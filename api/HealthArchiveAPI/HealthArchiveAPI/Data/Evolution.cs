@@ -11,5 +11,8 @@ namespace HealthArchiveAPI.Data
         [ForeignKey("HCE")]
         public Guid HCEId { get; set; }
         public HCE ClinicHistory { get; set; } = null!;
+        public string Notes { get; set; }
+        public string ModifiedBy { get; set; }
+        public DateTime ModifiedDate { get; set; }
     }
 }

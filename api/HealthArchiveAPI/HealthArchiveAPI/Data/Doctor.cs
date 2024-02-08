@@ -15,7 +15,7 @@ namespace HealthArchiveAPI.Data
         public string Password { get; set; }
         public Phone PhoneNumber { get; set; }
         [DataType(DataType.Date)]
-        public DateTime BirthDate { get; set; }
-        public string Description { get; set; }
+        public DateTime BirthDate { get; set; } 
+        public string? Description { get; set; } = "";
     }
 }
