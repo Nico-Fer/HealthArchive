@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "NYqy9SWF6y16P94gE/Ur8SkYulQFyRNc6eZKZf6TcGblhVCxLvlZ9i4CO+EZW3Q+1fP5gVodMUdILJYsL8wEFQ==",
+  "dgSpecHash": "pq3FAJuCNJm3kTn/XEdIXUM4O9DEtmVI992JN3o6TXbJUg68J2V3VZoB2Mbsd9pu/zp9apoyRPy8vy94eu+kXw==",
   "success": true,
-  "projectFilePath": "D:\\HealthArchiveProject\\HealthArchiveProject\\api\\HealthArchiveAPI\\HealthArchiveAPI\\HealthArchiveAPI.csproj",
+  "projectFilePath": "D:\\HealthArchiveProject\\api\\HealthArchiveAPI\\HealthArchiveAPI\\HealthArchiveAPI.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\ferna\\.nuget\\packages\\automapper\\13.0.0\\automapper.13.0.0.nupkg.sha512",
     "C:\\Users\\ferna\\.nuget\\packages\\azure.core\\1.25.0\\azure.core.1.25.0.nupkg.sha512",

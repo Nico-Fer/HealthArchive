@@ -4,6 +4,7 @@ using HealthArchiveAPI.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace HealthArchiveAPI.Migrations
 {
     [DbContext(typeof(DBContextHealth))]
-    partial class DBContextHealthModelSnapshot : ModelSnapshot
+    [Migration("20240208155611_DBStructureDefined")]
+    partial class DBStructureDefined
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -69,7 +72,7 @@ namespace HealthArchiveAPI.Migrations
 
                     b.HasIndex("HCEId");
 
-                    b.ToTable("Evolutions");
+                    b.ToTable("Evolution");
                 });
 
             modelBuilder.Entity("HealthArchiveAPI.Data.HCE", b =>
@@ -187,7 +190,7 @@ namespace HealthArchiveAPI.Migrations
 
                             b1.HasKey("PatientId");
 
-                            b1.ToTable("Patients");
+                            b1.ToTable("MedicalCoverages");
 
                             b1.WithOwner()
                                 .HasForeignKey("PatientId");

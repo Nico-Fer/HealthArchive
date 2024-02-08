@@ -4460,11 +4460,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\HealthArchiveProject\\HealthArchiveProject\\api\\HealthArchiveAPI\\HealthArchiveAPI\\HealthArchiveAPI.csproj",
+      "projectUniqueName": "D:\\HealthArchiveProject\\api\\HealthArchiveAPI\\HealthArchiveAPI\\HealthArchiveAPI.csproj",
       "projectName": "HealthArchiveAPI",
-      "projectPath": "D:\\HealthArchiveProject\\HealthArchiveProject\\api\\HealthArchiveAPI\\HealthArchiveAPI\\HealthArchiveAPI.csproj",
+      "projectPath": "D:\\HealthArchiveProject\\api\\HealthArchiveAPI\\HealthArchiveAPI\\HealthArchiveAPI.csproj",
       "packagesPath": "C:\\Users\\ferna\\.nuget\\packages\\",
-      "outputPath": "D:\\HealthArchiveProject\\HealthArchiveProject\\api\\HealthArchiveAPI\\HealthArchiveAPI\\obj\\",
+      "outputPath": "D:\\HealthArchiveProject\\api\\HealthArchiveAPI\\HealthArchiveAPI\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\ferna\\AppData\\Roaming\\NuGet\\NuGet.Config",

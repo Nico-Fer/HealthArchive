@@ -7,10 +7,15 @@ namespace HealthArchiveAPI.Data
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public Guid userId { get; set; }
-        public string name { get; set; }
-        public string email { get; set; }
-        public string password { get; set; }
-        public string phoneNumber { get; set; }
+        public Guid Id { get; set; }
+        public string Name { get; set; }
+        public string LastName { get; set; }
+        [EmailAddress(ErrorMessage ="Por favor ingrese un email correcto")]
+        public string Email { get; set; }
+        public string Password { get; set; }
+        public Phone PhoneNumber { get; set; }
+        [DataType(DataType.Date)]
+        public DateTime BirthDate { get; set; }
+        public string Description { get; set; }
     }
 }
