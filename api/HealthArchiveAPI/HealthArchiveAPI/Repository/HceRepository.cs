@@ -1,5 +1,6 @@
 ﻿using HealthArchiveAPI.Data;
 using HealthArchiveAPI.Repository.IRepository;
+using Microsoft.EntityFrameworkCore;
 
 namespace HealthArchiveAPI.Repository
 {
@@ -23,8 +24,10 @@ namespace HealthArchiveAPI.Repository
 
         public ICollection<Evolution> GetEvolutions(Guid id)
         {
-            var _hce = _db.HCEs.FirstOrDefault(h => h.Id == id);
-            if(_hce == null) { return null; }
+            var _hce = _db.HCEs
+                .Include(h => h.Evolutions) 
+                .FirstOrDefault(h => h.Id == id);
+            if (_hce == null) { return []; }
 
             return _hce.Evolutions;
         }

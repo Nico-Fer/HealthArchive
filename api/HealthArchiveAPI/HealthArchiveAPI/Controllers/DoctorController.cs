@@ -67,6 +67,8 @@ namespace HealthArchiveAPI.Controllers
             }
 
             var doctor = _mapper.Map<Doctor>(doctorDto);
+            if(doctor == null) return BadRequest(ModelState);
+
             if (!_repository.CreateDoctor(doctor))
             {
                 ModelState.AddModelError("", "Something went wrong");
@@ -110,7 +112,11 @@ namespace HealthArchiveAPI.Controllers
         {
             Doctor doctor = _repository.GetDoctor(doctorId);
             if (doctor == null) return NotFound();
-            _repository.DeleteDoctor(doctor);
+            if (!_repository.DeleteDoctor(doctor))
+            {
+                ModelState.AddModelError("", "Something went wrong");
+                return StatusCode(500, ModelState);
+            }
             return Ok(doctor);
         }
     }

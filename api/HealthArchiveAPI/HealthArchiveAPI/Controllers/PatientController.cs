@@ -1,0 +1,150 @@
+﻿using AutoMapper;
+using HealthArchiveAPI.Repository.IRepository;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using HealthArchiveAPI.Data;
+using HealthArchiveAPI.DTOs;
+using System.Diagnostics.Metrics;
+using System.Net;
+
+namespace HealthArchiveAPI.Controllers
+{
+    [Route("api/[controller]")]
+    [ApiController]
+    public class PatientController : ControllerBase
+    {
+        private readonly IPatientRepository _repository;
+        private readonly IMapper _mapper;
+
+        public PatientController(IPatientRepository repository, IMapper mapper)
+        {
+            _repository = repository;
+            _mapper = mapper;
+        }
+
+        [HttpGet]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [Route("GetPatients")]
+        public IActionResult GetPatients()
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            var patientsList = _repository.GetPatients();
+            return Ok(patientsList);
+        }
+
+        [HttpPost]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [Route("CreatePatient")]
+        public IActionResult CreatePatients([FromBody] PatientDto patientDto)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+            if (patientDto == null) return BadRequest(ModelState);
+
+            if (_repository.PatientsExists(patientDto.Email, patientDto.DNI))
+            {
+                ModelState.AddModelError("error", "patient_exists");
+                return BadRequest(ModelState);
+            }
+
+            var patient = new Patient
+            {
+                Name = patientDto.Name,
+                LastName = patientDto.LastName,
+                DNI = patientDto.DNI,
+                BirthDate = patientDto.BirthDate,
+                Country = patientDto.Country,
+                Email = patientDto.Email,
+                PhoneNumber = patientDto.PhoneNumber,
+                Ocupation = patientDto.Ocupation,
+                HomeAddress = patientDto.HomeAddress,
+                Note = patientDto.Note,
+                MedicalCoverage = patientDto.MedicalCoverage
+            };
+            if (patient == null) return BadRequest(ModelState);
+
+            if (!_repository.CreatePatient(patient))
+            {
+                ModelState.AddModelError("", "Something went wrong");
+                return StatusCode(404, ModelState);
+            }
+
+            return Ok(patient);
+        }
+
+        [HttpGet]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [Route("GetClinicHistory")]
+        public IActionResult GetClinicHistory(Guid Id)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            var hce = _repository.GetClinicHistory(Id);
+            if(hce == null) return BadRequest(ModelState);
+
+            return Ok(hce);
+        }
+
+        [HttpPatch]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [Route("UpdatePatientById")]
+        public IActionResult UpdatePatientById(Guid patientId, [FromBody] PatientDto patientDto)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            if (patientDto == null) return BadRequest();
+
+            var patientToUpdate = _repository.GetPatient(patientId);
+            if (patientToUpdate == null) return NotFound();
+
+            var auxPatient = _repository.GetPatientByDNI(patientDto.DNI);
+            if(auxPatient.Id != patientToUpdate.Id)
+            {
+                ModelState.AddModelError("error", "samedni_differentPatients");
+                return BadRequest(ModelState);
+            }
+
+            patientToUpdate.Name = patientDto.Name;
+            patientToUpdate.LastName = patientDto.LastName;
+            patientToUpdate.DNI = patientDto.DNI;
+            patientToUpdate.BirthDate = patientDto.BirthDate;
+            patientToUpdate.Country = patientDto.Country;
+            patientToUpdate.Email = patientDto.Email;
+            patientToUpdate.PhoneNumber = patientDto.PhoneNumber;
+            patientToUpdate.Ocupation = patientDto.Ocupation;
+            patientToUpdate.HomeAddress = patientDto.HomeAddress;
+            patientToUpdate.Note = patientDto.Note;
+            patientToUpdate.MedicalCoverage = patientDto.MedicalCoverage;
+
+            if (!_repository.UpdatePatient(patientToUpdate))
+            {
+                ModelState.AddModelError("", "Something went wrong");
+                return StatusCode(500, ModelState);
+            }
+
+            return Ok(patientToUpdate);
+        }
+
+        [HttpDelete]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [Route("DeletePatientById")]
+        public IActionResult DeleteDoctorById(Guid patientId)
+        {
+            Patient patient = _repository.GetPatient(patientId);
+            if (patient == null) return NotFound();
+            if(!_repository.DeletePatient(patient))
+            {
+                ModelState.AddModelError("", "Something went wrong");
+                return StatusCode(500, ModelState);
+            }
+            return Ok(patient);
+        }
+    }
+}

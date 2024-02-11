@@ -3,12 +3,17 @@ using HealthArchiveAPI.Repository;
 using HealthArchiveAPI.Repository.IRepository;
 using Microsoft.EntityFrameworkCore;
 using HealthArchiveAPI.Mapper;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<DBContextHealth>(opt => opt.UseSqlServer(builder.Configuration.GetConnectionString("DbContext")));
 
 // Add services to the container.
+builder.Services.AddControllers().AddJsonOptions(opt =>
+{
+    opt.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+});
 
 //Add Repsitories
 builder.Services.AddScoped<IDoctorRepository, DoctorRepository>();
@@ -18,6 +23,7 @@ builder.Services.AddScoped<IPatientRepository, PatientRepository>();
 
 //Add AutoMapper
 builder.Services.AddAutoMapper(typeof(DoctorMapper));
+builder.Services.AddAutoMapper(typeof(PatientMapper));
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

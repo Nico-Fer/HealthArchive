@@ -7,6 +7,8 @@ namespace HealthArchiveAPI.Repository.IRepository
         ICollection<Patient> GetPatients();
         Patient GetPatient(Guid id);
         Patient GetPatient(string email);
+        Patient GetPatientByDNI(string DNI);
+        HCE GetClinicHistory(Guid id);
         bool PatientsExists(Guid id);
         bool PatientsExists(string email, string DNI);
         bool CreatePatient(Patient patient);

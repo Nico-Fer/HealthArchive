@@ -14,13 +14,10 @@ namespace HealthArchiveAPI.Data
         [DataType(DataType.Date)]
         public DateTime BirthDate { get; set; }
         public string Country { get; set; }
-        [NotMapped]
         public string Email { get; set; }
         public Phone PhoneNumber { get; set; }
-        [NotMapped]
         public string Ocupation { get; set; }
         public string HomeAddress { get; set; }
-        [NotMapped]
         public string Note { get; set; }
         public MedicalCoverage MedicalCoverage { get; set; }
         public HCE ClinicHistory { get; set; }

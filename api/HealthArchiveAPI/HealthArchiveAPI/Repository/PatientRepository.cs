@@ -1,5 +1,6 @@
 ﻿using HealthArchiveAPI.Data;
 using HealthArchiveAPI.Repository.IRepository;
+using Microsoft.EntityFrameworkCore;
 
 namespace HealthArchiveAPI.Repository
 {
@@ -13,14 +14,29 @@ namespace HealthArchiveAPI.Repository
 
         public bool CreatePatient(Patient patient)
         {
+            HCE hCE = new HCE
+            {
+                Patient = patient
+            };
+
             _db.Patients.Add(patient);
+            _db.HCEs.Add(hCE);
             return Save();
         }
 
         public bool DeletePatient(Patient patient)
         {
+            var hce = _db.HCEs.FirstOrDefault(h => h.PatientId == patient.Id);
+
+            _db.HCEs.Remove(hce);
             _db.Patients.Remove(patient);
             return Save();
+        }
+
+        public HCE GetClinicHistory(Guid id)
+        {
+            var pacient =  _db.Patients.Include(h => h.ClinicHistory).FirstOrDefault(p => p.Id == id);
+            return pacient.ClinicHistory;
         }
 
         public Patient GetPatient(Guid id)
@@ -31,6 +47,11 @@ namespace HealthArchiveAPI.Repository
         public Patient GetPatient(string email)
         {
             return _db.Patients.FirstOrDefault(p => p.Email == email);
+        }
+
+        public Patient GetPatientByDNI(string DNI)
+        {
+            return _db.Patients.FirstOrDefault(p => p.DNI == DNI);
         }
 
         public ICollection<Patient> GetPatients()

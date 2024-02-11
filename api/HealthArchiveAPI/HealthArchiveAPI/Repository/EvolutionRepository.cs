@@ -11,8 +11,15 @@ namespace HealthArchiveAPI.Repository
             _db = db;
         }
 
-        public bool CreateEvolution(Evolution evolution)
+        public bool CreateEvolution(Evolution evolution, Guid hceId)
         {
+            var hce = _db.HCEs.FirstOrDefault(h => h.Id == hceId);
+            if (hce == null) return false;
+
+            evolution.HCEId = hceId;
+            evolution.ClinicHistory = hce;
+            evolution.ModifiedDate = DateTime.Now;
+
             _db.Evolutions.Add(evolution);
             return Save();
         }
