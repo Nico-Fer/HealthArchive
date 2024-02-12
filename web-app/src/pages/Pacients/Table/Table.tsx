@@ -10,7 +10,7 @@ interface Props {
 
 const Table : React.FC<Props> = ({ data, type }) => {
   return (
-    <div className="tabla-container" style={{maxWidth: '1140px'}}>
+    <div className="table-container" style={{maxWidth: '1140px', marginLeft: 'auto', marginRight: 'auto', width: '100%', display: 'block', boxSizing: 'border-box', backgroundColor: '#EAEAEA'}}>
         <div className="shadow-sm rounded bg-white table-responsive">
             <table className="table align-middle m-0">
                 <thead>
