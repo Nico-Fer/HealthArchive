@@ -1,3 +1,3 @@
-import Pacients from "./Pacients";
+import Patients from "./Patients";
 
-export default Pacients;
+export default Patients;
