@@ -2,8 +2,8 @@ import Table from '../Pacients/Table';
 
 const Proffesionals = () => {
   const proffesionals = [
-    { name: 'Profesional 1', lastName:'Apellido1', phoneNumber:'Numero1', email: 'profesional1@example.com'},
-    { name: 'Profesional 2', lastName:'Apellido2', phoneNumber:'Numero2', email: 'profesional2@example.com'},
+    { name: 'Profesional 1', lastName:'Apellido1', phoneNumber:{CountryCode:'+54', PhoneNumber: 'Numero1'}, email: 'profesional1@example.com'},
+    { name: 'Profesional 2', lastName:'Apellido2', phoneNumber:{CountryCode:'+54', PhoneNumber: 'Numero2'}, email: 'profesional2@example.com'},
   ];
 
   return (
