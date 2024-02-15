@@ -9,3 +9,12 @@
             }
     }
 }
+.patient-name {
+    color: #007bff; // Color azul claro
+    cursor: pointer;
+  }
+  
+  .patient-name:hover {
+    text-decoration: underline; // Subraya el texto al pasar el ratón
+  }
+  
