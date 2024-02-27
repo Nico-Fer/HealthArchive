@@ -30,12 +30,7 @@ interface FormProps {
       coberturaParte1: '',
         coberturaParte2: '',
     });
-    const handleHistory = () => {
-      // Lógica para redirigir a la página de Historia Clínica
-      console.log('Navegando a Historia Clínica');
-      navigate('/HistoriaClinica');
-  };
-
+    
     const [originalFormData, setOriginalFormData] = useState<FormData>({ ...formData });
     const [errors, setErrors] = useState<Partial<FormData>>({});
  
@@ -53,9 +48,7 @@ interface FormProps {
     }
   };
 
-  const handleReset = () => {
-    setFormData({ ...originalFormData });
-  };
+  
 
   const validateForm = (): boolean => {
     let valid = true;
@@ -173,9 +166,9 @@ interface FormProps {
           <div className="form-group">
             <div className="buttons-container">
             <button type="submit" className="submit-btn" disabled={!isFormChanged()}>Guardar</button>
-              <button type="button" className="delete-btn" onClick={handleReset}>Borrar</button>
               
-              <button className="history-btn" onClick={handleHistory}>Historia Clínica</button>
+              
+              
               <button className="close-btn" onClick={handleClose}>
                 Cerrar
               </button>

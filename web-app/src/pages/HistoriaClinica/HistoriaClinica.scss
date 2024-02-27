@@ -1,0 +1,68 @@
+.historia-clinica-container {
+  display: flex;
+  justify-content: space-between;
+  padding: 20px;
+
+  .sidebar {
+    width: 30%;
+    padding-right: 20px;
+    box-sizing: border-box;
+
+    .formularios-agregados {
+      margin-top: 20px;
+
+      .formulario-agregado {
+        background-color: #f9f9f9;
+        border: 1px solid #ccc;
+        padding: 10px;
+        margin-bottom: 10px;
+        border-radius: 5px;
+
+        h3 {
+          color: #007bff;
+          margin-top: 0;
+        }
+
+        p {
+          margin: 5px 0;
+
+          strong {
+            color: #000;
+          }
+        }
+      }
+    }
+  }
+
+.main-content {
+  width: 65%;
+}
+
+.buttons-container {
+  margin-bottom: 20px;
+}
+
+button {
+  margin-right: 10px;
+}
+
+/* Estilos para los formularios y el componente de subida de archivos */
+form {
+  margin-bottom: 20px;
+}
+
+.file-upload-container {
+  margin-bottom: 20px;
+}
+
+.agregar-btn {
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+
+}
