@@ -10,6 +10,7 @@ import NavBar from "./NavBar/NavBar";
 
 import "./App.scss";
 import Proffesionals from "../Professionals";
+import HistoriaClinica from "../HistoriaClinica/HistoriaClinica";
 
 const App = () => {
   return (
@@ -22,6 +23,7 @@ const App = () => {
             <Route path="/Pacientes" element={<Patients />} />
             <Route path="/Profesionales" element={<Proffesionals />} />
             <Route path="/Profesional" element={<Profesional />} />
+            <Route path="/HistoriaClinica" element={<HistoriaClinica />} />
           </Routes>
       </Router>
     </div>

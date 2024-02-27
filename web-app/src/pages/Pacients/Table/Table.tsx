@@ -1,6 +1,7 @@
 import React from 'react';
 import { FaWhatsapp } from 'react-icons/fa';
 import { Person, Patient } from '../../../Types/Person';
+import { useNavigate } from 'react-router-dom';
 
 interface Props {
   data: Array<Patient | Person>;
@@ -9,6 +10,12 @@ interface Props {
 }
 
 const Table: React.FC<Props> = ({ data, type, onNameClick }) => {
+  const navigate = useNavigate();
+  const handleHistory = () => {
+    // Lógica para redirigir a la página de Historia Clínica
+    console.log('Navegando a Historia Clínica');
+    navigate('/HistoriaClinica');
+};
   return (
     <div className="table-container">
       <div className="shadow-sm rounded bg-white table-responsive">
@@ -77,7 +84,7 @@ const Table: React.FC<Props> = ({ data, type, onNameClick }) => {
                 </td>
                 {type === 'patients' && (
                   <td className="p-2 px-md3 py-md-2 px-xl-4 py-xl-3">
-                    <button className="btn btn-primary">HCE</button>
+                    <button className="btn btn-primary" onClick={handleHistory}>HCE</button>
                   </td>
                 )}
               </tr>

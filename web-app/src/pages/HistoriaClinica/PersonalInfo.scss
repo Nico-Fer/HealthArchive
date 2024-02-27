@@ -1,0 +1,29 @@
+.personal-info-container {
+    background-color: #f9f9f9; /* Color de fondo gris claro */
+    padding: 20px; /* Espacio interno */
+    border-radius: 10px; /* Bordes redondeados */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Sombra ligera */
+  }
+  
+  .personal-info-container h2 {
+    color: #007bff; /* Color de texto azul */
+    font-size: 18px; /* Tamaño de fuente para el título */
+    margin-bottom: 10px; /* Margen inferior */
+  }
+  
+  .personal-info-container p {
+    margin: 5px 0; /* Margen superior e inferior */
+    font-size: 14px; /* Tamaño de fuente para los párrafos */
+    color: #333; /* Color de texto gris oscuro */
+  }
+  
+  .personal-info-container .name {
+    color: #007bff; /* Color azul para el nombre */
+    font-size: 16px; /* Tamaño de fuente del nombre */
+    margin-bottom: 5px; /* Margen inferior */
+  }
+  
+  .personal-info-container .details {
+    color: #555; /* Color gris para los detalles */
+  }
+  
