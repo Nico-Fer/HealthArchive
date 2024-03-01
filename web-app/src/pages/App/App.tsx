@@ -11,6 +11,7 @@ import NavBar from "./NavBar/NavBar";
 import "./App.scss";
 import Proffesionals from "../Professionals";
 import HistoriaClinica from "../HistoriaClinica/HistoriaClinica";
+import NewPatient from "../NewPatient";
 
 const App = () => {
   return (
@@ -21,6 +22,7 @@ const App = () => {
             <Route path="/" element={<Login />} />
             <Route path="/Register" element={<Register />} />
             <Route path="/Pacientes" element={<Patients />} />
+            <Route path="/Pacientes/Nuevo" element={<NewPatient />} />
             <Route path="/Profesionales" element={<Proffesionals />} />
             <Route path="/Profesional" element={<Profesional />} />
             <Route path="/HistoriaClinica" element={<HistoriaClinica />} />

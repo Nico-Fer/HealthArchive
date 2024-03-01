@@ -6,16 +6,10 @@ import { useNavigate } from 'react-router-dom';
 interface Props {
   data: Array<Patient | Person>;
   type: 'patients' | 'professionals';
-  onNameClick?: (patient: Patient | Person) => void;
 }
 
-const Table: React.FC<Props> = ({ data, type, onNameClick }) => {
+const Table: React.FC<Props> = ({ data, type }) => {
   const navigate = useNavigate();
-  const handleHistory = () => {
-    // Lógica para redirigir a la página de Historia Clínica
-    console.log('Navegando a Historia Clínica');
-    navigate('/HistoriaClinica');
-};
   return (
     <div className="table-container">
       <div className="shadow-sm rounded bg-white table-responsive">
@@ -33,7 +27,6 @@ const Table: React.FC<Props> = ({ data, type, onNameClick }) => {
               <tr className="bg-white" key={index}>
                 <td
                   className="p-2 px-md3 py-md-2 px-xl-4 py-xl-3"
-                  onClick={() => onNameClick && onNameClick(item)}
                   style={{ cursor: 'pointer', color: '#007bff' }} // Cambiar el color del texto del nombre
                 >
                   <div className="text-truncate">
@@ -84,7 +77,7 @@ const Table: React.FC<Props> = ({ data, type, onNameClick }) => {
                 </td>
                 {type === 'patients' && (
                   <td className="p-2 px-md3 py-md-2 px-xl-4 py-xl-3">
-                    <button className="btn btn-primary" onClick={handleHistory}>HCE</button>
+                    <button className="btn btn-primary">HCE</button>
                   </td>
                 )}
               </tr>

@@ -20,6 +20,10 @@ interface PacienteData {
     Coverage: string;
   };
   dni: string;
+  country: string;
+  ocupation: string;
+  address: string;
+  birthDate: Date;
 }
 
 interface EvolutionFormData {
@@ -107,6 +111,10 @@ const HistoriaClinica = () => {
       Coverage: '',
     },
     dni: '',
+    country: '',
+    ocupation: '',
+    address: '',
+    birthDate: new Date()
   });
 
   const handleShowForm = () => {

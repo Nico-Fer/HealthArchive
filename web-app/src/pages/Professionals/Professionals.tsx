@@ -11,17 +11,13 @@ const Proffesionals  = () => {
   ];
   const navigate = useNavigate();
 
-  const handleNameClick = (item: Patient | Person) => {
-    // Redirigir a la página Profe.tsx
-    navigate('/Profesional');
-  };
 
   const handleRowClick = () => {};
 
   return (
     <div>
       <h1>Profesinales</h1>
-      <Table data={proffesionals} type="professionals"  onNameClick={handleNameClick}/>
+      <Table data={proffesionals} type="professionals" />
     </div>
   );
 };

@@ -11,4 +11,8 @@ export interface Person {
 export interface Patient extends Person {
     medicalCoverage: MedicalCoverage;
     dni: string;
+    country: string;
+    ocupation: string;
+    address: string;
+    birthDate: Date;
 }
