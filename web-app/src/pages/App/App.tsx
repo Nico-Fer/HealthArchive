@@ -24,8 +24,8 @@ const App = () => {
             <Route path="/Pacientes" element={<Patients />} />
             <Route path="/Pacientes/Nuevo" element={<NewPatient />} />
             <Route path="/Profesionales" element={<Proffesionals />} />
-            <Route path="/Profesional" element={<Profesional />} />
-            <Route path="/HistoriaClinica" element={<HistoriaClinica />} />
+            <Route path="/Profesionales/Profesional" element={<Profesional />} />
+            <Route path="/Pacientes/HistoriaClinica" element={<HistoriaClinica />} />
           </Routes>
       </Router>
     </div>

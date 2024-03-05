@@ -37,6 +37,11 @@ namespace HealthArchiveAPI.Repository
             return _db.Doctors.FirstOrDefault(d => d.Id == id);
         }
 
+        public Doctor GetDoctor(string email)
+        {
+            return _db.Doctors.FirstOrDefault(d => d.Email == email);
+        }
+
         public ICollection<Doctor> GetDoctors()
         {
             return _db.Doctors.ToList();

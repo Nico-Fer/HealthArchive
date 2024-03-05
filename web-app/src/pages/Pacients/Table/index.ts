@@ -1,3 +1,3 @@
-import Table from './Table';
+import Table from "./PatientTable";
 
 export default Table;

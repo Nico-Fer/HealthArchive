@@ -50,6 +50,21 @@ namespace HealthArchiveAPI.Controllers
             return Ok(doctor);
         }
 
+        [HttpGet]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [Route("GetDoctorByEmail/{email}")]
+        public IActionResult GetDoctorByEmail(string email)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            var doctor = _repository.GetDoctor(email);
+            if (doctor == null) return NotFound();
+
+            return Ok(doctor);
+        }
+
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status200OK)]

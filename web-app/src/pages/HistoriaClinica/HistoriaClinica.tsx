@@ -1,156 +1,140 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
+
 import PersonalInfo from './PersonalInfo';
 import EvolutionForm from './FormEvolucion/FormEvolucion';
-import PrescriptionForm from './FormReceta/FormReceta';
-import TreatmentForm from './FormTratamiento/FormTratamiento';
-import MyForm from './FormPaciente/FormPaciente';
+import {Patient } from '../../Types/Person';
+import { HCE } from '../../Types/HCE';
 
 import './HistoriaClinica.scss';
+import { Evolution } from '../../Types/Evolution';
+import { EvolutionFromApi } from '../../Types/EvolutionFromApi';
 
-interface PacienteData {
-  name: string;
-  lastName: string;
-  email: string;
-  phoneNumber: {
-    CountryCode: string;
-    PhoneNumber: string;
-  };
-  medicalCoverage: {
-    Number: string;
-    Coverage: string;
-  };
-  dni: string;
-  country: string;
-  ocupation: string;
-  address: string;
-  birthDate: Date;
-}
+import formatDate from '../../Functions/FormatDate';
+
 
 interface EvolutionFormData {
-  fecha: string;
-  nombreMedico: {
-    nombreDoctor: string;
-    apellidoDoctor: string;
-  };
-  matriculaDoctor: string;
-  texto: string;
-}
-
-interface PrescriptionFormData {
-  fecha: string;
-  nombreMedico: {
-    nombreDoctor: string;
-    apellidoDoctor: string;
-  };
-  matriculaDoctor: string;
-  texto: string;
-}
-
-interface TreatmentFormData {
-  fecha: string;
-  nombreMedico: {
-    nombreDoctor: string;
-    apellidoDoctor: string;
-  };
-  matriculaDoctor: string;
-  texto: string;
+  Notes: string,
+  ModifiedBy: string,
+  DateAdded: Date,
 }
 
 const HistoriaClinica = () => {
-  const [showForm, setShowForm] = useState(false);
+
+  useEffect (() => {
+    fetchClinicHistory();
+  }
+  , []);
+
   const [showEvolutionForm, setShowEvolutionForm] = useState(false);
-  const [showPrescriptionForm, setShowPrescriptionForm] = useState(false);
-  const [showTreatmentForm, setShowTreatmentForm] = useState(false);
   const [showFileUploader, setShowFileUploader] = useState(false);
-  const [formularios, setFormularios] = useState<any[]>([]);
+  const [formularios, setFormularios] = useState<EvolutionFormData[]>([]);
 
   const handleShowEvolutionForm = () => setShowEvolutionForm(true);
-  const handleShowPrescriptionForm = () => setShowPrescriptionForm(true);
-  const handleShowTreatmentForm = () => setShowTreatmentForm(true);
 
-  const handleAddEvolution = (formData: EvolutionFormData) => {
-    const newFormulario = {
-      tipo: 'Evolución',
-      nombreMedico: formData.nombreMedico,
-      fecha: formData.fecha,
-      texto: formData.texto,
-    };
-    setFormularios([...formularios, newFormulario]);
-  };
+  const location = useLocation();
+  const patient = location.state.patient;
 
-  const handleAddPrescription = (formData: PrescriptionFormData) => {
-    const newFormulario = {
-      tipo: 'Receta',
-      nombreMedico: formData.nombreMedico,
-      fecha: formData.fecha,
-      texto: formData.texto,
-    };
-    setFormularios([...formularios, newFormulario]);
-  };
+  //const[evolutions, setEvolutions] = useState<Evolution[]>([]);
 
-  const handleAddTreatment = (formData: TreatmentFormData) => {
-    const newFormulario = {
-      tipo: 'Tratamiento',
-      nombreMedico: formData.nombreMedico,
-      fecha: formData.fecha,
-      texto: formData.texto,
-    };
-    setFormularios([...formularios, newFormulario]);
-  };
-
-  const [patient, setPatient] = useState<PacienteData>({
-    name: '',
-    lastName: '',
-    email: '',
-    phoneNumber: {
-      CountryCode: ' ',
-      PhoneNumber: ' ',
-    },
-    medicalCoverage: {
-      Number: '',
-      Coverage: '',
-    },
-    dni: '',
-    country: '',
-    ocupation: '',
-    address: '',
-    birthDate: new Date()
+  const[hce, setHce] = useState<HCE>({
+    Id: '',
+    PatientId: '',
+    Evolutions: []
   });
 
-  const handleShowForm = () => {
-    setShowForm(true);
+  const fetchClinicHistory = async () =>{
+    try{
+      const response = await fetch(`https://localhost:44393/api/Patient/GetClinicHistory/${patient.DNI}`);
+      if (!response.ok) {
+        throw new Error('Error al obtener la historia clinica');
+      }
+      const data = await response.json();
+      console.log(data);
+
+      const mappedHce ={
+        Id: data.id,
+        PatientId: data.patientId,
+        Evolutions: data.evolutions.map((evolution : EvolutionFromApi) => ({
+          Notes: evolution.notes,
+          ModifiedBy: evolution.modifiedBy,
+          DateAdded: new Date(evolution.modifiedDate),
+        }))
+      };
+
+      setHce(mappedHce);
+      console.log(mappedHce);
+
+      setFormularios(mappedHce.Evolutions);
+    }catch (error){
+      console.error('Error:', error);
+    }
+  }
+
+  const fetchCreateEvolution = async(evolution : Evolution) => {
+    try{
+      const response = await fetch(`https://localhost:44393/api/Evolution/CreateEvolution/${hce.Id}`,{
+      method: 'POST', 
+        headers: {
+          'Content-Type': 'application/json', 
+        },
+        body: JSON.stringify(evolution),
+      })
+      if (!response.ok) {
+        throw new Error('Error al obtener las evoluciones');
+      }
+
+      const data = await response.json();
+      console.log(data);
+
+    }catch(error){
+      console.error('Error:', error);
+    }
+  }
+
+  const handleAddEvolution = async (formData: EvolutionFormData) => {
+    const newEvolution: Evolution = {
+      Notes: formData.Notes,
+      ModifiedBy: formData.ModifiedBy,
+    };
+
+    const newFormulario = {
+      ModifiedBy: formData.ModifiedBy,
+      Notes: formData.Notes,
+      DateAdded: formData.DateAdded,
+    };
+    setFormularios([...formularios, newFormulario]);
+
+    try {
+      await fetchCreateEvolution(newEvolution);
+      console.log('Evolución agregada exitosamente');
+    } catch (error) {
+      console.error('Error al agregar la evolución:', error);
+    }
   };
 
-  const handleCloseForm = () => {
-    setShowForm(false);
-  };
 
   return (
     <div className="historia-clinica-container">
       <div className="sidebar">
-        <PersonalInfo patient={patient} onNameClick={handleShowForm} />
+        <PersonalInfo patient={patient} />
         <div className="formularios-agregados">
           {formularios.map((formulario, index) => (
             <div key={index} className="formulario-agregado">
-              <h3>{formulario.tipo}</h3>
-              <p><strong>Nombre del Médico:</strong> {formulario.nombreMedico.nombreDoctor} {formulario.nombreMedico.apellidoDoctor}</p>
-              <p><strong>Fecha:</strong> {formulario.fecha}</p>
-              <p><strong>Texto del Formulario:</strong> {formulario.texto}</p>
+              <h3>Evolución</h3>
+              <p><strong>Nombre del Médico:</strong> {formulario.ModifiedBy}</p>
+              <p><strong>Fecha:</strong> {formatDate(formulario.DateAdded)}</p>
+              <p><strong>Texto del Formulario:</strong> {formulario.Notes}</p>
             </div>
           ))}
         </div>
       </div>
       <div className="main-content">
-        {showForm && <MyForm patient={patient} onClose={handleCloseForm} />}
         <div className="buttons-container">
           <button className="agregar-btn" onClick={handleShowEvolutionForm}>Agregar Evolución</button>
-          <button className="agregar-btn" onClick={handleShowPrescriptionForm}>Agregar Receta</button>
-          <button className="agregar-btn" onClick={handleShowTreatmentForm}>Agregar Tratamiento</button>
           <button className="agregar-btn" onClick={() => setShowFileUploader(true)}>Agregar Archivo</button>
         </div>
         {showEvolutionForm && <EvolutionForm onAddEvolution={handleAddEvolution} onClose={() => setShowEvolutionForm(false)} />}
-        {showPrescriptionForm && <PrescriptionForm onAddReceta={handleAddPrescription} onClose={() => setShowPrescriptionForm(false)} />}
-        {showTreatmentForm && <TreatmentForm onAddTratamiento={handleAddTreatment} onClose={() => setShowTreatmentForm(false)} />}
       </div>
     </div>
   );

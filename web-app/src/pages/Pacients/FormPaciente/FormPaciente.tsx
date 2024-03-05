@@ -3,72 +3,176 @@ import './FormPaciente.scss';
 import { Patient } from '../../../Types/Person';
 import { useNavigate } from 'react-router-dom';
 
+import formatDate from '../../../Functions/FormatDate';
+
 interface FormProps {
-    patient: Patient | null; 
+    patient: Patient; 
     onClose: () => void;
+    onPatientUpdated: () => void;
   }
 
-  interface FormData {
-    nombre: string;
-    apellido: string;
-    fechaNacimiento: string;
-    email: string;
-    prefijo: string;
-    telefono: string;
-    coberturaParte1: string;
-    coberturaParte2: string;
-  }
-  const MyForm: React.FC<FormProps> = ({ patient, onClose }) => {
+  const MyForm: React.FC<FormProps> = ({ patient, onClose, onPatientUpdated }) => {
     const navigate = useNavigate();
-    const [formData, setFormData] = useState<FormData>({
-      nombre: '',
-      apellido: '',
-      fechaNacimiento: '',
-      email: '',
-      prefijo: '+54', // Prefijo predeterminado para Argentina
-      telefono: '',
-      coberturaParte1: '',
-        coberturaParte2: '',
+
+    let dateChanged = false;
+
+    const [patientData, setFormData] = useState<Patient>({
+      Name: patient.Name,
+      LastName: patient.LastName,
+      BirthDate: patient.BirthDate,
+      Email: patient.Email,
+      PhoneNumber:{CountryCode: patient.PhoneNumber.CountryCode, PhoneNumber: patient.PhoneNumber.PhoneNumber}, 
+      MedicalCoverage:{Coverage: patient.MedicalCoverage.Coverage, Number: patient.MedicalCoverage.Number},
+      DNI:patient.DNI,
+      Country:patient.Country,
+      Ocupation:patient.Ocupation,
+      HomeAddress:patient.HomeAddress,
+      Note:patient.Note,
     });
+
     const handleHistory = () => {
       // Lógica para redirigir a la página de Historia Clínica
       console.log('Navegando a Historia Clínica');
-      navigate('/HistoriaClinica');
+      navigate('/Pacientes/HistoriaClinica', {state: {patient}})
   };
 
-    const [originalFormData, setOriginalFormData] = useState<FormData>({ ...formData });
-    const [errors, setErrors] = useState<Partial<FormData>>({});
+    const [originalPatientData, setOriginalFormData] = useState<Patient>({ ...patientData });
  
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    setFormData({ ...patientData, [name]: value });
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const dateString = e.target.value;
+    const dateObject = new Date(dateString);
+  
+    setFormData(prevData => ({
+      ...prevData,
+      BirthDate: dateObject
+    }));
+
+    dateChanged = true;
+  };
+
+  const handleCoverageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const coverage = e.target.value;
+  
+    setFormData(prevData => ({
+      ...prevData,
+      MedicalCoverage: {
+        ...prevData.MedicalCoverage, 
+        Coverage: coverage, 
+      }
+    }));
+  };
+  
+  const handleCoverageNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const number = e.target.value;
+  
+    setFormData(prevData => ({
+      ...prevData,
+      MedicalCoverage: {
+        ...prevData.MedicalCoverage,
+        Number: number,
+      }
+    }));
+  };
+
+  const handleChangePhoneNumber = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const phoneNumber = e.target.value;
+  
+    setFormData(prevData => ({
+      ...prevData,
+      PhoneNumber: {
+        ...prevData.PhoneNumber,
+        PhoneNumber: phoneNumber,
+      }
+    }));
+  };
+
+  const updatePatient = async(patientData : Patient) =>{
+    let formattedPatientData;
+    if(dateChanged){
+      formattedPatientData = {
+        ...patientData,
+        BirthDate: patientData.BirthDate.toISOString()
+      };
+    }else{
+      formattedPatientData = {
+        ...patientData,
+      };
+    }
+
+    try{
+      const response = await fetch( `https://localhost:44393/api/Patient/UpdatePatientByDni/${formattedPatientData.DNI}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json', 
+        },
+        body: JSON.stringify(formattedPatientData),
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+    }catch(error){
+      console.error('Error al crear el paciente:', error)
+    }  
+  }
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (validateForm()) {
-      console.log(formData);
-      setOriginalFormData({ ...formData });
+    setOriginalFormData({ ...patientData });
+
+    try {
+      const result = await updatePatient(patientData);
+      console.log(result);
+      onPatientUpdated();
+      handleClose();
+    } catch (error) {
+      console.error('Error en la solicitud:', error);
+      if (error instanceof Response) {
+        const responseBody = await error.text();
+        console.error('Respuesta del servidor:', responseBody); 
+      }
     }
   };
 
-  const handleReset = () => {
-    setFormData({ ...originalFormData });
-  };
+  const deletePatient = async (dni : string) =>{
+    try{
+      const response = await fetch( `https://localhost:44393/api/Patient/DeletePatientByDni/${dni}`, {
+        method: 'DELETE',
+      })
 
-  const validateForm = (): boolean => {
-    let valid = true;
-    const newErrors: Partial<FormData> = {};
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
-    // Validación de campos...
+    }catch(error){
+      console.error('Error al crear el paciente:', error)
+    }  
+}
 
-    setErrors(newErrors);
-    return valid;
+  const handleReset = async() => {
+    try{
+      const result = await deletePatient(patientData.DNI);
+      console.log(result);
+      onPatientUpdated();
+      handleClose();
+    }catch(error){
+      console.error('Error en la solicitud:', error);
+      if (error instanceof Response) {
+        const responseBody = await error.text();
+        console.error('Respuesta del servidor:', responseBody); 
+      }
+    }
   };
 
   const isFormChanged = (): boolean => {
-    return JSON.stringify(formData) !== JSON.stringify(originalFormData);
+    return JSON.stringify(patientData) !== JSON.stringify(originalPatientData);
   };
 
   
@@ -82,91 +186,81 @@ interface FormProps {
       <div className="form-container">
         <form onSubmit={handleSubmit} className="form">
           <div className="form-group">
-            <label htmlFor="nombre">Nombre:</label>
+            <label htmlFor="Name">Nombre:</label>
             <input
               type="text"
-              id="nombre"
-              name="nombre"
-              value={formData.nombre}
+              id="Name"
+              name="Name"
+              value={patientData.Name}
               onChange={handleChange}
-              className={errors.nombre ? 'error' : ''}
             />
-            {errors.nombre && <span className="error-msg">{errors.nombre}</span>}
           </div>
 
           <div className="form-group">
-            <label htmlFor="apellido">Apellido:</label>
+            <label htmlFor="LastName">Apellido:</label>
             <input
               type="text"
-              id="apellido"
-              name="apellido"
-              value={formData.apellido}
+              id="LastName"
+              name="LastName"
+              value={patientData.LastName}
               onChange={handleChange}
-              className={errors.apellido ? 'error' : ''}
             />
-            {errors.apellido && <span className="error-msg">{errors.apellido}</span>}
           </div>
 
           <div className="form-group">
-            <label htmlFor="fechaNacimiento">Fecha de Nacimiento:</label>
+            <label htmlFor="BirthDate">Fecha de Nacimiento:</label>
             <input
               type="date"
-              id="fechaNacimiento"
-              name="fechaNacimiento"
-              value={formData.fechaNacimiento}
-              onChange={handleChange}
-              className={errors.fechaNacimiento ? 'error' : ''}
+              id="BirthDate"
+              name="BirthDate"
+              value={formatDate(patientData.BirthDate)}
+              onChange={handleDateChange}
             />
-            {errors.fechaNacimiento && <span className="error-msg">{errors.fechaNacimiento}</span>}
           </div>
 
           <div className="form-group">
-          <label htmlFor="coberturaParte1">Cobertura (Parte 1):</label>
+          <label htmlFor="MedicalCoverage.Coverage">Cobertura y Plan:</label>
           <input
             type="text"
-            id="coberturaParte1"
-            name="coberturaParte1"
-            value={formData.coberturaParte1}
-            onChange={handleChange}
+            id="MedicalCoverage.Coverage"
+            name="MedicalCoverage.Coverage"
+            value={patientData.MedicalCoverage.Coverage}
+            onChange={handleCoverageChange}
           />
         </div>
         <div className="form-group">
-          <label htmlFor="coberturaParte2">Cobertura (Parte 2):</label>
+          <label htmlFor="MedicalCoverage.Number"></label>
           <input
             type="text"
-            id="coberturaParte2"
-            name="coberturaParte2"
-            value={formData.coberturaParte2}
-            onChange={handleChange}
+            id="MedicalCoverage.Number"
+            name="MedicalCoverage.Number"
+            value={patientData.MedicalCoverage.Number}
+            onChange={handleCoverageNumberChange}
           />
         </div>
 
           <div className="form-group">
-            <label htmlFor="email">Email:</label>
+            <label htmlFor="Email">Email:</label>
             <input
               type="email"
-              id="email"
-              name="email"
-              value={formData.email}
+              id="Email"
+              name="Email"
+              value={patientData.Email}
               onChange={handleChange}
-              className={errors.email ? 'error' : ''}
             />
-            {errors.email && <span className="error-msg">{errors.email}</span>}
           </div>
 
           <div className="form-group">
             <label htmlFor="telefono">Teléfono:</label>
             <div className="phone-input">
-              <span>{formData.prefijo}</span>
+              <span>{patientData.PhoneNumber.CountryCode}</span>
               <input
                 type="tel"
-                id="telefono"
-                name="telefono"
-                value={formData.telefono}
-                onChange={handleChange}
-                className={errors.telefono ? 'error' : ''}
+                id="PhoneNumber.PhoneNumber"
+                name="PhoneNumber.PhoneNumber"
+                value={patientData.PhoneNumber.PhoneNumber}
+                onChange={handleChangePhoneNumber}
               />
-              {errors.telefono && <span className="error-msg">{errors.telefono}</span>}
             </div>
           </div>
 

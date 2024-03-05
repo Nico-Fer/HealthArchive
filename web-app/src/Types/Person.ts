@@ -2,17 +2,18 @@ import { MedicalCoverage } from "./MedicalCoverage";
 import { Phone } from "./Phone";
 
 export interface Person {
-    name: string;
-    lastName: string;
-    phoneNumber: Phone;
-    email: string;
+    Name: string;
+    LastName: string;
+    PhoneNumber: Phone;
+    Email: string;
 }
 
 export interface Patient extends Person {
-    medicalCoverage: MedicalCoverage;
-    dni: string;
-    country: string;
-    ocupation: string;
-    address: string;
-    birthDate: Date;
+    MedicalCoverage: MedicalCoverage;
+    DNI: string;
+    Country: string;
+    Ocupation: string;
+    HomeAddress: string;
+    BirthDate: Date;
+    Note: string;
 }

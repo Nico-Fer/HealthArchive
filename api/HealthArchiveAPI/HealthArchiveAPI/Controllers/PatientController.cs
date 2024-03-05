@@ -77,12 +77,15 @@ namespace HealthArchiveAPI.Controllers
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        [Route("GetClinicHistory")]
-        public IActionResult GetClinicHistory(Guid Id)
+        [Route("GetClinicHistory/{dni}")]
+        public IActionResult GetClinicHistory(string dni)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            var hce = _repository.GetClinicHistory(Id);
+            var patient = _repository.GetPatientByDNI(dni);
+            if(patient== null) return BadRequest(ModelState);
+
+            var hce = _repository.GetClinicHistory(patient.Id);
             if(hce == null) return BadRequest(ModelState);
 
             return Ok(hce);
@@ -130,16 +133,75 @@ namespace HealthArchiveAPI.Controllers
             return Ok(patientToUpdate);
         }
 
+        [HttpPatch]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [Route("UpdatePatientByDni/{dni}")]
+        public IActionResult UpdatePatientByDni(string dni, [FromBody] PatientDto patientDto)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            if (patientDto == null) return BadRequest();
+
+            var patientToUpdate = _repository.GetPatientByDNI(dni);
+            if (patientToUpdate == null) return NotFound();
+
+            var auxPatient = _repository.GetPatientByDNI(patientDto.DNI);
+            if (auxPatient.Id != patientToUpdate.Id)
+            {
+                ModelState.AddModelError("error", "samedni_differentPatients");
+                return BadRequest(ModelState);
+            }
+
+            patientToUpdate.Name = patientDto.Name;
+            patientToUpdate.LastName = patientDto.LastName;
+            patientToUpdate.DNI = patientDto.DNI;
+            patientToUpdate.BirthDate = patientDto.BirthDate;
+            patientToUpdate.Country = patientDto.Country;
+            patientToUpdate.Email = patientDto.Email;
+            patientToUpdate.PhoneNumber = patientDto.PhoneNumber;
+            patientToUpdate.Ocupation = patientDto.Ocupation;
+            patientToUpdate.HomeAddress = patientDto.HomeAddress;
+            patientToUpdate.Note = patientDto.Note;
+            patientToUpdate.MedicalCoverage = patientDto.MedicalCoverage;
+
+            if (!_repository.UpdatePatient(patientToUpdate))
+            {
+                ModelState.AddModelError("", "Something went wrong");
+                return StatusCode(500, ModelState);
+            }
+
+            return Ok(patientToUpdate);
+        }
+
         [HttpDelete]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [Route("DeletePatientById")]
-        public IActionResult DeleteDoctorById(Guid patientId)
+        public IActionResult DeletePatientById(Guid patientId)
         {
             Patient patient = _repository.GetPatient(patientId);
             if (patient == null) return NotFound();
             if(!_repository.DeletePatient(patient))
+            {
+                ModelState.AddModelError("", "Something went wrong");
+                return StatusCode(500, ModelState);
+            }
+            return Ok(patient);
+        }
+
+        [HttpDelete]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [Route("DeletePatientByDni/{dni}")]
+        public IActionResult DeletePatientByDni(string dni)
+        {
+            Patient patient = _repository.GetPatientByDNI(dni);
+            if (patient == null) return NotFound();
+            if (!_repository.DeletePatient(patient))
             {
                 ModelState.AddModelError("", "Something went wrong");
                 return StatusCode(500, ModelState);

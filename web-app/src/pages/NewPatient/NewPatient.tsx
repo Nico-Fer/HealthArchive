@@ -1,22 +1,28 @@
 import { useState } from 'react';
 import { Patient } from '../../Types/Person';
 import { Phone } from '../../Types/Phone';
+import { useNavigate } from 'react-router-dom';
+
+import formatDate from '../../Functions/FormatDate';
 
 import './NewPatient.scss'
 
+
 const NewPatient = () => {
+    const navigate = useNavigate();
 
     const [patientData, setPatientData] = useState<Patient>({
-      name: '',
-      lastName: '',
-      phoneNumber: { CountryCode: '', PhoneNumber: '' }, 
-      email: '',
-      medicalCoverage: {Number: '', Coverage: ''},
-      dni: '',
-      country: '',
-      ocupation: '',
-      address: '',
-      birthDate: new Date(),
+      Name: '',
+      LastName: '',
+      PhoneNumber: { CountryCode: '+54', PhoneNumber: '' }, 
+      Email: '',
+      MedicalCoverage: {Number: '', Coverage: ''},
+      DNI: '',
+      Country: '',
+      Ocupation: '',
+      HomeAddress: '',
+      BirthDate: new Date(),
+      Note: '',
     })
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -35,84 +41,141 @@ const NewPatient = () => {
   
     setPatientData(prevData => ({
       ...prevData,
-      birthDate: dateObject
+      BirthDate: dateObject
     }));
   };
 
-  const formatDate = (date: Date) => {
-    const d = new Date(date);
-    let month = '' + (d.getMonth() + 1);
-    let day = '' + d.getDate();
-    let year = d.getFullYear();
+  const handleCoverageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const coverage = e.target.value;
   
-    if (month.length < 2) 
-        month = '0' + month;
-    if (day.length < 2) 
-        day = '0' + day;
+    setPatientData(prevData => ({
+      ...prevData,
+      MedicalCoverage: {
+        ...prevData.MedicalCoverage, 
+        Coverage: coverage, 
+      }
+    }));
+  };
   
-    return [year, month, day].join('-');
+  const handleCoverageNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const number = e.target.value;
+  
+    setPatientData(prevData => ({
+      ...prevData,
+      MedicalCoverage: {
+        ...prevData.MedicalCoverage,
+        Number: number,
+      }
+    }));
   };
 
-  const formatPhoneNumber = (phoneNumber: Phone) => {
-    
+  const handleChangePhoneNumber = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const phoneNumber = e.target.value;
+  
+    setPatientData(prevData => ({
+      ...prevData,
+      PhoneNumber: {
+        ...prevData.PhoneNumber,
+        PhoneNumber: phoneNumber,
+      }
+    }));
+  };
+
+  const createPatient = async (patientData : Patient) => {
+    const formattedPatientData = {
+      ...patientData,
+      BirthDate: patientData.BirthDate.toISOString()
+    };
+
+    try {
+      const response = await fetch('https://localhost:44393/api/Patient/CreatePatient', {
+        method: 'POST', 
+        headers: {
+          'Content-Type': 'application/json', 
+        },
+        body: JSON.stringify(formattedPatientData),
+      });
+  
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      navigate('/Pacientes');
+    } catch (error) {
+      console.error('Error al crear el paciente:', error);
+    }
+  };
+  
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    try {
+      const result = await createPatient(patientData);
+      console.log(result); 
+    } catch (error) {
+      console.error('Error en la solicitud:', error);
+      if (error instanceof Response) {
+        const responseBody = await error.text();
+        console.error('Respuesta del servidor:', responseBody); 
+      }
+    }
   }
 
     return (
         <div className="page-container" style={{backgroundColor: '#EAEAEA'}}>
           <div className="form-container">
-            <form  className="form">
+            <form  className="form" onSubmit={handleSubmit}>
               <div className="form-group">
-                <label htmlFor="nombre">Nombre:</label>
+                <label >Nombre:</label>
                 <input
                   type="text"
-                  id="nombre"
-                  name="nombre"
-                  value={patientData.name}
+                  id="Name"
+                  name="Name"
+                  value={patientData.Name}
                   onChange={handleChange}
                 />
               </div>
     
               <div className="form-group">
-                <label htmlFor="apellido">Apellido:</label>
+                <label htmlFor="LastName">Apellido:</label>
                 <input
                   type="text"
-                  id="apellido"
-                  name="apellido"
-                  value={patientData.lastName}
+                  id="LastName"
+                  name="LastName"
+                  value={patientData.LastName}
                   onChange={handleChange}
                 />
               </div>
 
               <div className="form-group">
-                <label htmlFor="dni">DNI:</label>
+                <label htmlFor="DNI">DNI:</label>
                 <input
                   type="text"
-                  id="documento"
-                  name="documento"
-                  value={patientData.dni}
+                  id="DNI"
+                  name="DNI"
+                  value={patientData.DNI}
                   onChange={handleChange}
                 />
               </div>
     
               <div className="form-group">
-                <label htmlFor="fechaNacimiento">Fecha de Nacimiento:</label>
+                <label htmlFor="BirthDate">Fecha de Nacimiento:</label>
                 <input
                   type="date"
-                  id="fechaNacimiento"
-                  name="fechaNacimiento"
-                  value={formatDate(patientData.birthDate)}
+                  id="BirthDate"
+                  name="BirthDate"
+                  value={formatDate(patientData.BirthDate)}
                   onChange={handleDateChange}
                 />
               </div>
 
               <div className="form-group"> 
-                <label htmlFor="dni">Pais:</label>
+                <label htmlFor="Country">Pais:</label>
                 <input
                   type="text"
-                  id="pais"
-                  name="pais"
+                  id="Country"
+                  name="Country"
                   placeholder='Escriba el pais'
-                  value={patientData.country}
+                  value={patientData.Country}
                   onChange={handleChange}
                 />
               </div> 
@@ -123,25 +186,23 @@ const NewPatient = () => {
                 </div>
                 <div className='d-flex mb-2'>
                     <div className='flex-fill'>
-                      <label htmlFor="coberturaParte1"></label>
                       <input
                         type="text"
-                        id="cobertura"
-                        name="cobertura"
+                        id="MedicalCoverage.Coverage"
+                        name="MedicalCoverage.Coverage"
                         placeholder='Escribir cobertura y plan'
-                        value={patientData.medicalCoverage.Coverage}
-                        onChange={handleChange}
+                        value={patientData.MedicalCoverage.Coverage}
+                        onChange={handleCoverageChange}
                       />
                     </div>
                     <div className='flex-md-fill ms-2 position-relative'>
-                      <label htmlFor="coberturaParte2"></label>
                       <input
                         type="text"
-                        id="numeroCobertura"
-                        name="numeroCobertura"
+                        id="MedicalCoverage.Number"
+                        name="MedicalCoverage.Number"
                         placeholder='Escribir el número'
-                        value={patientData.medicalCoverage.Number}
-                        onChange={handleChange}
+                        value={patientData.MedicalCoverage.Number}
+                        onChange={handleCoverageNumberChange}
                       />
                     </div>
                 </div>
@@ -149,13 +210,13 @@ const NewPatient = () => {
               
     
               <div className="form-group">
-                <label htmlFor="email">Email:</label>
+                <label htmlFor="Email">Email:</label>
                 <input
                   type="text"
-                  id="email"
-                  name="email"
+                  id="Email"
+                  name="Email"
                   placeholder='Direccion de Email'
-                  value={patientData.email}
+                  value={patientData.Email}
                   onChange={handleChange}
                 />
               </div>
@@ -173,37 +234,43 @@ const NewPatient = () => {
                         id="phone"
                         name="phone"
                         placeholder='+54 '
-                        value={formatPhoneNumber(patientData.phoneNumber)}
-                        onChange={handleChange}
+                        value={patientData.PhoneNumber.PhoneNumber}
+                        onChange={handleChangePhoneNumber}
                       />
                   </div>
                 </div>
               </div>
 
               <div className="form-group">
-                <label htmlFor="ocupacion">Ocupacion:</label>
+                <label htmlFor="Ocupation">Ocupacion:</label>
                 <input
                   type="text"
-                  id="ocupacion"
-                  name="ocupacion"
+                  id="Ocupation"
+                  name="Ocupation"
+                  value={patientData.Ocupation}
+                  onChange={handleChange}
                 />
               </div>
 
               <div className="form-group">
-                <label htmlFor="direccion">Direccion:</label>
+                <label htmlFor="HomeAddress">Direccion:</label>
                 <input
                   type="text"
-                  id="direccion"
-                  name="direccion"
+                  id="HomeAddress"
+                  name="HomeAddress"
+                  value={patientData.HomeAddress}
+                  onChange={handleChange}
                 />
               </div>
 
               <div className="form-group">
-                <label htmlFor="notas">Notas:</label>
+                <label htmlFor="Note">Notas:</label>
                 <input
                   type="text"
-                  id="notas"
-                  name="notas"
+                  id="Note"
+                  name="Note"
+                  value={patientData.Note}
+                  onChange={handleChange}
                 />
               </div>
     

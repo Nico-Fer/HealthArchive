@@ -1,45 +1,31 @@
 import React, { useState } from 'react';
 import './FormEvolucion.scss'; 
 
+import formatDate from '../../../Functions/FormatDate';
 interface EvolutionFormProps {
     onAddEvolution: (formData: EvolutionFormData) => void;
     onClose: () => void;
 }
 
 interface EvolutionFormData {
-    fecha: string;
-    nombreMedico: {
-        nombreDoctor: string;
-        apellidoDoctor: string;
-      } ;
-    matriculaDoctor: string;
-    texto: string;
+    Notes: string,
+    ModifiedBy: string,
+    DateAdded: Date,
 }
 
 const EvolutionForm: React.FC<EvolutionFormProps> = ({ onAddEvolution, onClose }) => {
+
+  const todaysDate = new Date;
+
     const [formData, setFormData] = useState<EvolutionFormData>({
-        fecha: '',
-        nombreMedico: {
-            nombreDoctor: ' ',
-            apellidoDoctor: '' ,
-          } ,
-        matriculaDoctor: '',
-        texto: ''
+        DateAdded: new Date,
+        ModifiedBy: '',
+        Notes: ''
     });
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        const { name, value } = e.target;
-        if (name === 'nombreDoctor' || name === 'apellidoDoctor') {
-          setFormData({
-            ...formData,
-            nombreMedico: {
-              ...formData.nombreMedico,
-              [name]: value,
-            },
-          });
-        } else {
+        const { name, value } = e.target;       
           setFormData({ ...formData, [name]: value });
-        }
       };
 
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -52,13 +38,9 @@ const EvolutionForm: React.FC<EvolutionFormProps> = ({ onAddEvolution, onClose }
     
         // Limpia el formulario después de agregar la evolución
         setFormData({
-            fecha: '',
-        nombreMedico: {
-            nombreDoctor: ' ',
-            apellidoDoctor: '' ,
-          } ,
-        matriculaDoctor: '',
-        texto: ''
+            DateAdded: new Date,
+            ModifiedBy:'',
+            Notes: ''
         });
     };
     
@@ -66,24 +48,11 @@ const EvolutionForm: React.FC<EvolutionFormProps> = ({ onAddEvolution, onClose }
     return (
         <form onSubmit={handleSubmit}>
             <div>
-                <label>Fecha:</label>
-                <input type="date" name="fecha" value={formData.fecha} onChange={handleChange} />
-            </div>
-            <div>
-                <label>Nombre del Doctor:</label>
-                <input type="text" name="nombreDoctor" value={formData.nombreMedico.nombreDoctor} onChange={handleChange} />
-            </div>
-            <div>
-                <label>Apellido del Doctor:</label>
-                <input type="text" name="apellidoDoctor" value={formData.nombreMedico.apellidoDoctor} onChange={handleChange} />
-            </div>
-            <div>
-                <label>Matrícula del Doctor:</label>
-                <input type="text" name="matriculaDoctor" value={formData.matriculaDoctor} onChange={handleChange} />
+                <label>Fecha: {formatDate(todaysDate)}</label>
             </div>
             <div>
                 <label>Texto:</label>
-                <textarea name="texto" value={formData.texto} onChange={handleChange} />
+                <textarea name="Notes" value={formData.Notes} onChange={handleChange} />
             </div>
             <button type="submit" className="submit-btn">Agregar Evolución</button>
             <button type="button" className="close-btn" onClick={onClose}>Cerrar</button>

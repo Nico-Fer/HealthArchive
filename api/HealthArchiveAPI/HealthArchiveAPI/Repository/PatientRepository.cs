@@ -35,7 +35,7 @@ namespace HealthArchiveAPI.Repository
 
         public HCE GetClinicHistory(Guid id)
         {
-            var pacient =  _db.Patients.Include(h => h.ClinicHistory).FirstOrDefault(p => p.Id == id);
+            var pacient =  _db.Patients.Include(h => h.ClinicHistory).ThenInclude(ch => ch.Evolutions).FirstOrDefault(p => p.Id == id);
             return pacient.ClinicHistory;
         }
 

@@ -7,6 +7,7 @@ namespace HealthArchiveAPI.Repository.IRepository
         ICollection<Doctor> GetDoctors();
 
         Doctor GetDoctor(Guid id);
+        Doctor GetDoctor(string email);
         bool DoctorExists(Guid id);
         bool DoctorExists(string email);
         bool CreateDoctor(Doctor doctor);

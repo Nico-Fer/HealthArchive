@@ -1,28 +1,35 @@
-import React, { useState } from 'react';
-import './FormProfesional.scss'; // Importamos el archivo SCSS
+import React, { useEffect, useState } from 'react';
+import './FormProfesional.scss'; 
+import { useLocation } from 'react-router-dom';
+
+import { Phone } from '../../../Types/Phone';
 
 interface FormData {
-  nombre: string;
-  apellido: string;
-  fechaNacimiento: string;
-  especialidad: string;
-  email: string;
-  prefijo: string;
-  telefono: string;
-  matricula: string; // Agregamos el campo de matrícula
+  Name: string;
+  LastName: string;
+  BirthDate: string;
+  PhoneNumber: Phone;
+  Description: string;
+  Email: string;
 }
 
 const MyForm: React.FC = () => {
+  
+  useEffect(()=>{
+    fetchProfessional();
+  }, [])
+
   const [formData, setFormData] = useState<FormData>({
-    nombre: '',
-    apellido: '',
-    fechaNacimiento: '',
-    especialidad: '',
-    email: '',
-    prefijo: '+54', // Prefijo predeterminado para Argentina
-    telefono: '',
-    matricula: '', // Inicializamos el campo de matrícula
+    Name: '',
+    LastName: '',
+    BirthDate: '',
+    PhoneNumber:{CountryCode:'+54', PhoneNumber:''},
+    Description: '',
+    Email:''
   });
+
+  const location = useLocation();
+  const professinonalEmail = location.state.email;
 
   const [originalFormData, setOriginalFormData] = useState<FormData>({ ...formData });
   const [errors, setErrors] = useState<Partial<FormData>>({});
@@ -58,6 +65,36 @@ const MyForm: React.FC = () => {
     return JSON.stringify(formData) !== JSON.stringify(originalFormData);
   };
 
+  const fetchProfessional = async() =>{
+      try {
+        const response = await fetch(`https://localhost:44393/api/Doctor/GetDoctorByEmail/${professinonalEmail}`);
+        if (!response.ok) {
+          throw new Error('Error al obtener el doctor');
+        }
+        const data = await response.json();
+        console.log(data);
+        
+        const mappedProfessional ={
+          Name: data.name,
+          LastName: data.lastName,
+          PhoneNumber: {
+            CountryCode: data.phoneNumber.countryCode,
+            PhoneNumber: data.phoneNumber.phoneNumber,
+          },
+          Email: data.email,
+          Description: data.description,
+          BirthDate: data.birthDate
+        };
+  
+        setFormData(mappedProfessional);
+  
+      } catch (error) {
+        console.error('Error:', error);
+      }
+  
+      console.log('Doctor: ', formData)
+  }
+
   return (
     <div className="form-container">
       <form onSubmit={handleSubmit} className="form">
@@ -67,11 +104,9 @@ const MyForm: React.FC = () => {
             type="text"
             id="nombre"
             name="nombre"
-            value={formData.nombre}
+            value={formData.Name}
             onChange={handleChange}
-            className={errors.nombre ? 'error' : ''}
           />
-          {errors.nombre && <span className="error-msg">{errors.nombre}</span>}
         </div>
 
         <div className="form-group">
@@ -80,11 +115,9 @@ const MyForm: React.FC = () => {
             type="text"
             id="apellido"
             name="apellido"
-            value={formData.apellido}
+            value={formData.LastName}
             onChange={handleChange}
-            className={errors.apellido ? 'error' : ''}
           />
-          {errors.apellido && <span className="error-msg">{errors.apellido}</span>}
         </div>
 
         <div className="form-group">
@@ -93,66 +126,23 @@ const MyForm: React.FC = () => {
             type="date"
             id="fechaNacimiento"
             name="fechaNacimiento"
-            value={formData.fechaNacimiento}
+            value={formData.BirthDate}
             onChange={handleChange}
-            className={errors.fechaNacimiento ? 'error' : ''}
           />
-          {errors.fechaNacimiento && <span className="error-msg">{errors.fechaNacimiento}</span>}
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="especialidad">Especialidad:</label>
-          <input
-            type="text"
-            id="especialidad"
-            name="especialidad"
-            value={formData.especialidad}
-            onChange={handleChange}
-            className={errors.especialidad ? 'error' : ''}
-          />
-          {errors.especialidad && <span className="error-msg">{errors.especialidad}</span>}
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="email">Email:</label>
-          <input
-            type="email"
-            id="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            className={errors.email ? 'error' : ''}
-          />
-          {errors.email && <span className="error-msg">{errors.email}</span>}
         </div>
 
         <div className="form-group">
           <label htmlFor="telefono">Teléfono:</label>
           <div className="phone-input">
-            <span>{formData.prefijo}</span>
+            <span>{formData.PhoneNumber.CountryCode}</span>
             <input
               type="tel"
               id="telefono"
               name="telefono"
-              value={formData.telefono}
+              value={formData.PhoneNumber.PhoneNumber}
               onChange={handleChange}
-              className={errors.telefono ? 'error' : ''}
             />
-            {errors.telefono && <span className="error-msg">{errors.telefono}</span>}
           </div>
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="matricula">Matrícula:</label>
-          <input
-            type="text"
-            id="matricula"
-            name="matricula"
-            value={formData.matricula}
-            onChange={handleChange}
-            className={errors.matricula ? 'error' : ''}
-          />
-          {errors.matricula && <span className="error-msg">{errors.matricula}</span>}
         </div>
 
         <div className="form-group">

@@ -1,23 +1,47 @@
-import React from 'react';
-import Table from '../Pacients/Table';
-import { Person, Patient } from './../../Types/Person';
-import { useNavigate } from 'react-router-dom';
+import ProfessionalTable from './ProffesionalTable';
+import { Person} from './../../Types/Person';
+import { useEffect, useState } from 'react';
 
 
 const Proffesionals  = () => {
-  const proffesionals = [
-    { name: 'Profesional 1', lastName:'Apellido1', phoneNumber:{CountryCode:'+54', PhoneNumber: 'Numero1'}, email: 'profesional1@example.com'},
-    { name: 'Profesional 2', lastName:'Apellido2', phoneNumber:{CountryCode:'+54', PhoneNumber: 'Numero2'}, email: 'profesional2@example.com'},
-  ];
-  const navigate = useNavigate();
+  const [proffesionals, setProffesionals] = useState<Person[]>([]);
 
+  useEffect(() =>{
+    fetchProfesssionals();
+  }, [])
 
-  const handleRowClick = () => {};
+  const fetchProfesssionals = async() =>{
+    try {
+      const response = await fetch('https://localhost:44393/api/Doctor/GetDoctors');
+      if (!response.ok) {
+        throw new Error('Error al obtener los doctores');
+      }
+      const data = await response.json();
+      console.log(data);
+      
+      const mappedProfessionals = data.map((professional: any) => ({
+        Name: professional.name,
+        LastName: professional.lastName,
+        PhoneNumber: {
+          CountryCode: professional.phoneNumber.countryCode,
+          PhoneNumber: professional.phoneNumber.phoneNumber,
+        },
+        Email: professional.email,
+      }));
+
+      setProffesionals(mappedProfessionals);
+
+    } catch (error) {
+      console.error('Error:', error);
+    }
+
+    console.log('Lista de pacientes: ',proffesionals)
+  }
 
   return (
     <div>
       <h1>Profesinales</h1>
-      <Table data={proffesionals} type="professionals" />
+      <ProfessionalTable data = {proffesionals}/>
     </div>
   );
 };

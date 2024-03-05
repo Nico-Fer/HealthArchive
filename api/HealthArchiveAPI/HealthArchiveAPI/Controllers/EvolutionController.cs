@@ -25,7 +25,7 @@ namespace HealthArchiveAPI.Controllers
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        [Route("CreateEvolution")]
+        [Route("CreateEvolution/{hceId}")]
         public IActionResult CreateEvolution(Guid hceId, [FromBody] EvolutionDto evolutionDto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
