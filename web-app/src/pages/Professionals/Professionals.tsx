@@ -1,6 +1,7 @@
 import ProfessionalTable from './ProffesionalTable';
 import { Person} from './../../Types/Person';
 import { useEffect, useState } from 'react';
+import ProfessionalHeader from '../Profesional/ProfessionalHeader';
 
 
 const Proffesionals  = () => {
@@ -40,7 +41,7 @@ const Proffesionals  = () => {
 
   return (
     <div>
-      <h1>Profesinales</h1>
+      <ProfessionalHeader/>
       <ProfessionalTable data = {proffesionals}/>
     </div>
   );

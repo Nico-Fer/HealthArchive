@@ -20,6 +20,7 @@ builder.Services.AddScoped<IDoctorRepository, DoctorRepository>();
 builder.Services.AddScoped<IEvolutionRepository, EvolutionRepository>();
 builder.Services.AddScoped<IHceRepository, HceRepository>();
 builder.Services.AddScoped<IPatientRepository, PatientRepository>();
+builder.Services.AddScoped<IAuthServiceRepository, AuthServiceRepository>();
 
 //Add AutoMapper
 builder.Services.AddAutoMapper(typeof(DoctorMapper));

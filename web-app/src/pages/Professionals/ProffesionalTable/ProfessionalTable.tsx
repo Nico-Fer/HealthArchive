@@ -1,6 +1,6 @@
 import React from 'react';
 import { FaWhatsapp } from 'react-icons/fa';
-import { Person, Patient } from '../../../Types/Person';
+import { Person } from '../../../Types/Person';
 import { useNavigate } from 'react-router-dom';
 
 interface Props {
@@ -22,23 +22,21 @@ const ProfessionalTable: React.FC<Props> = ({ data}) => {
         <table className="table align-middle m-0">
           <thead>
             <tr>
-              <th>Nombre</th>
-              <th>Contacto</th>
+              <th className="text-start">Nombre</th>
+              <th className="text-end">Contacto</th>
             </tr>
           </thead>
           <tbody>
             {data.map((item, index) => (
               <tr className="bg-white" key={index}>
-                <td
-                  className="p-2 px-md3 py-md-2 px-xl-4 py-xl-3"
-                >
+                <td className="p-2 px-md3 py-md-2 px-xl-4 py-xl-3 text-start">
                   <div className="text-truncate">
                     <a href="#" onClick={(e) => handleClick(e, item)} style={{textDecoration: 'none'}}>{item.Name}, {item.LastName}</a>
                   </div>
                 </td>
 
                 <td className="p-2 px-md3 py-md-2 px-xl-4 py-xl-3 d-lg-table-cell d-none">
-                  <div className="d-flex align-items-center">
+                  <div className="text-end">
                     <div>
                       {item.PhoneNumber && item.PhoneNumber.PhoneNumber !== '' && (
                         <div className="phone-number" style={{color: '#198754'}}>

@@ -5,46 +5,56 @@ import "./Form.scss";
 
 import InputComponent from "../Input/InputComponent";
 
+interface FormData {
+  Password: string;
+  Email: string;
+}
+
 const Form = () => {
 
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
     const navigate = useNavigate();
 
-    const handleUsernameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setEmail(event.target.value);
-      };
+    const[formData, setFormData] = useState<FormData>({
+      Password: '',
+      Email: '',
+    });
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const { id, value } = e.target;
+      setFormData({ ...formData, [id]: value });
+    };
     
-      const handlePasswordChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setPassword(event.target.value);
-      };
-    
+    const createProffesional = async() =>{
+      try {
+        const response = await fetch("https://localhost:44393/api/AuthService/Login",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(formData),
+          }
+        );
+  
+        if (!response.ok) {
+          throw new Error("Sign In Error");
+        }
+  
+        const userData = await response.json();
+  
+        localStorage.setItem("userData", JSON.stringify(userData));
+        return true;
+      } catch (error) {
+        console.error("Error al iniciar sesión:", error);
+        return false;
+      }
+    }
+
       const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        try {
-          const response = await fetch(
-            "http://localhost:5189/api/AuthService/Login",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({ email, password }),
-            }
-          );
-    
-          if (!response.ok) {
-            throw new Error("Sign In Error");
-          }
-    
-          const userData = await response.json();
-    
-          localStorage.setItem("userData", JSON.stringify(userData));
-          navigate("/homePage");
-    
-          console.log("Respuesta de la API:", userData);
-        } catch (error) {
-          console.error("Error al iniciar sesión:", error);
+        
+        if(await createProffesional()){
+          navigate("/Pacientes");
         }
       };
 
@@ -53,19 +63,19 @@ const Form = () => {
         <form onSubmit={handleSubmit} className="d-flex flex-column align-items-center">
           <InputComponent
              type="text" 
-             id="email"
-             value={email}
-             onChange={handleUsernameChange}
+             id="Email"
+             value={formData.Email}
+             onChange={handleChange}
              placeholder="Email"             
           />
           <InputComponent
             type="text" 
-            id="password"
-            value={password}
-            onChange={handlePasswordChange}
-            placeholder="Password"
+            id="Password"
+            value={formData.Password}
+            onChange={handleChange}
+            placeholder="Contraseña"
           />
-          <button className="btn btn-primary  rounded w-100 mb-2 mt-2" style={{backgroundColor: '#004EB8', color:'white', height:'50px'}} type="submit">Log in</button>
+          <button className="btn btn-primary  rounded w-100 mb-2 mt-2" style={{backgroundColor: '#004EB8', color:'white', height:'50px'}} type="submit">Iniciar Sesion</button>
         </form>
       </div>
     );

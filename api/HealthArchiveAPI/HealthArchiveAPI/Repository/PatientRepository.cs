@@ -64,9 +64,9 @@ namespace HealthArchiveAPI.Repository
             return _db.Patients.Any(p => p.Id == id);
         }
 
-        public bool PatientsExists(string email, string DNI)
+        public bool PatientsExists(string DNI)
         {
-            return _db.Patients.Any(p => p.Email == email && p.DNI == DNI);
+            return _db.Patients.Any(p => p.DNI == DNI);
         }
 
         public bool Save()

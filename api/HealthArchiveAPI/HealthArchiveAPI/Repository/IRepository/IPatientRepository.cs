@@ -10,7 +10,7 @@ namespace HealthArchiveAPI.Repository.IRepository
         Patient GetPatientByDNI(string DNI);
         HCE GetClinicHistory(Guid id);
         bool PatientsExists(Guid id);
-        bool PatientsExists(string email, string DNI);
+        bool PatientsExists(string DNI);
         bool CreatePatient(Patient patient);
         bool UpdatePatient(Patient patient);
         bool DeletePatient(Patient patient);

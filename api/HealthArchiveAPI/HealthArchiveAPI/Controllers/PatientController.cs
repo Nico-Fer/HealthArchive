@@ -43,7 +43,7 @@ namespace HealthArchiveAPI.Controllers
             if (!ModelState.IsValid) return BadRequest(ModelState);
             if (patientDto == null) return BadRequest(ModelState);
 
-            if (_repository.PatientsExists(patientDto.Email, patientDto.DNI))
+            if (_repository.PatientsExists(patientDto.DNI))
             {
                 ModelState.AddModelError("error", "patient_exists");
                 return BadRequest(ModelState);
@@ -54,7 +54,7 @@ namespace HealthArchiveAPI.Controllers
                 Name = patientDto.Name,
                 LastName = patientDto.LastName,
                 DNI = patientDto.DNI,
-                BirthDate = patientDto.BirthDate,
+                BirthDate = (DateTime)patientDto.BirthDate,
                 Country = patientDto.Country,
                 Email = patientDto.Email,
                 PhoneNumber = patientDto.PhoneNumber,
@@ -115,7 +115,7 @@ namespace HealthArchiveAPI.Controllers
             patientToUpdate.Name = patientDto.Name;
             patientToUpdate.LastName = patientDto.LastName;
             patientToUpdate.DNI = patientDto.DNI;
-            patientToUpdate.BirthDate = patientDto.BirthDate;
+            patientToUpdate.BirthDate = (DateTime)patientDto.BirthDate;
             patientToUpdate.Country = patientDto.Country;
             patientToUpdate.Email = patientDto.Email;
             patientToUpdate.PhoneNumber = patientDto.PhoneNumber;
@@ -157,7 +157,7 @@ namespace HealthArchiveAPI.Controllers
             patientToUpdate.Name = patientDto.Name;
             patientToUpdate.LastName = patientDto.LastName;
             patientToUpdate.DNI = patientDto.DNI;
-            patientToUpdate.BirthDate = patientDto.BirthDate;
+            patientToUpdate.BirthDate = (DateTime)patientDto.BirthDate;
             patientToUpdate.Country = patientDto.Country;
             patientToUpdate.Email = patientDto.Email;
             patientToUpdate.PhoneNumber = patientDto.PhoneNumber;

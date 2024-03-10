@@ -81,6 +81,12 @@ namespace HealthArchiveAPI.Controllers
                 return BadRequest(ModelState);
             }
 
+            if(doctorDto.consultoryCode != "1234")
+            {
+                ModelState.AddModelError("error", "incorrect_code");
+                return BadRequest(ModelState);
+            }
+
             var doctor = _mapper.Map<Doctor>(doctorDto);
             if(doctor == null) return BadRequest(ModelState);
 
@@ -97,7 +103,7 @@ namespace HealthArchiveAPI.Controllers
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [Route("UpdateDoctorById")]
+        [Route("UpdateDoctorById/{doctorId}")]
         public IActionResult UpdateDoctorById(Guid doctorId, [FromBody] EditDoctorDto doctorDto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -122,7 +128,7 @@ namespace HealthArchiveAPI.Controllers
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [Route("DeleteDoctorById")]
+        [Route("DeleteDoctorById/{doctorId}")]
         public IActionResult DeleteDoctorById(Guid doctorId)
         {
             Doctor doctor = _repository.GetDoctor(doctorId);

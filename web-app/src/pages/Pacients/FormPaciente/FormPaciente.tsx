@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import './FormPaciente.scss'; 
 import { Patient } from '../../../Types/Person';
 import { useNavigate } from 'react-router-dom';
+import { FormErrors } from '../../../Types/FormErrors';
+import validateForm from '../../../Functions/validateForm';
 
 import formatDate from '../../../Functions/FormatDate';
 
@@ -13,7 +15,7 @@ interface FormProps {
 
   const MyForm: React.FC<FormProps> = ({ patient, onClose, onPatientUpdated }) => {
     const navigate = useNavigate();
-
+    const [errors, setErrors] = useState<FormErrors>({});
     let dateChanged = false;
 
     const [patientData, setFormData] = useState<Patient>({
@@ -119,24 +121,28 @@ interface FormProps {
       }
 
     }catch(error){
-      console.error('Error al crear el paciente:', error)
+      console.error('Error al actualizar el paciente:', error)
     }  
   }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setOriginalFormData({ ...patientData });
+    const newErrors = validateForm(patientData)
+    setErrors(newErrors);
 
-    try {
-      const result = await updatePatient(patientData);
-      console.log(result);
-      onPatientUpdated();
-      handleClose();
-    } catch (error) {
-      console.error('Error en la solicitud:', error);
-      if (error instanceof Response) {
-        const responseBody = await error.text();
-        console.error('Respuesta del servidor:', responseBody); 
+    if(Object.keys(newErrors).length === 0){
+      try {
+        const result = await updatePatient(patientData);
+        console.log(result);
+        onPatientUpdated();
+        handleClose();
+      } catch (error) {
+        console.error('Error en la solicitud:', error);
+        if (error instanceof Response) {
+          const responseBody = await error.text();
+          console.error('Respuesta del servidor:', responseBody); 
+        }
       }
     }
   };
@@ -194,6 +200,9 @@ interface FormProps {
               value={patientData.Name}
               onChange={handleChange}
             />
+            {errors.Name && <div className="alert alert-danger p-1">
+                  {errors.Name}
+                </div>}
           </div>
 
           <div className="form-group">
@@ -205,6 +214,9 @@ interface FormProps {
               value={patientData.LastName}
               onChange={handleChange}
             />
+            {errors.LastName && <div className="alert alert-danger p-1">
+                  {errors.LastName}
+                </div>}
           </div>
 
           <div className="form-group">
@@ -248,6 +260,9 @@ interface FormProps {
               value={patientData.Email}
               onChange={handleChange}
             />
+            {errors.Email && <div className="alert alert-danger p-1">
+                  {errors.Email}
+                </div>}
           </div>
 
           <div className="form-group">

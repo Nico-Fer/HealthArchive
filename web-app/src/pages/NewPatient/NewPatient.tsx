@@ -1,15 +1,19 @@
 import { useState } from 'react';
 import { Patient } from '../../Types/Person';
-import { Phone } from '../../Types/Phone';
 import { useNavigate } from 'react-router-dom';
+import { FormErrors } from '../../Types/FormErrors';
 
 import formatDate from '../../Functions/FormatDate';
+import validateForm from '../../Functions/validateForm';
+
 
 import './NewPatient.scss'
 
 
 const NewPatient = () => {
     const navigate = useNavigate();
+
+    const [errors, setErrors] = useState<FormErrors>({});
 
     const [patientData, setPatientData] = useState<Patient>({
       Name: '',
@@ -108,17 +112,26 @@ const NewPatient = () => {
   
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    try {
-      const result = await createPatient(patientData);
-      console.log(result); 
-    } catch (error) {
-      console.error('Error en la solicitud:', error);
-      if (error instanceof Response) {
-        const responseBody = await error.text();
-        console.error('Respuesta del servidor:', responseBody); 
+    const newErrors = validateForm(patientData)
+    setErrors(newErrors);
+
+    if(Object.keys(newErrors).length === 0){
+      try {
+        const result = await createPatient(patientData);
+        console.log(result); 
+      } catch (error) {
+        console.error('Error en la solicitud:', error);
+        if (error instanceof Response) {
+          const responseBody = await error.text();
+          console.error('Respuesta del servidor:', responseBody); 
+        }
       }
     }
   }
+
+  const handleClose = () => {
+    navigate(-1); 
+  };
 
     return (
         <div className="page-container" style={{backgroundColor: '#EAEAEA'}}>
@@ -133,6 +146,9 @@ const NewPatient = () => {
                   value={patientData.Name}
                   onChange={handleChange}
                 />
+                {errors.Name && <div className="alert alert-danger p-1">
+                  {errors.Name}
+                </div>}
               </div>
     
               <div className="form-group">
@@ -144,6 +160,9 @@ const NewPatient = () => {
                   value={patientData.LastName}
                   onChange={handleChange}
                 />
+                {errors.LastName && <div className="alert alert-danger p-1">
+                  {errors.LastName}
+                </div>}
               </div>
 
               <div className="form-group">
@@ -155,6 +174,9 @@ const NewPatient = () => {
                   value={patientData.DNI}
                   onChange={handleChange}
                 />
+                {errors.DNI && <div className="alert alert-danger p-1">
+                  {errors.DNI}
+                </div>}
               </div>
     
               <div className="form-group">
@@ -219,6 +241,9 @@ const NewPatient = () => {
                   value={patientData.Email}
                   onChange={handleChange}
                 />
+                {errors.Email && <div className="alert alert-danger p-1">
+                  {errors.Email}
+                </div>}
               </div>
     
               <div className='mb-3'>
@@ -278,7 +303,7 @@ const NewPatient = () => {
                 <div className="buttons-container">
                 <button type="submit" className="submit-btn">Guardar</button>
                   
-                  <button className="close-btn">
+                  <button type="button" className="close-btn" onClick={handleClose}>
                     Cerrar
                   </button>
                 </div>

@@ -1,19 +1,26 @@
 import React, { useEffect, useState } from 'react';
 import './FormProfesional.scss'; 
 import { useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 import { Phone } from '../../../Types/Phone';
+import { FormErrors } from '../../../Types/FormErrors';
+
+import formatDate from '../../../Functions/FormatDate';
+import validateForm from '../../../Functions/validateForm';
 
 interface FormData {
   Name: string;
   LastName: string;
-  BirthDate: string;
+  BirthDate: Date;
   PhoneNumber: Phone;
   Description: string;
   Email: string;
 }
 
 const MyForm: React.FC = () => {
+  const navigate = useNavigate();
+  const [Id, setId] = useState('');
   
   useEffect(()=>{
     fetchProfessional();
@@ -22,17 +29,17 @@ const MyForm: React.FC = () => {
   const [formData, setFormData] = useState<FormData>({
     Name: '',
     LastName: '',
-    BirthDate: '',
+    BirthDate: new Date(),
     PhoneNumber:{CountryCode:'+54', PhoneNumber:''},
     Description: '',
-    Email:''
+    Email:'',
   });
 
   const location = useLocation();
   const professinonalEmail = location.state.email;
 
   const [originalFormData, setOriginalFormData] = useState<FormData>({ ...formData });
-  const [errors, setErrors] = useState<Partial<FormData>>({});
+  const [errors, setErrors] = useState<FormErrors>({});
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -41,25 +48,20 @@ const MyForm: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (validateForm()) {
-      console.log(formData);
-      setOriginalFormData({ ...formData });
-    }
+    const newErrors = validateForm(formData)
+    setErrors(newErrors);
+
+    if(Object.keys(newErrors).length === 0){
+      updateProfessional();
+    }   
   };
 
   const handleReset = () => {
-    setFormData({ ...originalFormData });
+    deleteProfessional();
+    navigate('/Profesionales');
   };
 
-  const validateForm = (): boolean => {
-    let valid = true;
-    const newErrors: Partial<FormData> = {};
 
-    // Validación de campos...
-
-    setErrors(newErrors);
-    return valid;
-  };
 
   const isFormChanged = (): boolean => {
     return JSON.stringify(formData) !== JSON.stringify(originalFormData);
@@ -83,9 +85,11 @@ const MyForm: React.FC = () => {
           },
           Email: data.email,
           Description: data.description,
-          BirthDate: data.birthDate
+          BirthDate: data.birthDate,
         };
   
+        setId(data.id);
+
         setFormData(mappedProfessional);
   
       } catch (error) {
@@ -95,38 +99,76 @@ const MyForm: React.FC = () => {
       console.log('Doctor: ', formData)
   }
 
+  const updateProfessional = async() =>{
+    try{
+      const response = await fetch( `https://localhost:44393/api/Doctor/UpdateDoctorById/${Id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json', 
+        },
+        body: JSON.stringify(formData),
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+    }catch(error){
+      console.error('Error al actualizar el profesional:', error)
+    }
+  }
+
+  const deleteProfessional = async() =>{
+    try{
+      const response = await fetch( `https://localhost:44393/api/Doctor/DeleteDoctorById/${Id}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+    }catch(error){
+      console.error('Error al eliminar el profesional:', error)
+    } 
+  }
+
   return (
     <div className="form-container">
       <form onSubmit={handleSubmit} className="form">
         <div className="form-group">
-          <label htmlFor="nombre">Nombre:</label>
+          <label htmlFor="Name">Nombre:</label>
           <input
             type="text"
-            id="nombre"
-            name="nombre"
+            id="Name"
+            name="Name"
             value={formData.Name}
             onChange={handleChange}
-          />
+          />{errors.Name && <div className="alert alert-danger p-1">
+          {errors.Name}
+        </div>}
         </div>
 
         <div className="form-group">
-          <label htmlFor="apellido">Apellido:</label>
+          <label htmlFor="LastName">Apellido:</label>
           <input
             type="text"
-            id="apellido"
-            name="apellido"
+            id="LastName"
+            name="LastName"
             value={formData.LastName}
             onChange={handleChange}
           />
+          {errors.LastName && <div className="alert alert-danger p-1">
+                  {errors.LastName}
+                </div>}
         </div>
 
         <div className="form-group">
-          <label htmlFor="fechaNacimiento">Fecha de Nacimiento:</label>
+          <label htmlFor="BirthDate">Fecha de Nacimiento:</label>
           <input
             type="date"
-            id="fechaNacimiento"
-            name="fechaNacimiento"
-            value={formData.BirthDate}
+            id="BirthDate"
+            name="BirthDate"
+            value={formatDate(formData.BirthDate)}
             onChange={handleChange}
           />
         </div>
@@ -137,12 +179,37 @@ const MyForm: React.FC = () => {
             <span>{formData.PhoneNumber.CountryCode}</span>
             <input
               type="tel"
-              id="telefono"
-              name="telefono"
+              id="PhoneNumber.PhoneNumber"
+              name="PhoneNumber.PhoneNumber"
               value={formData.PhoneNumber.PhoneNumber}
               onChange={handleChange}
             />
           </div>
+        </div>
+        
+        <div className="form-group">
+          <label htmlFor="Email">Email:</label>
+          <input
+            type="text"
+            id="Email"
+            name="Email"
+            value={formData.Email}
+            onChange={handleChange}
+          />
+          {errors.Email && <div className="alert alert-danger p-1">
+                  {errors.Email}
+                </div>}
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="Description">Descripcion:</label>
+          <input
+            type="text"
+            id="Description"
+            name="Description"
+            value={formData.Description}
+            onChange={handleChange}
+          />
         </div>
 
         <div className="form-group">

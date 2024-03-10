@@ -9,5 +9,6 @@ namespace HealthArchiveAPI.DTOs
         public string Name { get; set; }
         public string LastName { get; set; }
         public Phone PhoneNumber { get; set; }
+        public string consultoryCode { get; set; }
     }
 }
