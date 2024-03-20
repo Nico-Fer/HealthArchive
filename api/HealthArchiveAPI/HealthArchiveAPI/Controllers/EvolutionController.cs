@@ -32,13 +32,17 @@ namespace HealthArchiveAPI.Controllers
 
             if (evolutionDto == null) return BadRequest(ModelState);
 
-            var evolution = _mapper.Map<Evolution>(evolutionDto);
+            Evolution evolution = _mapper.Map<Evolution>(evolutionDto);
             if (evolution == null) return BadRequest(ModelState);
 
             evolution.HCEId = hceId;
+            evolution.EvolutionInfo = new EvolutionInfo
+            {
+                ModifiedBy = evolutionDto.ModifiedBy.ModifiedBy,
+                Tuition = evolutionDto.ModifiedBy.Tuition,
+            };
 
-
-            if(!_repository.CreateEvolution(evolution, hceId)) 
+            if (!_repository.CreateEvolution(evolution, hceId)) 
             {
                 ModelState.AddModelError("", "Something went wrong");
                 return StatusCode(404, ModelState);

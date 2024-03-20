@@ -33,10 +33,13 @@ namespace HealthArchiveAPI.Data
                     coverage.Property(c => c.Number).IsRequired(false);
                     coverage.Property(c => c.Coverage).IsRequired(false);
                 });
+
+            modelBuilder.Entity<Evolution>().OwnsOne(e => e.EvolutionInfo);
         }
         public DbSet<Doctor> Doctors { get; set; }
         public DbSet<Patient> Patients { get; set; }
         public DbSet<HCE> HCEs { get; set; }
         public DbSet<Evolution> Evolutions { get; set;}
+        public DbSet<HCEFile> HCEFiles { get; set; }
     }
 }

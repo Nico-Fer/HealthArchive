@@ -8,7 +8,7 @@ namespace HealthArchiveAPI.DTOs
         public string Password { get; set; }
         public string Name { get; set; }
         public string LastName { get; set; }
-        public Phone PhoneNumber { get; set; }
         public string consultoryCode { get; set; }
+        public string Tuition {  get; set; }
     }
 }

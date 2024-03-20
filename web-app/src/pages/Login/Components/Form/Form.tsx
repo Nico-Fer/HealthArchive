@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import "./Form.scss";
 
 import InputComponent from "../Input/InputComponent";
+import { useDispatch } from "react-redux";
+import { createProfessionalRed } from "../../../../Redux/States/professional";
 
 interface FormData {
   Password: string;
@@ -13,6 +15,7 @@ interface FormData {
 const Form = () => {
 
     const navigate = useNavigate();
+    const dispatch = useDispatch();
 
     const[formData, setFormData] = useState<FormData>({
       Password: '',
@@ -41,8 +44,9 @@ const Form = () => {
         }
   
         const userData = await response.json();
-  
-        localStorage.setItem("userData", JSON.stringify(userData));
+
+        dispatch(createProfessionalRed(userData));
+
         return true;
       } catch (error) {
         console.error("Error al iniciar sesión:", error);

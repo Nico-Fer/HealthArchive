@@ -3,6 +3,7 @@ import Form from "./Components/Form/Form";
 import { Link } from 'react-router-dom';
 
 import "./Login.scss";
+import { PrivateRoutes } from "../../Types/Routes";
 
 const Login = () => {
     return (
@@ -14,7 +15,7 @@ const Login = () => {
             </div>
                 <Form/>
                 <p className="small-text text-center">
-                    ¿Usuario Nuevo? <Link to="register" style={{ color: 'black', fontWeight: 'bold', textDecoration: 'none' }}>Registrarse</Link>
+                    ¿Usuario Nuevo? <Link to={PrivateRoutes.REGISTER} style={{ color: 'black', fontWeight: 'bold', textDecoration: 'none' }}>Registrarse</Link>
                 </p>
             </div>
         </div>

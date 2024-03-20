@@ -13,9 +13,8 @@ namespace HealthArchiveAPI.Data
         [EmailAddress(ErrorMessage ="Por favor ingrese un email correcto")]
         public string Email { get; set; }
         public string Password { get; set; }
-        public Phone PhoneNumber { get; set; }
-        [DataType(DataType.Date)]
-        public DateTime BirthDate { get; set; } 
+        public Phone? PhoneNumber { get; set; }
+        public string Tuition { get; set; }
         public string? Description { get; set; } = "";
     }
 }

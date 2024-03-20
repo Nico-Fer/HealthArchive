@@ -1,6 +1,7 @@
 ﻿using HealthArchiveAPI.Repository.IRepository;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace HealthArchiveAPI.Controllers
 {
@@ -25,6 +26,15 @@ namespace HealthArchiveAPI.Controllers
 
             var evolutions = _repository.GetEvolutions(hceId);
             return Ok(evolutions);
+        }
+
+        public async Task<IActionResult> UploadFile(Guid hceId, IFormFile file)
+        {
+            
+            if (hce == null)
+            {
+                return NotFound();
+            }
         }
     }
 }

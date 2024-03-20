@@ -11,11 +11,15 @@ import { Evolution } from '../../Types/Evolution';
 import { EvolutionFromApi } from '../../Types/EvolutionFromApi';
 
 import formatDate from '../../Functions/FormatDate';
+import { useSelector } from 'react-redux';
+import { Store } from '../../Redux/Store';
+import { EvolutionInfo } from '../../Types/EvolutionInfo';
+import PrintHCE from './PrintHCE/PrintHCE';
 
 
 interface EvolutionFormData {
   Notes: string,
-  ModifiedBy: string,
+  ModifiedBy: EvolutionInfo,
   DateAdded: Date,
 }
 
@@ -28,14 +32,16 @@ const HistoriaClinica = () => {
 
   const [showEvolutionForm, setShowEvolutionForm] = useState(false);
   const [showFileUploader, setShowFileUploader] = useState(false);
+  const [showPrintView, setShowPrintView] = useState(false);
+
   const [formularios, setFormularios] = useState<EvolutionFormData[]>([]);
+
+  const stateRedux = useSelector((store: Store) => store.Professional);
 
   const handleShowEvolutionForm = () => setShowEvolutionForm(true);
 
   const location = useLocation();
   const patient = location.state.patient;
-
-  //const[evolutions, setEvolutions] = useState<Evolution[]>([]);
 
   const[hce, setHce] = useState<HCE>({
     Id: '',
@@ -57,8 +63,8 @@ const HistoriaClinica = () => {
         PatientId: data.patientId,
         Evolutions: data.evolutions.map((evolution : EvolutionFromApi) => ({
           Notes: evolution.notes,
-          ModifiedBy: evolution.modifiedBy,
           DateAdded: new Date(evolution.modifiedDate),
+          ModifiedBy: {modifiedBy: evolution.evolutionInfo.modifiedBy, tuition: evolution.evolutionInfo.tuition}
         }))
       };
 
@@ -93,13 +99,15 @@ const HistoriaClinica = () => {
   }
 
   const handleAddEvolution = async (formData: EvolutionFormData) => {
+
     const newEvolution: Evolution = {
       Notes: formData.Notes,
-      ModifiedBy: formData.ModifiedBy,
+      ModifiedBy:{modifiedBy: stateRedux.name + ' ' + stateRedux.lastName, tuition: stateRedux.tuition},
+      DateAdded: new Date(),
     };
 
     const newFormulario = {
-      ModifiedBy: formData.ModifiedBy,
+      ModifiedBy: {modifiedBy: stateRedux.name + ' ' + stateRedux.lastName, tuition: stateRedux.tuition},
       Notes: formData.Notes,
       DateAdded: formData.DateAdded,
     };
@@ -121,8 +129,11 @@ const HistoriaClinica = () => {
         <div className="formularios-agregados">
           {formularios.map((formulario, index) => (
             <div key={index} className="formulario-agregado">
-              <h3>Evolución</h3>
-              <p><strong>Nombre del Médico:</strong> {formulario.ModifiedBy}</p>
+              <div className='d-flex justify-content-between align-items-center'>
+                <h3>Evolución</h3>
+                <p className="text-secondary mb-0 fs-6">Nro. Matricula: {formulario.ModifiedBy.tuition}</p>
+              </div>
+              <p><strong>Nombre del Médico:</strong> {formulario.ModifiedBy.modifiedBy}</p>
               <p><strong>Fecha:</strong> {formatDate(formulario.DateAdded)}</p>
               <p><strong>Texto del Formulario:</strong> {formulario.Notes}</p>
             </div>
@@ -133,8 +144,10 @@ const HistoriaClinica = () => {
         <div className="buttons-container">
           <button className="agregar-btn" onClick={handleShowEvolutionForm}>Agregar Evolución</button>
           <button className="agregar-btn" onClick={() => setShowFileUploader(true)}>Agregar Archivo</button>
+          <button className="agregar-btn" onClick={() => setShowPrintView(true)}>Imprimir HCE</button>
         </div>
         {showEvolutionForm && <EvolutionForm onAddEvolution={handleAddEvolution} onClose={() => setShowEvolutionForm(false)} />}
+        {showPrintView && <PrintHCE evoluciones={hce.Evolutions} patient={patient} onClose={() => setShowPrintView(false)} />}
       </div>
     </div>
   );

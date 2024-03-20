@@ -38,6 +38,7 @@ namespace HealthArchiveAPI.Controllers
                 LastName = user.LastName,
                 Description = user.Description, 
                 PhoneNumber = user.PhoneNumber,
+                Tuition = user.Tuition,
             };
 
             return Ok(doctor);

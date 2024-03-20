@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import './FormEvolucion.scss'; 
 
 import formatDate from '../../../Functions/FormatDate';
+import { EvolutionInfo } from '../../../Types/EvolutionInfo';
 interface EvolutionFormProps {
     onAddEvolution: (formData: EvolutionFormData) => void;
     onClose: () => void;
@@ -9,7 +10,7 @@ interface EvolutionFormProps {
 
 interface EvolutionFormData {
     Notes: string,
-    ModifiedBy: string,
+    ModifiedBy: EvolutionInfo
     DateAdded: Date,
 }
 
@@ -19,8 +20,8 @@ const EvolutionForm: React.FC<EvolutionFormProps> = ({ onAddEvolution, onClose }
 
     const [formData, setFormData] = useState<EvolutionFormData>({
         DateAdded: new Date,
-        ModifiedBy: '',
-        Notes: ''
+        ModifiedBy: {modifiedBy: '', tuition: ''},
+        Notes: '',
     });
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -39,8 +40,8 @@ const EvolutionForm: React.FC<EvolutionFormProps> = ({ onAddEvolution, onClose }
         // Limpia el formulario después de agregar la evolución
         setFormData({
             DateAdded: new Date,
-            ModifiedBy:'',
-            Notes: ''
+            ModifiedBy: {modifiedBy: '', tuition: ''},
+            Notes: '',
         });
     };
     
@@ -52,7 +53,7 @@ const EvolutionForm: React.FC<EvolutionFormProps> = ({ onAddEvolution, onClose }
             </div>
             <div>
                 <label>Texto:</label>
-                <textarea name="Notes" value={formData.Notes} onChange={handleChange} />
+                <textarea className='form-control w-100' name="Notes" value={formData.Notes} onChange={handleChange} style={{height: 300}}/>
             </div>
             <button type="submit" className="submit-btn">Agregar Evolución</button>
             <button type="button" className="close-btn" onClick={onClose}>Cerrar</button>

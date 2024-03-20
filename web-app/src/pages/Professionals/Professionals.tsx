@@ -24,8 +24,8 @@ const Proffesionals  = () => {
         Name: professional.name,
         LastName: professional.lastName,
         PhoneNumber: {
-          CountryCode: professional.phoneNumber.countryCode,
-          PhoneNumber: professional.phoneNumber.phoneNumber,
+          CountryCode: professional.phoneNumber ? professional.phoneNumber.countryCode : '',
+          PhoneNumber: professional.phoneNumber ? professional.phoneNumber.phoneNumber : '',
         },
         Email: professional.email,
       }));

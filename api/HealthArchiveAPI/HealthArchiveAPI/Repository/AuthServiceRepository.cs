@@ -1,5 +1,6 @@
 ﻿using HealthArchiveAPI.Data;
 using HealthArchiveAPI.Repository.IRepository;
+using Microsoft.EntityFrameworkCore;
 
 namespace HealthArchiveAPI.Repository
 {

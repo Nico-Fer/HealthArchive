@@ -1,5 +1,7 @@
+import { EvolutionInfo } from "./EvolutionInfo";
+
 export interface EvolutionFromApi {
   notes: string;
-  modifiedBy: string;
+  evolutionInfo: EvolutionInfo;
   modifiedDate: string;
 }

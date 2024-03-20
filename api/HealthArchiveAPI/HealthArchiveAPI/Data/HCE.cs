@@ -12,5 +12,6 @@ namespace HealthArchiveAPI.Data
         public Guid PatientId { get; set; }
         public Patient Patient { get; set; }
         public ICollection<Evolution> Evolutions { get; set; } = new List<Evolution>();
+        public ICollection<HCEFile> Files { get; set; } = new List<HCEFile>();
     }
 }

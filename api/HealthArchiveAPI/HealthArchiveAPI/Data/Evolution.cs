@@ -12,7 +12,7 @@ namespace HealthArchiveAPI.Data
         public Guid HCEId { get; set; }
         public HCE ClinicHistory { get; set; } = null!;
         public string Notes { get; set; }
-        public string ModifiedBy { get; set; }
+        public EvolutionInfo EvolutionInfo { get; set; }
         public DateTime ModifiedDate { get; set; }
     }
 }

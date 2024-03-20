@@ -2,6 +2,9 @@ import React, { useState } from "react";
 import InputComponent from "../../Login/Components/Input/InputComponent";
 import { Phone } from "../../../Types/Phone";
 import { useNavigate } from 'react-router-dom';
+import { ProfessionalForRedux } from "../../../Types/ProfessionalForRedux";
+import { useDispatch } from "react-redux";
+import { createProfessionalRed } from "../../../Redux/States/professional";
 
 interface FormData {
   Name: string;
@@ -10,10 +13,12 @@ interface FormData {
   Password: string;
   Email: string;
   ConsultoryCode: string;
+  Tuition: string;
 }
 
 const RegisterForm = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const [formData, setFormData] = useState<FormData>({
     Name: '',
@@ -22,7 +27,19 @@ const RegisterForm = () => {
     Password: '',
     Email: '',
     ConsultoryCode: '',
+    Tuition: '',
   });
+
+  const createProfessional = (data : any) : ProfessionalForRedux => {
+    const p : ProfessionalForRedux = {
+      name: data.name,
+      lastName: data.lastName,
+      email: data.email,
+      tuition: data.tuition,
+    }
+
+    return p;
+  }
 
   const createUser = async() =>{
     try{
@@ -37,6 +54,11 @@ const RegisterForm = () => {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
+
+      const data = await response.json();
+      const professional = createProfessional(data);
+      dispatch(createProfessionalRed(professional));
+
       return true;
     }catch(error){
       console.error('Error al crear el profesional:', error)
@@ -98,30 +120,21 @@ const RegisterForm = () => {
             placeholder="Contraseña"
           />
 
-        <div className="mb-3" style={{ width: '25rem', display: 'flex' }}>
-          <div className="input-group">
-            <span className="input-group-text" id="basic-addon1" style={{ height: '50px', border: '1px solid #EAEAEA' }}>
-              {formData.PhoneNumber.CountryCode}
-            </span>
-            <input
-              className="form-control rounded shadow"
-              type="tel"
-              id="PhoneNumber.PhoneNumber"
-              value={formData.PhoneNumber.PhoneNumber}
-              onChange={handleChange}
-              style={{ border: '1px solid #EAEAEA', height: '50px' }}
-              placeholder="Teléfono"
-            />
-          </div>
-        </div>
-        
-        <InputComponent
+          <InputComponent
             type="text" 
-            id="ConsultoryCode"
-            value={formData.ConsultoryCode}
+            id="Tuition"
+            value={formData.Tuition}
             onChange={handleChange}
-            placeholder="Codigo del Consultorio"
+            placeholder="Nro. Matricula"
           />
+        
+          <InputComponent
+              type="text" 
+              id="ConsultoryCode"
+              value={formData.ConsultoryCode}
+              onChange={handleChange}
+              placeholder="Codigo del Consultorio"
+            />
 
         <button className="btn btn-primary rounded w-100 mb-2 mt-2" style={{ backgroundColor: '#004EB8', color: 'white', height: '50px' }} type="submit">Registrarse</button>
       </form>

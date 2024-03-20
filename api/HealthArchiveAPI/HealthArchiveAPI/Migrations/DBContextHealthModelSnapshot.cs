@@ -28,9 +28,6 @@ namespace HealthArchiveAPI.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<DateTime>("BirthDate")
-                        .HasColumnType("datetime2");
-
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
 
@@ -50,6 +47,10 @@ namespace HealthArchiveAPI.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("Tuition")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.HasKey("Id");
 
                     b.ToTable("Doctors");
@@ -63,10 +64,6 @@ namespace HealthArchiveAPI.Migrations
 
                     b.Property<Guid>("HCEId")
                         .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("ModifiedBy")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("ModifiedDate")
                         .HasColumnType("datetime2");
@@ -97,6 +94,30 @@ namespace HealthArchiveAPI.Migrations
                         .IsUnique();
 
                     b.ToTable("HCEs");
+                });
+
+            modelBuilder.Entity("HealthArchiveAPI.Data.HCEFile", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<byte[]>("Content")
+                        .IsRequired()
+                        .HasColumnType("varbinary(max)");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("HCEId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("HCEId");
+
+                    b.ToTable("HCEFiles");
                 });
 
             modelBuilder.Entity("HealthArchiveAPI.Data.Patient", b =>
@@ -168,8 +189,7 @@ namespace HealthArchiveAPI.Migrations
                                 .HasForeignKey("DoctorId");
                         });
 
-                    b.Navigation("PhoneNumber")
-                        .IsRequired();
+                    b.Navigation("PhoneNumber");
                 });
 
             modelBuilder.Entity("HealthArchiveAPI.Data.Evolution", b =>
@@ -180,7 +200,31 @@ namespace HealthArchiveAPI.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.OwnsOne("HealthArchiveAPI.Data.EvolutionInfo", "EvolutionInfo", b1 =>
+                        {
+                            b1.Property<Guid>("EvolutionId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<string>("ModifiedBy")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<string>("Tuition")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.HasKey("EvolutionId");
+
+                            b1.ToTable("Evolutions");
+
+                            b1.WithOwner()
+                                .HasForeignKey("EvolutionId");
+                        });
+
                     b.Navigation("ClinicHistory");
+
+                    b.Navigation("EvolutionInfo")
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("HealthArchiveAPI.Data.HCE", b =>
@@ -192,6 +236,17 @@ namespace HealthArchiveAPI.Migrations
                         .IsRequired();
 
                     b.Navigation("Patient");
+                });
+
+            modelBuilder.Entity("HealthArchiveAPI.Data.HCEFile", b =>
+                {
+                    b.HasOne("HealthArchiveAPI.Data.HCE", "HCE")
+                        .WithMany("Files")
+                        .HasForeignKey("HCEId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("HCE");
                 });
 
             modelBuilder.Entity("HealthArchiveAPI.Data.Patient", b =>
@@ -246,6 +301,8 @@ namespace HealthArchiveAPI.Migrations
             modelBuilder.Entity("HealthArchiveAPI.Data.HCE", b =>
                 {
                     b.Navigation("Evolutions");
+
+                    b.Navigation("Files");
                 });
 
             modelBuilder.Entity("HealthArchiveAPI.Data.Patient", b =>
