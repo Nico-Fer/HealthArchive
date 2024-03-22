@@ -3,6 +3,7 @@ import './FormEvolucion.scss';
 
 import formatDate from '../../../Functions/FormatDate';
 import { EvolutionInfo } from '../../../Types/EvolutionInfo';
+import RichEditorExample from './TextEditor/TextEditor';
 interface EvolutionFormProps {
     onAddEvolution: (formData: EvolutionFormData) => void;
     onClose: () => void;
@@ -24,20 +25,13 @@ const EvolutionForm: React.FC<EvolutionFormProps> = ({ onAddEvolution, onClose }
         Notes: '',
     });
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        const { name, value } = e.target;       
-          setFormData({ ...formData, [name]: value });
-      };
-
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         handleAddEvolution();
     };
     const handleAddEvolution = () => {
-        // Llama a la función proporcionada por el padre para agregar la evolución
         onAddEvolution(formData);
     
-        // Limpia el formulario después de agregar la evolución
         setFormData({
             DateAdded: new Date,
             ModifiedBy: {modifiedBy: '', tuition: ''},
@@ -45,6 +39,9 @@ const EvolutionForm: React.FC<EvolutionFormProps> = ({ onAddEvolution, onClose }
         });
     };
     
+    const handleTextChange = (notes : string) =>{
+        setFormData({...formData, Notes: notes})
+    }
 
     return (
         <form onSubmit={handleSubmit}>
@@ -52,8 +49,7 @@ const EvolutionForm: React.FC<EvolutionFormProps> = ({ onAddEvolution, onClose }
                 <label>Fecha: {formatDate(todaysDate)}</label>
             </div>
             <div>
-                <label>Texto:</label>
-                <textarea className='form-control w-100' name="Notes" value={formData.Notes} onChange={handleChange} style={{height: 300}}/>
+                <RichEditorExample handleTextChange={handleTextChange} notes = {formData.Notes}/>
             </div>
             <button type="submit" className="submit-btn">Agregar Evolución</button>
             <button type="button" className="close-btn" onClick={onClose}>Cerrar</button>

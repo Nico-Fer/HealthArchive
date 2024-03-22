@@ -6,16 +6,17 @@ import { useNavigate } from 'react-router-dom';
 import { Phone } from '../../../Types/Phone';
 import { FormErrors } from '../../../Types/FormErrors';
 
-import formatDate from '../../../Functions/FormatDate';
 import validateForm from '../../../Functions/validateForm';
+import { useSelector } from 'react-redux';
+import { store } from '../../../Redux/Store';
 
 interface FormData {
   Name: string;
   LastName: string;
-  BirthDate: Date;
   PhoneNumber: Phone;
   Description: string;
   Email: string;
+  Tuition: string;
 }
 
 const MyForm: React.FC = () => {
@@ -26,17 +27,17 @@ const MyForm: React.FC = () => {
     fetchProfessional();
   }, [])
 
+  const location = useLocation();
+  const professinonalEmail = location.state.email;
+
   const [formData, setFormData] = useState<FormData>({
     Name: '',
     LastName: '',
-    BirthDate: new Date(),
     PhoneNumber:{CountryCode:'+54', PhoneNumber:''},
     Description: '',
     Email:'',
+    Tuition: '',
   });
-
-  const location = useLocation();
-  const professinonalEmail = location.state.email;
 
   const [originalFormData, setOriginalFormData] = useState<FormData>({ ...formData });
   const [errors, setErrors] = useState<FormErrors>({});
@@ -53,6 +54,7 @@ const MyForm: React.FC = () => {
 
     if(Object.keys(newErrors).length === 0){
       updateProfessional();
+      navigate('/Profesionales')
     }   
   };
 
@@ -60,8 +62,6 @@ const MyForm: React.FC = () => {
     deleteProfessional();
     navigate('/Profesionales');
   };
-
-
 
   const isFormChanged = (): boolean => {
     return JSON.stringify(formData) !== JSON.stringify(originalFormData);
@@ -80,12 +80,12 @@ const MyForm: React.FC = () => {
           Name: data.name,
           LastName: data.lastName,
           PhoneNumber: {
-            CountryCode: data.phoneNumber.countryCode,
-            PhoneNumber: data.phoneNumber.phoneNumber,
+            CountryCode: data.phoneNumber? data.phoneNumber.countryCode : '+54',
+            PhoneNumber: data.phoneNumber? data.phoneNumber.phoneNumber : '',
           },
           Email: data.email,
           Description: data.description,
-          BirthDate: data.birthDate,
+          Tuition: data.tuition,
         };
   
         setId(data.id);
@@ -132,6 +132,10 @@ const MyForm: React.FC = () => {
     } 
   }
 
+  const onClose = () =>{
+    navigate('/Profesionales')
+  }
+
   return (
     <div className="form-container">
       <form onSubmit={handleSubmit} className="form">
@@ -163,17 +167,6 @@ const MyForm: React.FC = () => {
         </div>
 
         <div className="form-group">
-          <label htmlFor="BirthDate">Fecha de Nacimiento:</label>
-          <input
-            type="date"
-            id="BirthDate"
-            name="BirthDate"
-            value={formatDate(formData.BirthDate)}
-            onChange={handleChange}
-          />
-        </div>
-
-        <div className="form-group">
           <label htmlFor="telefono">Teléfono:</label>
           <div className="phone-input">
             <span>{formData.PhoneNumber.CountryCode}</span>
@@ -199,7 +192,7 @@ const MyForm: React.FC = () => {
           {errors.Email && <div className="alert alert-danger p-1">
                   {errors.Email}
                 </div>}
-        </div>
+          </div>
 
         <div className="form-group">
           <label htmlFor="Description">Descripcion:</label>
@@ -220,6 +213,7 @@ const MyForm: React.FC = () => {
             <button type="submit" className="submit-btn" disabled={!isFormChanged()}>
               Guardar
             </button>
+            <button className="close-btn d-flex flex-column mb-4" onClick={() => onClose()} style={{color: 'red', background: 'none'}}>Cerrar</button>
           </div>
         </div>
       </form>

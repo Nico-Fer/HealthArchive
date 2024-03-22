@@ -14,14 +14,17 @@ import HistoriaClinica from "../HistoriaClinica/HistoriaClinica";
 import NewPatient from "../NewPatient";
 import AuthGuard from "../../Guards";
 import { Provider } from "react-redux";
-import Store from "../../Redux/Store";
+import  store  from "../../Redux/Store";
 
 const App = () => {
+
+  let isLogged = false;
+
   return (
     <div>
-      <Provider store={Store}>
+      <Provider store={store}>
         <BrowserRouter>
-            <NavBar />
+            <NavBar/>
             <Routes>
               <Route path="/" element={<Login />} />
               <Route path="/Login" element={<Login />} />

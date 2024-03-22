@@ -2,10 +2,16 @@ import { Link } from 'react-router-dom';
 import './Navbar.scss';
 import { useDispatch } from 'react-redux';
 import { resetProfessionalRed } from '../../../Redux/States/professional';
+import { useSelector } from "react-redux";
+import { store } from '../../../Redux/Store';
 
 const NavBar = () => {
 
   const dispatch = useDispatch();
+  const isLogged = useSelector((state : store) => state.Professional.tuition !== '');
+  if(!isLogged){
+    return null;
+  }
 
   const handleSignOut = () =>{
     dispatch(resetProfessionalRed())

@@ -22,6 +22,12 @@ namespace HealthArchiveAPI.Repository
             return Save();
         }
 
+        public bool AddFile(HCEFile file)
+        {
+            _db.HCEFiles.Add(file);
+            return Save();
+        }
+
         public ICollection<Evolution> GetEvolutions(Guid id)
         {
             var _hce = _db.HCEs

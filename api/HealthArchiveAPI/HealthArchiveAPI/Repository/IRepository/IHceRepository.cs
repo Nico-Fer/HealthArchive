@@ -9,6 +9,7 @@ namespace HealthArchiveAPI.Repository.IRepository
         bool CreateHce(HCE hce);
         bool UpdateHce(HCE hce);
         bool DeleteHce(HCE hce);
+        bool AddFile(HCEFile file);
         bool Save();
     }
 }

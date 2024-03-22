@@ -12,9 +12,13 @@ import { EvolutionFromApi } from '../../Types/EvolutionFromApi';
 
 import formatDate from '../../Functions/FormatDate';
 import { useSelector } from 'react-redux';
-import { Store } from '../../Redux/Store';
+import { store } from '../../Redux/Store';
 import { EvolutionInfo } from '../../Types/EvolutionInfo';
 import PrintHCE from './PrintHCE/PrintHCE';
+import AddHceFile from './AddHCEFile/AddHCEFile';
+import { HCEFile } from '../../Types/HCEFile';
+import FilesCollection from './FilesCollection/FilesCollection';
+import convertJsonToHtml from '../../Functions/ConvertJsonToHTML';
 
 
 interface EvolutionFormData {
@@ -31,12 +35,12 @@ const HistoriaClinica = () => {
   , []);
 
   const [showEvolutionForm, setShowEvolutionForm] = useState(false);
-  const [showFileUploader, setShowFileUploader] = useState(false);
   const [showPrintView, setShowPrintView] = useState(false);
+  const [showFiles, setShowFiles] = useState(false);
 
   const [formularios, setFormularios] = useState<EvolutionFormData[]>([]);
 
-  const stateRedux = useSelector((store: Store) => store.Professional);
+  const stateRedux = useSelector((store: store) => store.Professional);
 
   const handleShowEvolutionForm = () => setShowEvolutionForm(true);
 
@@ -46,8 +50,16 @@ const HistoriaClinica = () => {
   const[hce, setHce] = useState<HCE>({
     Id: '',
     PatientId: '',
-    Evolutions: []
+    Evolutions: [],
+    Files: [],
   });
+
+  const addNewFileToHce = (newFile: HCEFile) => {
+    setHce(prevHce => ({
+      ...prevHce,
+      Files: [...prevHce.Files, newFile],
+    }));
+  };
 
   const fetchClinicHistory = async () =>{
     try{
@@ -62,9 +74,15 @@ const HistoriaClinica = () => {
         Id: data.id,
         PatientId: data.patientId,
         Evolutions: data.evolutions.map((evolution : EvolutionFromApi) => ({
-          Notes: evolution.notes,
+          Notes: convertJsonToHtml(evolution.notes),
           DateAdded: new Date(evolution.modifiedDate),
           ModifiedBy: {modifiedBy: evolution.evolutionInfo.modifiedBy, tuition: evolution.evolutionInfo.tuition}
+        })),
+        Files: data.files.map((file : HCEFile) => ({
+          id: file.id,
+          content: file.content,
+          fileName: file.fileName,
+          hceId: file.hceId
         }))
       };
 
@@ -106,9 +124,20 @@ const HistoriaClinica = () => {
       DateAdded: new Date(),
     };
 
+    const newEvolutionToHtml: Evolution = {
+      Notes: convertJsonToHtml(formData.Notes),
+      ModifiedBy:{modifiedBy: stateRedux.name + ' ' + stateRedux.lastName, tuition: stateRedux.tuition},
+      DateAdded: new Date(),
+    };
+
+    setHce(prevHce => ({
+      ...prevHce,
+      Evolutions: [...prevHce.Evolutions, newEvolutionToHtml],
+    }));
+
     const newFormulario = {
       ModifiedBy: {modifiedBy: stateRedux.name + ' ' + stateRedux.lastName, tuition: stateRedux.tuition},
-      Notes: formData.Notes,
+      Notes: convertJsonToHtml(formData.Notes),
       DateAdded: formData.DateAdded,
     };
     setFormularios([...formularios, newFormulario]);
@@ -135,19 +164,21 @@ const HistoriaClinica = () => {
               </div>
               <p><strong>Nombre del Médico:</strong> {formulario.ModifiedBy.modifiedBy}</p>
               <p><strong>Fecha:</strong> {formatDate(formulario.DateAdded)}</p>
-              <p><strong>Texto del Formulario:</strong> {formulario.Notes}</p>
+              <div dangerouslySetInnerHTML={{ __html: formulario.Notes }} />
             </div>
           ))}
         </div>
       </div>
       <div className="main-content">
-        <div className="buttons-container">
+        <div className="buttons-container d-flex align-items-center">
           <button className="agregar-btn" onClick={handleShowEvolutionForm}>Agregar Evolución</button>
-          <button className="agregar-btn" onClick={() => setShowFileUploader(true)}>Agregar Archivo</button>
+          <AddHceFile HceId={hce.Id} onFileAdded={addNewFileToHce}/>
           <button className="agregar-btn" onClick={() => setShowPrintView(true)}>Imprimir HCE</button>
+          <button className="btn text-secondary opacity-75" onClick={() => setShowFiles(true)}>VerArchivos</button>
         </div>
         {showEvolutionForm && <EvolutionForm onAddEvolution={handleAddEvolution} onClose={() => setShowEvolutionForm(false)} />}
         {showPrintView && <PrintHCE evoluciones={hce.Evolutions} patient={patient} onClose={() => setShowPrintView(false)} />}
+        {showFiles && <FilesCollection files={hce.Files} onClose={() => setShowFiles(false)} />}
       </div>
     </div>
   );

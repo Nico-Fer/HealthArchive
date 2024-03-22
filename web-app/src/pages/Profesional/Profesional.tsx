@@ -5,8 +5,7 @@ import './Profesional.scss';
 
 const MainPage: React.FC = () => {
   return (
-    <div className="main-page">
-      
+    <div className="main-page">     
       <div className="content">
         <MyForm />
       </div>

@@ -6,8 +6,10 @@ import { useSelector } from "react-redux";
 import CalculateAge from "../../../Functions/CalculateAge";
 import { Evolution } from "../../../Types/Evolution";
 import { Patient } from "../../../Types/Person";
-import { Store } from "../../../Redux/Store";
+import { store } from "../../../Redux/Store";
 import formatDate from "../../../Functions/FormatDate";
+
+import convertJsonToHtml from "../../../Functions/ConvertJsonToHTML";
 
 interface Props {
     evoluciones: Evolution[];
@@ -36,7 +38,7 @@ const PrintHCE : React.FC<Props> = ( {evoluciones, patient, onClose} ) =>{
         };
 
 
-    const stateRedux = useSelector((store: Store) => store.Professional);
+    const stateRedux = useSelector((store: store) => store.Professional);
 
     return (
         <div className="bg-white p-3 print-body">
@@ -69,7 +71,7 @@ const PrintHCE : React.FC<Props> = ( {evoluciones, patient, onClose} ) =>{
                                 <span>{formatDate(evolucion.DateAdded)}</span>
                                 <small className="text-muted fw-normal"> Por {evolucion.ModifiedBy.modifiedBy}</small>
                                 <div>
-                                    <div className="mt-3">{evolucion.Notes}</div>
+                                    <div className="mt-3"><div dangerouslySetInnerHTML={{ __html: evolucion.Notes }} /></div>
                                 </div>
                             </div>
                         ))}
