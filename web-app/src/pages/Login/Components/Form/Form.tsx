@@ -17,6 +17,9 @@ const Form = () => {
     const navigate = useNavigate();
     const dispatch = useDispatch();
 
+    const [error, setError] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
+
     const[formData, setFormData] = useState<FormData>({
       Password: '',
       Email: '',
@@ -40,7 +43,10 @@ const Form = () => {
         );
   
         if (!response.ok) {
-          throw new Error("Sign In Error");
+          const errorMsg = 'Email o contraseña incorrectos'
+          setErrorMessage('Email o contraseña incorrectos');
+          setError(true);
+          throw new Error(errorMsg);
         }
   
         const userData = await response.json();
@@ -79,6 +85,9 @@ const Form = () => {
             onChange={handleChange}
             placeholder="Contraseña"
           />
+          {error && <div className="alert alert-danger p-1">
+                  {errorMessage}
+                </div>}
           <button className="btn btn-primary  rounded w-100 mb-2 mt-2" style={{backgroundColor: '#004EB8', color:'white', height:'50px'}} type="submit">Iniciar Sesion</button>
         </form>
       </div>

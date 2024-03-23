@@ -9,7 +9,6 @@ import { createProfessionalRed } from "../../../Redux/States/professional";
 interface FormData {
   Name: string;
   LastName: string;
-  PhoneNumber: Phone;
   Password: string;
   Email: string;
   ConsultoryCode: string;
@@ -20,10 +19,12 @@ const RegisterForm = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
+  const [error, setError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+
   const [formData, setFormData] = useState<FormData>({
     Name: '',
     LastName: '',
-    PhoneNumber: { CountryCode: '+54', PhoneNumber: '' },
     Password: '',
     Email: '',
     ConsultoryCode: '',
@@ -52,7 +53,10 @@ const RegisterForm = () => {
       })
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorMsg = 'El email ya se encuentra registrado'
+          setErrorMessage('Error al crear usuario: El email ya se encuentra registrado o el código del consultorio es incorrecto');
+          setError(true);
+          throw new Error(errorMsg);
       }
 
       const data = await response.json();
@@ -66,23 +70,28 @@ const RegisterForm = () => {
     }
   }
 
+  const validateForm= () => {
+    if(formData.ConsultoryCode === '' || formData.Email=== '' || formData.Name=== '' || formData.LastName=== '' || formData.Password=== '' || formData.Tuition=== ''){
+      setErrorMessage('Todos los campos son obligatorios');
+      setError(true);
+      return false;
+    }
+    return true;
+  }
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if(await createUser()){
-      navigate('/Pacientes');
-    };
+    if(validateForm()){
+      if(await createUser()){
+        navigate('/Pacientes');
+      };
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setError(false);
     const { id, value } = e.target;
-    if(id === "PhoneNumber.PhoneNumber") {
-      setFormData({
-        ...formData,
-        PhoneNumber: { ...formData.PhoneNumber, PhoneNumber: value }
-      });
-    } else {
       setFormData({ ...formData, [id]: value });
-    }
   };
 
   return (
@@ -135,6 +144,10 @@ const RegisterForm = () => {
               onChange={handleChange}
               placeholder="Codigo del Consultorio"
             />
+
+            {error && <div className="alert alert-danger p-1 mb-0">
+                  {errorMessage}
+                </div>}
 
         <button className="btn btn-primary rounded w-100 mb-2 mt-2" style={{ backgroundColor: '#004EB8', color: 'white', height: '50px' }} type="submit">Registrarse</button>
       </form>
