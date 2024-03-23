@@ -37,7 +37,7 @@ const AddHceFile: React.FC<AddFileProps> = ({ HceId, onFileAdded }) => {
     formData.append('file', file);
 
     try{
-        const response = await fetch(`https://localhost:44393/api/Hce/AddFile/${HceId}`, {
+        const response = await fetch(`http://192.168.0.122:44392/api/Hce/AddFile/${HceId}`, {
         method: 'POST',
         body: formData,
         });

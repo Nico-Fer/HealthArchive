@@ -6,7 +6,10 @@ const  convertJsonToHtml = (serializedDraftJsContent: string): string => {
 
     const options = {
         inlineStyles: {
-            'Verde': {style: {backgroundColor: 'rgba(0, 255, 0, 0.3)'}}
+            'Verde': {style: {backgroundColor: 'rgba(0, 255, 0, 0.3)'}},
+            'Rojo': {style: {backgroundColor: 'rgba(255, 0, 0, 0.3)'}},
+            'Azul': {style: {backgroundColor: 'rgba(0, 0, 255, 0.3)'}},
+            'Amarillo': {style: {backgroundColor: 'rgba(245, 243, 39, 0.8)'}}
         }
     }
 

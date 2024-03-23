@@ -69,7 +69,7 @@ const MyForm: React.FC = () => {
 
   const fetchProfessional = async() =>{
       try {
-        const response = await fetch(`https://localhost:44393/api/Doctor/GetDoctorByEmail/${professinonalEmail}`);
+        const response = await fetch(`http://192.168.0.122:44392/api/Doctor/GetDoctorByEmail/${professinonalEmail}`);
         if (!response.ok) {
           throw new Error('Error al obtener el doctor');
         }
@@ -101,7 +101,7 @@ const MyForm: React.FC = () => {
 
   const updateProfessional = async() =>{
     try{
-      const response = await fetch( `https://localhost:44393/api/Doctor/UpdateDoctorById/${Id}`, {
+      const response = await fetch( `http://192.168.0.122:44392/api/Doctor/UpdateDoctorById/${Id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json', 
@@ -119,7 +119,7 @@ const MyForm: React.FC = () => {
 
   const deleteProfessional = async() =>{
     try{
-      const response = await fetch( `https://localhost:44393/api/Doctor/DeleteDoctorById/${Id}`, {
+      const response = await fetch( `http://192.168.0.122:44392/api/Doctor/DeleteDoctorById/${Id}`, {
         method: 'DELETE',
       })
 

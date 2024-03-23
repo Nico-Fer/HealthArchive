@@ -44,7 +44,7 @@ const RegisterForm = () => {
 
   const createUser = async() =>{
     try{
-      const response = await fetch( `https://localhost:44393/api/Doctor/CreateDoctor`, {
+      const response = await fetch( `http://192.168.0.122:44392/api/Doctor/CreateDoctor`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json', 

@@ -63,7 +63,7 @@ const HistoriaClinica = () => {
 
   const fetchClinicHistory = async () =>{
     try{
-      const response = await fetch(`https://localhost:44393/api/Patient/GetClinicHistory/${patient.DNI}`);
+      const response = await fetch(`http://192.168.0.122:44392/api/Patient/GetClinicHistory/${patient.DNI}`);
       if (!response.ok) {
         throw new Error('Error al obtener la historia clinica');
       }
@@ -97,7 +97,7 @@ const HistoriaClinica = () => {
 
   const fetchCreateEvolution = async(evolution : Evolution) => {
     try{
-      const response = await fetch(`https://localhost:44393/api/Evolution/CreateEvolution/${hce.Id}`,{
+      const response = await fetch(`http://192.168.0.122:44392/api/Evolution/CreateEvolution/${hce.Id}`,{
       method: 'POST', 
         headers: {
           'Content-Type': 'application/json', 
