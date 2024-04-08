@@ -4,7 +4,7 @@ import { FormErrors } from "../Types/FormErrors";
 
 
 const validateForm =  (personData : Person | Patient) : FormErrors =>{
-    const regexLetrasEspacios = /^[A-Za-z\s]+$/;
+    const regexLetrasEspacios = /^[A-Za-zñÑáéíóúÁÉÍÓÚüÜ\s]+$/;
     const regexSoloNumeros = /^([0-9])*$/;
     const newErrors : FormErrors = {};
 

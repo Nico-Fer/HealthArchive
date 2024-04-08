@@ -22,7 +22,7 @@ const Proffesionals  = () => {
 
   const fetchProfesssionals = async() =>{
     try {
-      const response = await fetch('http://192.168.0.122:44392/api/Doctor/GetDoctors');
+      const response = await fetch('https://localhost:44393/api/Doctor/GetDoctors');
       if (!response.ok) {
         throw new Error('Error al obtener los doctores');
       }

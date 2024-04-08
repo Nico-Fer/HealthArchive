@@ -41,7 +41,8 @@ const NewPatient = () => {
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const dateString = e.target.value;
-    const dateObject = new Date(dateString);
+    const adjustedDateString = dateString + 'T00:00:00';
+    const dateObject = new Date(adjustedDateString);
   
     setPatientData(prevData => ({
       ...prevData,
@@ -92,7 +93,7 @@ const NewPatient = () => {
     };
 
     try {
-      const response = await fetch('http://192.168.0.122:44392/api/Patient/CreatePatient', {
+      const response = await fetch('https://localhost:44393/api/Patient/CreatePatient', {
         method: 'POST', 
         headers: {
           'Content-Type': 'application/json', 

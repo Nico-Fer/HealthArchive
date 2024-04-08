@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("HealthArchiveAPI")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5d1bf33dd93501aa586681eac2ca0b9d28189394")]
 [assembly: System.Reflection.AssemblyProductAttribute("HealthArchiveAPI")]
 [assembly: System.Reflection.AssemblyTitleAttribute("HealthArchiveAPI")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

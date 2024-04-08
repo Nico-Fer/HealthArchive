@@ -48,7 +48,8 @@ interface FormProps {
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const dateString = e.target.value;
-    const dateObject = new Date(dateString);
+    const adjustedDateString = dateString + 'T00:00:00';
+    const dateObject = new Date(adjustedDateString);
   
     setFormData(prevData => ({
       ...prevData,
@@ -108,7 +109,7 @@ interface FormProps {
     }
 
     try{
-      const response = await fetch( `http://192.168.0.122:44392/api/Patient/UpdatePatientByDni/${formattedPatientData.DNI}`, {
+      const response = await fetch( `https://localhost:44393/api/Patient/UpdatePatientByDni/${formattedPatientData.DNI}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json', 
@@ -149,7 +150,7 @@ interface FormProps {
 
   const deletePatient = async (dni : string) =>{
     try{
-      const response = await fetch( `http://192.168.0.122:44392/api/Patient/DeletePatientByDni/${dni}`, {
+      const response = await fetch( `https://localhost:44393/api/Patient/DeletePatientByDni/${dni}`, {
         method: 'DELETE',
       })
 

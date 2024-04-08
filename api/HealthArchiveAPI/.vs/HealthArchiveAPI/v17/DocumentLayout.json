@@ -1,0 +1,181 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "D:\\HealthArchive\\HealthArchive\\api\\HealthArchiveAPI\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{E6099C62-632D-4448-BD9A-068924EC4B87}|HealthArchiveAPI\\HealthArchiveAPI.csproj|d:\\healtharchive\\healtharchive\\api\\healtharchiveapi\\healtharchiveapi\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E6099C62-632D-4448-BD9A-068924EC4B87}|HealthArchiveAPI\\HealthArchiveAPI.csproj|solutionrelative:healtharchiveapi\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E6099C62-632D-4448-BD9A-068924EC4B87}|HealthArchiveAPI\\HealthArchiveAPI.csproj|d:\\healtharchive\\healtharchive\\api\\healtharchiveapi\\healtharchiveapi\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{E6099C62-632D-4448-BD9A-068924EC4B87}|HealthArchiveAPI\\HealthArchiveAPI.csproj|solutionrelative:healtharchiveapi\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E6099C62-632D-4448-BD9A-068924EC4B87}|HealthArchiveAPI\\HealthArchiveAPI.csproj|d:\\healtharchive\\healtharchive\\api\\healtharchiveapi\\healtharchiveapi\\properties\\launchsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{E6099C62-632D-4448-BD9A-068924EC4B87}|HealthArchiveAPI\\HealthArchiveAPI.csproj|solutionrelative:healtharchiveapi\\properties\\launchsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E6099C62-632D-4448-BD9A-068924EC4B87}|HealthArchiveAPI\\HealthArchiveAPI.csproj|d:\\healtharchive\\healtharchive\\api\\healtharchiveapi\\healtharchiveapi\\controllers\\authservicescontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E6099C62-632D-4448-BD9A-068924EC4B87}|HealthArchiveAPI\\HealthArchiveAPI.csproj|solutionrelative:healtharchiveapi\\controllers\\authservicescontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E6099C62-632D-4448-BD9A-068924EC4B87}|HealthArchiveAPI\\HealthArchiveAPI.csproj|d:\\healtharchive\\healtharchive\\api\\healtharchiveapi\\healtharchiveapi\\data\\evolution.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E6099C62-632D-4448-BD9A-068924EC4B87}|HealthArchiveAPI\\HealthArchiveAPI.csproj|solutionrelative:healtharchiveapi\\data\\evolution.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E6099C62-632D-4448-BD9A-068924EC4B87}|HealthArchiveAPI\\HealthArchiveAPI.csproj|d:\\healtharchive\\healtharchive\\api\\healtharchiveapi\\healtharchiveapi\\dtos\\doctorregisterdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E6099C62-632D-4448-BD9A-068924EC4B87}|HealthArchiveAPI\\HealthArchiveAPI.csproj|solutionrelative:healtharchiveapi\\dtos\\doctorregisterdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E6099C62-632D-4448-BD9A-068924EC4B87}|HealthArchiveAPI\\HealthArchiveAPI.csproj|d:\\healtharchive\\healtharchive\\api\\healtharchiveapi\\healtharchiveapi\\controllers\\doctorcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E6099C62-632D-4448-BD9A-068924EC4B87}|HealthArchiveAPI\\HealthArchiveAPI.csproj|solutionrelative:healtharchiveapi\\controllers\\doctorcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E6099C62-632D-4448-BD9A-068924EC4B87}|HealthArchiveAPI\\HealthArchiveAPI.csproj|d:\\healtharchive\\healtharchive\\api\\healtharchiveapi\\healtharchiveapi\\dtos\\editdoctordto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E6099C62-632D-4448-BD9A-068924EC4B87}|HealthArchiveAPI\\HealthArchiveAPI.csproj|solutionrelative:healtharchiveapi\\dtos\\editdoctordto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E6099C62-632D-4448-BD9A-068924EC4B87}|HealthArchiveAPI\\HealthArchiveAPI.csproj|d:\\healtharchive\\healtharchive\\api\\healtharchiveapi\\healtharchiveapi\\repository\\patientrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E6099C62-632D-4448-BD9A-068924EC4B87}|HealthArchiveAPI\\HealthArchiveAPI.csproj|solutionrelative:healtharchiveapi\\repository\\patientrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E6099C62-632D-4448-BD9A-068924EC4B87}|HealthArchiveAPI\\HealthArchiveAPI.csproj|d:\\healtharchive\\healtharchive\\api\\healtharchiveapi\\healtharchiveapi\\data\\patient.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E6099C62-632D-4448-BD9A-068924EC4B87}|HealthArchiveAPI\\HealthArchiveAPI.csproj|solutionrelative:healtharchiveapi\\data\\patient.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 2,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "appsettings.json",
+              "DocumentMoniker": "D:\\HealthArchive\\HealthArchive\\api\\HealthArchiveAPI\\HealthArchiveAPI\\appsettings.json",
+              "RelativeDocumentMoniker": "HealthArchiveAPI\\appsettings.json",
+              "ToolTip": "D:\\HealthArchive\\HealthArchive\\api\\HealthArchiveAPI\\HealthArchiveAPI\\appsettings.json",
+              "RelativeToolTip": "HealthArchiveAPI\\appsettings.json",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAkAAAAJAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2024-04-05T13:15:17.292Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "launchSettings.json",
+              "DocumentMoniker": "D:\\HealthArchive\\HealthArchive\\api\\HealthArchiveAPI\\HealthArchiveAPI\\Properties\\launchSettings.json",
+              "RelativeDocumentMoniker": "HealthArchiveAPI\\Properties\\launchSettings.json",
+              "ToolTip": "D:\\HealthArchive\\HealthArchive\\api\\HealthArchiveAPI\\HealthArchiveAPI\\Properties\\launchSettings.json",
+              "RelativeToolTip": "HealthArchiveAPI\\Properties\\launchSettings.json",
+              "ViewState": "AQIAAAYAAAAAAAAAAAAAAAgAAAAFAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2024-04-05T13:06:43.03Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "Program.cs",
+              "DocumentMoniker": "D:\\HealthArchive\\HealthArchive\\api\\HealthArchiveAPI\\HealthArchiveAPI\\Program.cs",
+              "RelativeDocumentMoniker": "HealthArchiveAPI\\Program.cs",
+              "ToolTip": "D:\\HealthArchive\\HealthArchive\\api\\HealthArchiveAPI\\HealthArchiveAPI\\Program.cs",
+              "RelativeToolTip": "HealthArchiveAPI\\Program.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAC0AAAAhAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-04-05T13:06:43.035Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "DoctorRegisterDto.cs",
+              "DocumentMoniker": "D:\\HealthArchive\\HealthArchive\\api\\HealthArchiveAPI\\HealthArchiveAPI\\DTOs\\DoctorRegisterDto.cs",
+              "RelativeDocumentMoniker": "HealthArchiveAPI\\DTOs\\DoctorRegisterDto.cs",
+              "ToolTip": "D:\\HealthArchive\\HealthArchive\\api\\HealthArchiveAPI\\HealthArchiveAPI\\DTOs\\DoctorRegisterDto.cs",
+              "RelativeToolTip": "HealthArchiveAPI\\DTOs\\DoctorRegisterDto.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-04-05T13:06:43.038Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "Evolution.cs",
+              "DocumentMoniker": "D:\\HealthArchive\\HealthArchive\\api\\HealthArchiveAPI\\HealthArchiveAPI\\Data\\Evolution.cs",
+              "RelativeDocumentMoniker": "HealthArchiveAPI\\Data\\Evolution.cs",
+              "ToolTip": "D:\\HealthArchive\\HealthArchive\\api\\HealthArchiveAPI\\HealthArchiveAPI\\Data\\Evolution.cs",
+              "RelativeToolTip": "HealthArchiveAPI\\Data\\Evolution.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAA8AAAAyAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-04-05T13:06:43.041Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "AuthServicesController.cs",
+              "DocumentMoniker": "D:\\HealthArchive\\HealthArchive\\api\\HealthArchiveAPI\\HealthArchiveAPI\\Controllers\\AuthServicesController.cs",
+              "RelativeDocumentMoniker": "HealthArchiveAPI\\Controllers\\AuthServicesController.cs",
+              "ToolTip": "D:\\HealthArchive\\HealthArchive\\api\\HealthArchiveAPI\\HealthArchiveAPI\\Controllers\\AuthServicesController.cs",
+              "RelativeToolTip": "HealthArchiveAPI\\Controllers\\AuthServicesController.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAACgAAAAnAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-04-05T13:06:43.045Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "EditDoctorDto.cs",
+              "DocumentMoniker": "D:\\HealthArchive\\HealthArchive\\api\\HealthArchiveAPI\\HealthArchiveAPI\\DTOs\\EditDoctorDto.cs",
+              "RelativeDocumentMoniker": "HealthArchiveAPI\\DTOs\\EditDoctorDto.cs",
+              "ToolTip": "D:\\HealthArchive\\HealthArchive\\api\\HealthArchiveAPI\\HealthArchiveAPI\\DTOs\\EditDoctorDto.cs",
+              "RelativeToolTip": "HealthArchiveAPI\\DTOs\\EditDoctorDto.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAsAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-04-05T13:06:43.048Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "DoctorController.cs",
+              "DocumentMoniker": "D:\\HealthArchive\\HealthArchive\\api\\HealthArchiveAPI\\HealthArchiveAPI\\Controllers\\DoctorController.cs",
+              "RelativeDocumentMoniker": "HealthArchiveAPI\\Controllers\\DoctorController.cs",
+              "ToolTip": "D:\\HealthArchive\\HealthArchive\\api\\HealthArchiveAPI\\HealthArchiveAPI\\Controllers\\DoctorController.cs",
+              "RelativeToolTip": "HealthArchiveAPI\\Controllers\\DoctorController.cs",
+              "ViewState": "AQIAAEQAAAAAAAAAAAAIwDoAAAAJAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-04-05T13:06:43.051Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "PatientRepository.cs",
+              "DocumentMoniker": "D:\\HealthArchive\\HealthArchive\\api\\HealthArchiveAPI\\HealthArchiveAPI\\Repository\\PatientRepository.cs",
+              "RelativeDocumentMoniker": "HealthArchiveAPI\\Repository\\PatientRepository.cs",
+              "ToolTip": "D:\\HealthArchive\\HealthArchive\\api\\HealthArchiveAPI\\HealthArchiveAPI\\Repository\\PatientRepository.cs",
+              "RelativeToolTip": "HealthArchiveAPI\\Repository\\PatientRepository.cs",
+              "ViewState": "AQIAABwAAAAAAAAAAAAuwCcAAAA0AAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-04-05T13:06:43.055Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
+              "Title": "Patient.cs",
+              "DocumentMoniker": "D:\\HealthArchive\\HealthArchive\\api\\HealthArchiveAPI\\HealthArchiveAPI\\Data\\Patient.cs",
+              "RelativeDocumentMoniker": "HealthArchiveAPI\\Data\\Patient.cs",
+              "ToolTip": "D:\\HealthArchive\\HealthArchive\\api\\HealthArchiveAPI\\HealthArchiveAPI\\Data\\Patient.cs",
+              "RelativeToolTip": "HealthArchiveAPI\\Data\\Patient.cs",
+              "ViewState": "AQIAAAMAAAAAAAAAAAAqwAsAAAAsAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-04-05T13:06:43.059Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

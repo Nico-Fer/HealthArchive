@@ -32,7 +32,7 @@ const Form = () => {
     
     const createProffesional = async() =>{
       try {
-        const response = await fetch("http://192.168.0.122:44392/api/AuthService/Login",
+        const response = await fetch("https://localhost:44393/api/AuthService/Login",
           {
             method: "POST",
             headers: {
