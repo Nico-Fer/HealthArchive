@@ -1,4 +1,4 @@
-version: '3.8'
+# version no longer required in modern Docker Compose
 
 services:
   # Base de datos SQL Server
@@ -40,7 +40,7 @@ services:
     networks:
       - healtharchive-network
     healthcheck:
-      test: curl -f http://localhost/health || exit 1
+      test: curl -f http://localhost/ || exit 1
       interval: 30s
       timeout: 10s
       retries: 3
