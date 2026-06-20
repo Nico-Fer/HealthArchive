@@ -1,0 +1,24 @@
+# ---- Build results (.NET) ----
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+[Dd]ebug/
+[Rr]elease/
+
+# ---- Visual Studio / Rider ----
+.vs/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# ---- Node (el front tiene su propio .gitignore tambien) ----
+node_modules/
+
+# ---- OS ----
+.DS_Store
+Thumbs.db
+
+# ---- Claude Code (settings locales personales) ----
+.claude/settings.local.json
