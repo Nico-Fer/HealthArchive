@@ -19,6 +19,7 @@ import AddHceFile from './AddHCEFile/AddHCEFile';
 import { HCEFile } from '../../Types/HCEFile';
 import FilesCollection from './FilesCollection/FilesCollection';
 import convertJsonToHtml from '../../Functions/ConvertJsonToHTML';
+import { apiGet, apiPost } from '../../api/client';
 
 
 interface EvolutionFormData {
@@ -63,11 +64,7 @@ const HistoriaClinica = () => {
 
   const fetchClinicHistory = async () =>{
     try{
-      const response = await fetch(`https://localhost:44393/api/Patient/GetClinicHistory/${patient.DNI}`);
-      if (!response.ok) {
-        throw new Error('Error al obtener la historia clinica');
-      }
-      const data = await response.json();
+      const data = await apiGet<any>(`/api/Patient/GetClinicHistory/${patient.DNI}`);
       console.log(data);
 
       const mappedHce ={
@@ -97,20 +94,8 @@ const HistoriaClinica = () => {
 
   const fetchCreateEvolution = async(evolution : Evolution) => {
     try{
-      const response = await fetch(`https://localhost:44393/api/Evolution/CreateEvolution/${hce.Id}`,{
-      method: 'POST', 
-        headers: {
-          'Content-Type': 'application/json', 
-        },
-        body: JSON.stringify(evolution),
-      })
-      if (!response.ok) {
-        throw new Error('Error al obtener las evoluciones');
-      }
-
-      const data = await response.json();
+      const data = await apiPost<any>(`/api/Evolution/CreateEvolution/${hce.Id}`, evolution);
       console.log(data);
-
     }catch(error){
       console.error('Error:', error);
     }

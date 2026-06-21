@@ -1,0 +1,17 @@
+using HealthArchive.Domain;
+
+namespace HealthArchive.Application.Interfaces
+{
+    public interface IDoctorRepository
+    {
+        ICollection<Doctor> GetDoctors();
+        Doctor GetDoctor(Guid id);
+        Doctor GetDoctor(string email);
+        bool DoctorExists(Guid id);
+        bool DoctorExists(string email);
+        bool CreateDoctor(Doctor doctor);
+        bool UpdateDoctor(Doctor doctor);
+        bool DeleteDoctor(Doctor doctor);
+        bool Save();
+    }
+}

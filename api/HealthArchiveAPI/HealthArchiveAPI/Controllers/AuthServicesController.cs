@@ -1,10 +1,9 @@
-﻿using HealthArchiveAPI.DTOs;
-using HealthArchiveAPI.Data;
-using HealthArchiveAPI.Mapper;
-using HealthArchiveAPI.Repository.IRepository;
+using AutoMapper;
+using HealthArchive.Application.DTOs;
+using HealthArchive.Application.Interfaces;
+using HealthArchive.Domain;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
-using AutoMapper;
 
 namespace HealthArchiveAPI.Controllers
 {
@@ -36,7 +35,7 @@ namespace HealthArchiveAPI.Controllers
             {
                 Name = user.Name,
                 LastName = user.LastName,
-                Description = user.Description, 
+                Description = user.Description,
                 PhoneNumber = user.PhoneNumber,
                 Tuition = user.Tuition,
             };

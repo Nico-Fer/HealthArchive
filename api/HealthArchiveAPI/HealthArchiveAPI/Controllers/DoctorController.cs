@@ -1,11 +1,9 @@
-﻿using HealthArchiveAPI.Repository.IRepository;
-using HealthArchiveAPI.Data;
-using HealthArchiveAPI.DTOs;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Cors;
-using HealthArchiveAPI.Mapper;
 using AutoMapper;
+using HealthArchive.Application.DTOs;
+using HealthArchive.Application.Interfaces;
+using HealthArchive.Domain;
+using Microsoft.AspNetCore.Cors;
+using Microsoft.AspNetCore.Mvc;
 
 namespace HealthArchiveAPI.Controllers
 {
@@ -16,7 +14,7 @@ namespace HealthArchiveAPI.Controllers
     {
         private readonly IDoctorRepository _repository;
         private readonly IMapper _mapper;
-        
+
         public DoctorController(IDoctorRepository repository, IMapper mapper)
         {
             _repository = repository;
@@ -45,7 +43,7 @@ namespace HealthArchiveAPI.Controllers
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
             var doctor = _repository.GetDoctor(doctorId);
-            if(doctor == null) return NotFound();
+            if (doctor == null) return NotFound();
 
             return Ok(doctor);
         }
@@ -72,7 +70,6 @@ namespace HealthArchiveAPI.Controllers
         public IActionResult CreateDoctor([FromBody] DoctorRegisterDto doctorDto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
-
             if (doctorDto == null) return BadRequest(ModelState);
 
             if (_repository.DoctorExists(doctorDto.Email))
@@ -81,14 +78,14 @@ namespace HealthArchiveAPI.Controllers
                 return BadRequest(ModelState);
             }
 
-            if(doctorDto.consultoryCode != "1234")
+            if (doctorDto.consultoryCode != "1234")
             {
                 ModelState.AddModelError("error", "incorrect_code");
                 return BadRequest(ModelState);
             }
 
             var doctor = _mapper.Map<Doctor>(doctorDto);
-            if(doctor == null) return BadRequest(ModelState);
+            if (doctor == null) return BadRequest(ModelState);
 
             if (!_repository.CreateDoctor(doctor))
             {
@@ -107,11 +104,10 @@ namespace HealthArchiveAPI.Controllers
         public IActionResult UpdateDoctorById(Guid doctorId, [FromBody] EditDoctorDto doctorDto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
-
-            if (doctorDto == null ) return BadRequest();
+            if (doctorDto == null) return BadRequest();
 
             var doctorToUpdate = _repository.GetDoctor(doctorId);
-            if(doctorToUpdate == null) return NotFound();
+            if (doctorToUpdate == null) return NotFound();
 
             _mapper.Map(doctorDto, doctorToUpdate);
 
@@ -133,11 +129,13 @@ namespace HealthArchiveAPI.Controllers
         {
             Doctor doctor = _repository.GetDoctor(doctorId);
             if (doctor == null) return NotFound();
+
             if (!_repository.DeleteDoctor(doctor))
             {
                 ModelState.AddModelError("", "Something went wrong");
                 return StatusCode(500, ModelState);
             }
+
             return Ok(doctor);
         }
     }

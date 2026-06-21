@@ -6,6 +6,7 @@ import { FormErrors } from '../../../Types/FormErrors';
 import validateForm from '../../../Functions/validateForm';
 
 import formatDate from '../../../Functions/FormatDate';
+import { apiPatch, apiDelete } from '../../../api/client';
 
 interface FormProps {
     patient: Patient; 
@@ -109,21 +110,10 @@ interface FormProps {
     }
 
     try{
-      const response = await fetch( `https://localhost:44393/api/Patient/UpdatePatientByDni/${formattedPatientData.DNI}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json', 
-        },
-        body: JSON.stringify(formattedPatientData),
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
+      await apiPatch(`/api/Patient/UpdatePatientByDni/${formattedPatientData.DNI}`, formattedPatientData);
     }catch(error){
       console.error('Error al actualizar el paciente:', error)
-    }  
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -150,17 +140,10 @@ interface FormProps {
 
   const deletePatient = async (dni : string) =>{
     try{
-      const response = await fetch( `https://localhost:44393/api/Patient/DeletePatientByDni/${dni}`, {
-        method: 'DELETE',
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
+      await apiDelete(`/api/Patient/DeletePatientByDni/${dni}`);
     }catch(error){
       console.error('Error al crear el paciente:', error)
-    }  
+    }
 }
 
   const handleReset = async() => {

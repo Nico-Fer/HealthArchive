@@ -3,6 +3,7 @@ import Table from './Table';
 import PatientHeader from './PersonaHeader';
 import FormPaciente from './FormPaciente/FormPaciente';
 import { Person, Patient } from "./../../Types/Person";
+import { apiGet } from '../../api/client';
 
 const Patients = () => {
 
@@ -13,11 +14,7 @@ const Patients = () => {
 
   const fetchPatients = async () => {
     try {
-      const response = await fetch('https://localhost:44393/api/Patient/GetPatients');
-      if (!response.ok) {
-        throw new Error('Error al obtener los pacientes');
-      }
-      const data = await response.json();
+      const data = await apiGet<any[]>('/api/Patient/GetPatients');
       console.log(data);
       
       const mappedPatients = data.map((patient: any) => ({

@@ -3,6 +3,7 @@ import { Person} from './../../Types/Person';
 import { useEffect, useState } from 'react';
 import ProfessionalHeader from '../Profesional/ProfessionalHeader';
 import { Phone } from '../../Types/Phone';
+import { apiGet } from '../../api/client';
 
 interface FormData {
   Name: string;
@@ -22,11 +23,7 @@ const Proffesionals  = () => {
 
   const fetchProfesssionals = async() =>{
     try {
-      const response = await fetch('https://localhost:44393/api/Doctor/GetDoctors');
-      if (!response.ok) {
-        throw new Error('Error al obtener los doctores');
-      }
-      const data = await response.json();
+      const data = await apiGet<any[]>('/api/Doctor/GetDoctors');
       console.log(data);
       
       const mappedProfessionals = data.map((professional: any) => ({

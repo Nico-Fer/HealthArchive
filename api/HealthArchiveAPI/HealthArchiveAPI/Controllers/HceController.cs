@@ -1,9 +1,6 @@
-﻿using System.IO;
-using HealthArchiveAPI.Data;
-using HealthArchiveAPI.Repository.IRepository;
-using Microsoft.AspNetCore.Http;
+using HealthArchive.Application.Interfaces;
+using HealthArchive.Domain;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace HealthArchiveAPI.Controllers
 {
@@ -38,7 +35,8 @@ namespace HealthArchiveAPI.Controllers
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            if(_repository.GetHce(hceId) == null){
+            if (_repository.GetHce(hceId) == null)
+            {
                 return NotFound();
             }
 

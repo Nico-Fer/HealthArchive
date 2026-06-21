@@ -7,6 +7,7 @@ import { Phone } from '../../../Types/Phone';
 import { FormErrors } from '../../../Types/FormErrors';
 
 import validateForm from '../../../Functions/validateForm';
+import { apiGet, apiPatch, apiDelete } from '../../../api/client';
 import { useSelector } from 'react-redux';
 import { store } from '../../../Redux/Store';
 
@@ -69,11 +70,7 @@ const MyForm: React.FC = () => {
 
   const fetchProfessional = async() =>{
       try {
-        const response = await fetch(`https://localhost:44393/api/Doctor/GetDoctorByEmail/${professinonalEmail}`);
-        if (!response.ok) {
-          throw new Error('Error al obtener el doctor');
-        }
-        const data = await response.json();
+        const data = await apiGet<any>(`/api/Doctor/GetDoctorByEmail/${professinonalEmail}`);
         console.log(data);
         
         const mappedProfessional ={
@@ -101,17 +98,7 @@ const MyForm: React.FC = () => {
 
   const updateProfessional = async() =>{
     try{
-      const response = await fetch( `https://localhost:44393/api/Doctor/UpdateDoctorById/${Id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json', 
-        },
-        body: JSON.stringify(formData),
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      await apiPatch(`/api/Doctor/UpdateDoctorById/${Id}`, formData);
     }catch(error){
       console.error('Error al actualizar el profesional:', error)
     }
@@ -119,17 +106,10 @@ const MyForm: React.FC = () => {
 
   const deleteProfessional = async() =>{
     try{
-      const response = await fetch( `https://localhost:44393/api/Doctor/DeleteDoctorById/${Id}`, {
-        method: 'DELETE',
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
+      await apiDelete(`/api/Doctor/DeleteDoctorById/${Id}`);
     }catch(error){
       console.error('Error al eliminar el profesional:', error)
-    } 
+    }
   }
 
   const onClose = () =>{
