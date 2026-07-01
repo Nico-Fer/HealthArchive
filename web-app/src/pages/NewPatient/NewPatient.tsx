@@ -5,6 +5,7 @@ import { FormErrors } from '../../Types/FormErrors';
 
 import formatDate from '../../Functions/FormatDate';
 import validateForm from '../../Functions/validateForm';
+import { apiPost } from '../../api/client';
 
 
 import './NewPatient.scss'
@@ -93,18 +94,7 @@ const NewPatient = () => {
     };
 
     try {
-      const response = await fetch('https://localhost:44393/api/Patient/CreatePatient', {
-        method: 'POST', 
-        headers: {
-          'Content-Type': 'application/json', 
-        },
-        body: JSON.stringify(formattedPatientData),
-      });
-  
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
+      await apiPost('/api/Patient/CreatePatient', formattedPatientData);
       navigate('/Pacientes');
     } catch (error) {
       console.error('Error al crear el paciente:', error);

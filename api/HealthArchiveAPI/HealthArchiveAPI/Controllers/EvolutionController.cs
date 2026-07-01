@@ -1,11 +1,8 @@
-﻿using AutoMapper;
-using HealthArchiveAPI.Data;
-using HealthArchiveAPI.DTOs;
-using HealthArchiveAPI.Mapper;
-using HealthArchiveAPI.Repository.IRepository;
-using Microsoft.AspNetCore.Http;
+using AutoMapper;
+using HealthArchive.Application.DTOs;
+using HealthArchive.Application.Interfaces;
+using HealthArchive.Domain;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace HealthArchiveAPI.Controllers
 {
@@ -29,7 +26,6 @@ namespace HealthArchiveAPI.Controllers
         public IActionResult CreateEvolution(Guid hceId, [FromBody] EvolutionDto evolutionDto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
-
             if (evolutionDto == null) return BadRequest(ModelState);
 
             Evolution evolution = _mapper.Map<Evolution>(evolutionDto);
@@ -42,7 +38,7 @@ namespace HealthArchiveAPI.Controllers
                 Tuition = evolutionDto.ModifiedBy.Tuition,
             };
 
-            if (!_repository.CreateEvolution(evolution, hceId)) 
+            if (!_repository.CreateEvolution(evolution, hceId))
             {
                 ModelState.AddModelError("", "Something went wrong");
                 return StatusCode(404, ModelState);

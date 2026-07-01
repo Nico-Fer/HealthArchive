@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useRef } from "react";
+import React, { useState, useRef } from "react";
+import { apiPostFile } from '../../../api/client';
 import { HCEFile } from "../../../Types/HCEFile";
 
 interface AddFileProps {
@@ -37,19 +37,9 @@ const AddHceFile: React.FC<AddFileProps> = ({ HceId, onFileAdded }) => {
     formData.append('file', file);
 
     try{
-        const response = await fetch(`https://localhost:44393/api/Hce/AddFile/${HceId}`, {
-        method: 'POST',
-        body: formData,
-        });
-
-        if (response.ok) {
-            const result = await response.json();
-            console.log("Archivo cargado con éxito:", result);
-            onFileAdded(result);
-        } else {
-            throw new Error('No se pudo cargar el archivo');
-        }
-
+        const result = await apiPostFile<HCEFile>(`/api/Hce/AddFile/${HceId}`, formData);
+        console.log("Archivo cargado con éxito:", result);
+        onFileAdded(result);
     }catch(error){
         console.error("Error al cargar el archivo:", error);
     }

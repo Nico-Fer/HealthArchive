@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { ProfessionalForRedux } from "../../../Types/ProfessionalForRedux";
 import { useDispatch } from "react-redux";
 import { createProfessionalRed } from "../../../Redux/States/professional";
+import { apiFetch } from '../../../api/client';
 
 interface FormData {
   Name: string;
@@ -44,11 +45,9 @@ const RegisterForm = () => {
 
   const createUser = async() =>{
     try{
-      const response = await fetch( `https://localhost:44393/api/Doctor/CreateDoctor`, {
+      const response = await apiFetch('/api/Doctor/CreateDoctor', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json', 
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       })
 

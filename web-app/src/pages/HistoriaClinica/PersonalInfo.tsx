@@ -2,6 +2,7 @@ import React from 'react';
 import { Patient} from './../../Types/Person';
 import './PersonalInfo.scss';
 import CalculateAge from '../../Functions/CalculateAge';
+import Spinner from '../../components/Spinner';
 
 interface PersonalInfoProps {
   patient: Patient;
@@ -10,7 +11,7 @@ interface PersonalInfoProps {
 const PersonalInfo: React.FC<PersonalInfoProps> = ({patient}) => {
 
   if (!patient) {
-    return <div>Loading...</div>; 
+    return <Spinner />;
   }
 
   return (

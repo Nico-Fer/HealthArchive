@@ -7,6 +7,8 @@ import { Phone } from '../../../Types/Phone';
 import { FormErrors } from '../../../Types/FormErrors';
 
 import validateForm from '../../../Functions/validateForm';
+import { apiGet, apiPatch, apiDelete } from '../../../api/client';
+import Spinner from '../../../components/Spinner';
 import { useSelector } from 'react-redux';
 import { store } from '../../../Redux/Store';
 
@@ -41,6 +43,7 @@ const MyForm: React.FC = () => {
 
   const [originalFormData, setOriginalFormData] = useState<FormData>({ ...formData });
   const [errors, setErrors] = useState<FormErrors>({});
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -69,11 +72,8 @@ const MyForm: React.FC = () => {
 
   const fetchProfessional = async() =>{
       try {
-        const response = await fetch(`https://localhost:44393/api/Doctor/GetDoctorByEmail/${professinonalEmail}`);
-        if (!response.ok) {
-          throw new Error('Error al obtener el doctor');
-        }
-        const data = await response.json();
+        setIsLoading(true);
+        const data = await apiGet<any>(`/api/Doctor/GetDoctorByEmail/${professinonalEmail}`);
         console.log(data);
         
         const mappedProfessional ={
@@ -94,24 +94,16 @@ const MyForm: React.FC = () => {
   
       } catch (error) {
         console.error('Error:', error);
+      } finally {
+        setIsLoading(false);
       }
-  
+
       console.log('Doctor: ', formData)
   }
 
   const updateProfessional = async() =>{
     try{
-      const response = await fetch( `https://localhost:44393/api/Doctor/UpdateDoctorById/${Id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json', 
-        },
-        body: JSON.stringify(formData),
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      await apiPatch(`/api/Doctor/UpdateDoctorById/${Id}`, formData);
     }catch(error){
       console.error('Error al actualizar el profesional:', error)
     }
@@ -119,21 +111,22 @@ const MyForm: React.FC = () => {
 
   const deleteProfessional = async() =>{
     try{
-      const response = await fetch( `https://localhost:44393/api/Doctor/DeleteDoctorById/${Id}`, {
-        method: 'DELETE',
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
+      await apiDelete(`/api/Doctor/DeleteDoctorById/${Id}`);
     }catch(error){
       console.error('Error al eliminar el profesional:', error)
-    } 
+    }
   }
 
   const onClose = () =>{
     navigate('/Profesionales')
+  }
+
+  if (isLoading) {
+    return (
+      <div className="form-container">
+        <Spinner label="Cargando datos del profesional..." />
+      </div>
+    );
   }
 
   return (

@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import { Editor, EditorState, RichUtils, DraftHandleValue, getDefaultKeyBinding, KeyBindingUtil, ContentBlock, Modifier  } from 'draft-js';
-import { convertToRaw } from 'draft-js';
+import { convertToRaw, convertFromRaw } from 'draft-js';
 import 'draft-js/dist/Draft.css';
 import './styles.scss'
 
@@ -21,6 +21,19 @@ const styleMap = {
       padding: 2,
   },
 };
+
+// Rehidrata el editor desde el borrador serializado (rawContentState). Si viene
+// vacío o corrupto, arranca en blanco en lugar de romper.
+function hydrateEditorState(notes: string): EditorState {
+  if (notes) {
+    try {
+      return EditorState.createWithContent(convertFromRaw(JSON.parse(notes)));
+    } catch {
+      // notes inválido; caemos a editor vacío.
+    }
+  }
+  return EditorState.createEmpty();
+}
 
 function getBlockStyle(block: ContentBlock): string {
   switch (block.getType()) {
@@ -147,9 +160,24 @@ const ColorControls: React.FC<StyleControlsProps> = (props) => {
 };
 
 class RichEditorExample extends Component<Props, State> {
-  state = { editorState: EditorState.createEmpty() };
+  state: State = { editorState: hydrateEditorState(this.props.notes) };
 
   editor: React.RefObject<Editor> = React.createRef();
+
+  // El editor mantiene su propio estado interno, pero `notes` es la fuente de
+  // verdad externa (borrador restaurado / reset a '' tras guardar). Cuando cambia
+  // por afuera, resincronizamos. El chequeo evita re-hidratar en cada tecla
+  // (ahí `notes` ya coincide con lo tipeado) y así no rompe el cursor.
+  componentDidUpdate(prevProps: Props) {
+    if (prevProps.notes === this.props.notes) return;
+
+    const current = JSON.stringify(
+      convertToRaw(this.state.editorState.getCurrentContent())
+    );
+    if (current !== this.props.notes) {
+      this.setState({ editorState: hydrateEditorState(this.props.notes) });
+    }
+  }
 
   focus = () => {
     if (this.editor.current) {

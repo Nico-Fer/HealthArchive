@@ -3,6 +3,8 @@ import { Person} from './../../Types/Person';
 import { useEffect, useState } from 'react';
 import ProfessionalHeader from '../Profesional/ProfessionalHeader';
 import { Phone } from '../../Types/Phone';
+import { apiGet } from '../../api/client';
+import Spinner from '../../components/Spinner';
 
 interface FormData {
   Name: string;
@@ -15,6 +17,7 @@ interface FormData {
 
 const Proffesionals  = () => {
   const [proffesionals, setProffesionals] = useState<FormData[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() =>{
     fetchProfesssionals();
@@ -22,11 +25,8 @@ const Proffesionals  = () => {
 
   const fetchProfesssionals = async() =>{
     try {
-      const response = await fetch('https://localhost:44393/api/Doctor/GetDoctors');
-      if (!response.ok) {
-        throw new Error('Error al obtener los doctores');
-      }
-      const data = await response.json();
+      setIsLoading(true);
+      const data = await apiGet<any[]>('/api/Doctor/GetDoctors');
       console.log(data);
       
       const mappedProfessionals = data.map((professional: any) => ({
@@ -44,13 +44,19 @@ const Proffesionals  = () => {
 
     } catch (error) {
       console.error('Error:', error);
+    } finally {
+      setIsLoading(false);
     }
   }
 
   return (
     <div>
       <ProfessionalHeader/>
-      <ProfessionalTable data = {proffesionals}/>
+      {isLoading ? (
+        <Spinner label="Cargando profesionales..." />
+      ) : (
+        <ProfessionalTable data = {proffesionals}/>
+      )}
     </div>
   );
 };

@@ -1,11 +1,8 @@
-﻿using AutoMapper;
-using HealthArchiveAPI.Repository.IRepository;
-using Microsoft.AspNetCore.Http;
+using AutoMapper;
+using HealthArchive.Application.DTOs;
+using HealthArchive.Application.Interfaces;
+using HealthArchive.Domain;
 using Microsoft.AspNetCore.Mvc;
-using HealthArchiveAPI.Data;
-using HealthArchiveAPI.DTOs;
-using System.Diagnostics.Metrics;
-using System.Net;
 
 namespace HealthArchiveAPI.Controllers
 {
@@ -26,12 +23,22 @@ namespace HealthArchiveAPI.Controllers
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [Route("GetPatients")]
-        public IActionResult GetPatients()
+        public IActionResult GetPatients([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 30, [FromQuery] string? search = null)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
+            if (pageNumber < 1) pageNumber = 1;
+            if (pageSize < 1 || pageSize > 100) pageSize = 30; // cota defensiva
 
-            var patientsList = _repository.GetPatients();
-            return Ok(patientsList);
+            var (items, totalCount) = _repository.GetPatients(pageNumber, pageSize, search);
+
+            var result = new PagedResultDto<Patient>
+            {
+                Items = items,
+                TotalCount = totalCount,
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
+            return Ok(result);
         }
 
         [HttpPost]
@@ -83,10 +90,10 @@ namespace HealthArchiveAPI.Controllers
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
             var patient = _repository.GetPatientByDNI(dni);
-            if(patient== null) return BadRequest(ModelState);
+            if (patient == null) return BadRequest(ModelState);
 
             var hce = _repository.GetClinicHistory(patient.Id);
-            if(hce == null) return BadRequest(ModelState);
+            if (hce == null) return BadRequest(ModelState);
 
             return Ok(hce);
         }
@@ -99,14 +106,13 @@ namespace HealthArchiveAPI.Controllers
         public IActionResult UpdatePatientById(Guid patientId, [FromBody] PatientDto patientDto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
-
             if (patientDto == null) return BadRequest();
 
             var patientToUpdate = _repository.GetPatient(patientId);
             if (patientToUpdate == null) return NotFound();
 
             var auxPatient = _repository.GetPatientByDNI(patientDto.DNI);
-            if(auxPatient.Id != patientToUpdate.Id)
+            if (auxPatient.Id != patientToUpdate.Id)
             {
                 ModelState.AddModelError("error", "samedni_differentPatients");
                 return BadRequest(ModelState);
@@ -141,7 +147,6 @@ namespace HealthArchiveAPI.Controllers
         public IActionResult UpdatePatientByDni(string dni, [FromBody] PatientDto patientDto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
-
             if (patientDto == null) return BadRequest();
 
             var patientToUpdate = _repository.GetPatientByDNI(dni);
@@ -184,11 +189,13 @@ namespace HealthArchiveAPI.Controllers
         {
             Patient patient = _repository.GetPatient(patientId);
             if (patient == null) return NotFound();
-            if(!_repository.DeletePatient(patient))
+
+            if (!_repository.DeletePatient(patient))
             {
                 ModelState.AddModelError("", "Something went wrong");
                 return StatusCode(500, ModelState);
             }
+
             return Ok(patient);
         }
 
@@ -201,11 +208,13 @@ namespace HealthArchiveAPI.Controllers
         {
             Patient patient = _repository.GetPatientByDNI(dni);
             if (patient == null) return NotFound();
+
             if (!_repository.DeletePatient(patient))
             {
                 ModelState.AddModelError("", "Something went wrong");
                 return StatusCode(500, ModelState);
             }
+
             return Ok(patient);
         }
     }

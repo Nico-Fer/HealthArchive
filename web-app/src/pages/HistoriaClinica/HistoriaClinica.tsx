@@ -19,6 +19,9 @@ import AddHceFile from './AddHCEFile/AddHCEFile';
 import { HCEFile } from '../../Types/HCEFile';
 import FilesCollection from './FilesCollection/FilesCollection';
 import convertJsonToHtml from '../../Functions/ConvertJsonToHTML';
+import { apiGet, apiPost } from '../../api/client';
+import { clearHceDraft, readHceDraft } from '../../Functions/hceDraft';
+import Spinner from '../../components/Spinner';
 
 
 interface EvolutionFormData {
@@ -39,6 +42,7 @@ const HistoriaClinica = () => {
   const [showFiles, setShowFiles] = useState(false);
 
   const [formularios, setFormularios] = useState<EvolutionFormData[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const stateRedux = useSelector((store: store) => store.Professional);
 
@@ -46,6 +50,14 @@ const HistoriaClinica = () => {
 
   const location = useLocation();
   const patient = location.state.patient;
+
+  // Si el paciente elegido tiene un borrador sin guardar, abrimos el editor
+  // automáticamente para que el médico vea el texto sin tener que clickear.
+  useEffect(() => {
+    if (readHceDraft(patient.DNI)) {
+      setShowEvolutionForm(true);
+    }
+  }, [patient.DNI]);
 
   const[hce, setHce] = useState<HCE>({
     Id: '',
@@ -63,11 +75,8 @@ const HistoriaClinica = () => {
 
   const fetchClinicHistory = async () =>{
     try{
-      const response = await fetch(`https://localhost:44393/api/Patient/GetClinicHistory/${patient.DNI}`);
-      if (!response.ok) {
-        throw new Error('Error al obtener la historia clinica');
-      }
-      const data = await response.json();
+      setIsLoading(true);
+      const data = await apiGet<any>(`/api/Patient/GetClinicHistory/${patient.DNI}`);
       console.log(data);
 
       const mappedHce ={
@@ -92,27 +101,18 @@ const HistoriaClinica = () => {
       setFormularios(mappedHce.Evolutions);
     }catch (error){
       console.error('Error:', error);
+    }finally{
+      setIsLoading(false);
     }
   }
 
   const fetchCreateEvolution = async(evolution : Evolution) => {
     try{
-      const response = await fetch(`https://localhost:44393/api/Evolution/CreateEvolution/${hce.Id}`,{
-      method: 'POST', 
-        headers: {
-          'Content-Type': 'application/json', 
-        },
-        body: JSON.stringify(evolution),
-      })
-      if (!response.ok) {
-        throw new Error('Error al obtener las evoluciones');
-      }
-
-      const data = await response.json();
+      const data = await apiPost<any>(`/api/Evolution/CreateEvolution/${hce.Id}`, evolution);
       console.log(data);
-
     }catch(error){
       console.error('Error:', error);
+      throw error; // que el llamador sepa que falló y NO limpie el borrador
     }
   }
 
@@ -130,20 +130,25 @@ const HistoriaClinica = () => {
       DateAdded: new Date(),
     };
 
-    setHce(prevHce => ({
-      ...prevHce,
-      Evolutions: [...prevHce.Evolutions, newEvolutionToHtml],
-    }));
-
     const newFormulario = {
       ModifiedBy: {modifiedBy: stateRedux.name + ' ' + stateRedux.lastName, tuition: stateRedux.tuition},
       Notes: convertJsonToHtml(formData.Notes),
       DateAdded: formData.DateAdded,
     };
-    setFormularios([...formularios, newFormulario]);
 
     try {
+      // Recién tras confirmar el guardado en el backend agregamos la evolución
+      // a la vista y limpiamos el borrador. Así lista y borrador quedan
+      // consistentes: nada de evoluciones "fantasma" si el POST falla.
       await fetchCreateEvolution(newEvolution);
+
+      setHce(prevHce => ({
+        ...prevHce,
+        Evolutions: [...prevHce.Evolutions, newEvolutionToHtml],
+      }));
+      setFormularios(prev => [...prev, newFormulario]);
+
+      clearHceDraft(patient.DNI);
       console.log('Evolución agregada exitosamente');
     } catch (error) {
       console.error('Error al agregar la evolución:', error);
@@ -156,7 +161,10 @@ const HistoriaClinica = () => {
       <div className="sidebar">
         <PersonalInfo patient={patient} />
         <div className="formularios-agregados">
-          {formularios.map((formulario, index) => (
+          {isLoading ? (
+            <Spinner label="Cargando historia clínica..." />
+          ) : (
+            formularios.map((formulario, index) => (
             <div key={index} className="formulario-agregado">
               <div className='d-flex justify-content-between align-items-center'>
                 <h3>Evolución</h3>
@@ -166,7 +174,8 @@ const HistoriaClinica = () => {
               <p><strong>Fecha:</strong> {formatDate(formulario.DateAdded)}</p>
               <div dangerouslySetInnerHTML={{ __html: formulario.Notes }} />
             </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
       <div className="main-content">
@@ -176,7 +185,7 @@ const HistoriaClinica = () => {
           <button className="agregar-btn" onClick={() => setShowPrintView(true)}>Imprimir HCE</button>
           <button className="btn text-secondary opacity-75" onClick={() => setShowFiles(true)}>VerArchivos</button>
         </div>
-        {showEvolutionForm && <EvolutionForm onAddEvolution={handleAddEvolution} onClose={() => setShowEvolutionForm(false)} />}
+        {showEvolutionForm && <EvolutionForm key={patient.DNI} onAddEvolution={handleAddEvolution} onClose={() => setShowEvolutionForm(false)} patientDni={patient.DNI} />}
         {showPrintView && <PrintHCE evoluciones={hce.Evolutions} patient={patient} onClose={() => setShowPrintView(false)} />}
         {showFiles && <FilesCollection files={hce.Files} onClose={() => setShowFiles(false)} />}
       </div>
