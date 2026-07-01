@@ -8,6 +8,7 @@ import { FormErrors } from '../../../Types/FormErrors';
 
 import validateForm from '../../../Functions/validateForm';
 import { apiGet, apiPatch, apiDelete } from '../../../api/client';
+import Spinner from '../../../components/Spinner';
 import { useSelector } from 'react-redux';
 import { store } from '../../../Redux/Store';
 
@@ -42,6 +43,7 @@ const MyForm: React.FC = () => {
 
   const [originalFormData, setOriginalFormData] = useState<FormData>({ ...formData });
   const [errors, setErrors] = useState<FormErrors>({});
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -70,6 +72,7 @@ const MyForm: React.FC = () => {
 
   const fetchProfessional = async() =>{
       try {
+        setIsLoading(true);
         const data = await apiGet<any>(`/api/Doctor/GetDoctorByEmail/${professinonalEmail}`);
         console.log(data);
         
@@ -91,8 +94,10 @@ const MyForm: React.FC = () => {
   
       } catch (error) {
         console.error('Error:', error);
+      } finally {
+        setIsLoading(false);
       }
-  
+
       console.log('Doctor: ', formData)
   }
 
@@ -114,6 +119,14 @@ const MyForm: React.FC = () => {
 
   const onClose = () =>{
     navigate('/Profesionales')
+  }
+
+  if (isLoading) {
+    return (
+      <div className="form-container">
+        <Spinner label="Cargando datos del profesional..." />
+      </div>
+    );
   }
 
   return (

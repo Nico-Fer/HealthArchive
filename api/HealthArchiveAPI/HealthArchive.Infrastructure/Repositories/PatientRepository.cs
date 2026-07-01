@@ -66,6 +66,30 @@ namespace HealthArchive.Infrastructure.Repositories
             return _db.Patients.ToList();
         }
 
+        public (ICollection<Patient> Items, int TotalCount) GetPatients(int pageNumber, int pageSize, string? search)
+        {
+            var query = _db.Patients.AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var term = search.Trim();
+                query = query.Where(p =>
+                    EF.Functions.ILike(p.Name, $"%{term}%") ||
+                    EF.Functions.ILike(p.LastName, $"%{term}%") ||
+                    EF.Functions.ILike(p.DNI, $"%{term}%"));
+            }
+
+            var totalCount = query.Count();
+
+            var items = query
+                .OrderBy(p => p.LastName).ThenBy(p => p.Name)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            return (items, totalCount);
+        }
+
         public bool PatientsExists(Guid id)
         {
             return _db.Patients.Any(p => p.Id == id);

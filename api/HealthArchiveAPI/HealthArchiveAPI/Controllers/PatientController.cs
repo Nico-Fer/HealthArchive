@@ -23,12 +23,22 @@ namespace HealthArchiveAPI.Controllers
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [Route("GetPatients")]
-        public IActionResult GetPatients()
+        public IActionResult GetPatients([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 30, [FromQuery] string? search = null)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
+            if (pageNumber < 1) pageNumber = 1;
+            if (pageSize < 1 || pageSize > 100) pageSize = 30; // cota defensiva
 
-            var patientsList = _repository.GetPatients();
-            return Ok(patientsList);
+            var (items, totalCount) = _repository.GetPatients(pageNumber, pageSize, search);
+
+            var result = new PagedResultDto<Patient>
+            {
+                Items = items,
+                TotalCount = totalCount,
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
+            return Ok(result);
         }
 
         [HttpPost]

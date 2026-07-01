@@ -5,6 +5,7 @@ namespace HealthArchive.Application.Interfaces
     public interface IPatientRepository
     {
         ICollection<Patient> GetPatients();
+        (ICollection<Patient> Items, int TotalCount) GetPatients(int pageNumber, int pageSize, string? search);
         Patient GetPatient(Guid id);
         Patient GetPatient(string email);
         Patient GetPatientByDNI(string DNI);
