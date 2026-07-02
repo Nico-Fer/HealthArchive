@@ -1,7 +1,50 @@
 const BASE = import.meta.env.VITE_API_URL;
+const REFRESH_PATH = '/api/AuthService/Refresh';
 
-export const apiFetch = (path: string, init?: RequestInit): Promise<Response> =>
-  fetch(`${BASE}${path}`, init);
+// Deduplicate concurrent refresh attempts: if several requests 401 at once,
+// they all await the same in-flight refresh call.
+let refreshPromise: Promise<boolean> | null = null;
+
+const tryRefresh = (): Promise<boolean> => {
+  if (!refreshPromise) {
+    refreshPromise = fetch(`${BASE}${REFRESH_PATH}`, {
+      method: 'POST',
+      credentials: 'include',
+    })
+      .then((res) => res.ok)
+      .catch(() => false)
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+  return refreshPromise;
+};
+
+const handleAuthFailure = () => {
+  localStorage.removeItem('Professional');
+  if (window.location.pathname !== '/Login') {
+    window.location.href = '/Login';
+  }
+};
+
+// Base wrapper: always sends cookies (credentials: 'include'). On a 401 it tries a
+// single token refresh and retries the original request once; if that fails, it clears
+// the session and redirects to Login.
+export const apiFetch = async (path: string, init?: RequestInit): Promise<Response> => {
+  const opts: RequestInit = { ...init, credentials: 'include' };
+  let res = await fetch(`${BASE}${path}`, opts);
+
+  if (res.status === 401 && path !== REFRESH_PATH) {
+    const refreshed = await tryRefresh();
+    if (refreshed) {
+      res = await fetch(`${BASE}${path}`, opts);
+    } else {
+      handleAuthFailure();
+    }
+  }
+
+  return res;
+};
 
 export const apiGet = async <T>(path: string): Promise<T> => {
   const res = await apiFetch(path);

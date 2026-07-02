@@ -2,8 +2,10 @@ using AutoMapper;
 using HealthArchive.Application.DTOs;
 using HealthArchive.Application.Interfaces;
 using HealthArchive.Domain;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace HealthArchiveAPI.Controllers
 {
@@ -13,16 +15,30 @@ namespace HealthArchiveAPI.Controllers
     public class AuthServiceController : ControllerBase
     {
         private readonly IAuthServiceRepository _authServiceRepo;
+        private readonly IDoctorRepository _doctorRepo;
+        private readonly ITokenService _tokenService;
+        private readonly IRefreshTokenRepository _refreshTokenRepo;
         private readonly IMapper _mapper;
+        private readonly IConfiguration _config;
 
-        public AuthServiceController(IAuthServiceRepository authServiceRepo, IMapper mapper)
+        public AuthServiceController(
+            IAuthServiceRepository authServiceRepo,
+            IDoctorRepository doctorRepo,
+            ITokenService tokenService,
+            IRefreshTokenRepository refreshTokenRepo,
+            IMapper mapper,
+            IConfiguration config)
         {
             _authServiceRepo = authServiceRepo;
+            _doctorRepo = doctorRepo;
+            _tokenService = tokenService;
+            _refreshTokenRepo = refreshTokenRepo;
             _mapper = mapper;
+            _config = config;
         }
 
+        [AllowAnonymous]
         [HttpPost]
-        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [Route("Login")]
@@ -31,16 +47,124 @@ namespace HealthArchiveAPI.Controllers
             Doctor user = _authServiceRepo.Authenticate(doctorDto.Email, doctorDto.Password);
             if (user == null) return NotFound();
 
-            EditDoctorDto doctor = new EditDoctorDto
-            {
-                Name = user.Name,
-                LastName = user.LastName,
-                Description = user.Description,
-                PhoneNumber = user.PhoneNumber,
-                Tuition = user.Tuition,
-            };
+            IssueTokens(user);
+            return Ok(_mapper.Map<AuthUserDto>(user));
+        }
 
-            return Ok(doctor);
+        [AllowAnonymous]
+        [HttpPost]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [Route("Refresh")]
+        public IActionResult Refresh()
+        {
+            if (!Request.Cookies.TryGetValue("refresh_token", out var tokenValue))
+                return Unauthorized();
+
+            var stored = _refreshTokenRepo.GetByToken(tokenValue);
+            if (stored == null || !stored.IsActive) return Unauthorized();
+
+            var user = _doctorRepo.GetDoctor(stored.DoctorId);
+            if (user == null) return Unauthorized();
+
+            // Rotate: revoke the current token and issue a new pair.
+            var newRefresh = _tokenService.CreateRefreshToken(user.Id);
+            stored.RevokedAt = DateTime.UtcNow;
+            stored.ReplacedByToken = newRefresh.Token;
+            _refreshTokenRepo.Update(stored);
+
+            IssueTokens(user, newRefresh);
+            return Ok(_mapper.Map<AuthUserDto>(user));
+        }
+
+        [Authorize]
+        [HttpPost]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [Route("Logout")]
+        public IActionResult Logout()
+        {
+            if (Request.Cookies.TryGetValue("refresh_token", out var tokenValue))
+            {
+                var stored = _refreshTokenRepo.GetByToken(tokenValue);
+                if (stored != null && stored.IsActive)
+                {
+                    stored.RevokedAt = DateTime.UtcNow;
+                    _refreshTokenRepo.Update(stored);
+                }
+            }
+
+            DeleteCookie("access_token");
+            DeleteCookie("refresh_token");
+            return Ok();
+        }
+
+        [Authorize]
+        [HttpGet]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [Route("Me")]
+        public IActionResult Me()
+        {
+            var idValue = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                          ?? User.FindFirstValue("sub");
+            if (idValue == null || !Guid.TryParse(idValue, out var doctorId))
+                return Unauthorized();
+
+            var user = _doctorRepo.GetDoctor(doctorId);
+            if (user == null) return Unauthorized();
+
+            return Ok(_mapper.Map<AuthUserDto>(user));
+        }
+
+        // Issues the access + refresh cookies. If a refresh token is provided (rotation),
+        // it is used as-is; otherwise a fresh one is created and persisted.
+        private void IssueTokens(Doctor user, RefreshToken? refreshToken = null)
+        {
+            var accessToken = _tokenService.CreateAccessToken(user);
+
+            if (refreshToken == null)
+            {
+                refreshToken = _tokenService.CreateRefreshToken(user.Id);
+                _refreshTokenRepo.Add(refreshToken);
+            }
+            else
+            {
+                _refreshTokenRepo.Add(refreshToken);
+            }
+
+            var accessMinutes = int.Parse(_config["Jwt:AccessTokenMinutes"] ?? "15");
+            Response.Cookies.Append("access_token", accessToken,
+                BuildCookieOptions(DateTime.UtcNow.AddMinutes(accessMinutes)));
+            Response.Cookies.Append("refresh_token", refreshToken.Token,
+                BuildCookieOptions(refreshToken.ExpiresAt));
+        }
+
+        private CookieOptions BuildCookieOptions(DateTime expires)
+        {
+            var secure = bool.Parse(_config["Cookies:Secure"] ?? "true");
+            var sameSite = Enum.Parse<SameSiteMode>(_config["Cookies:SameSite"] ?? "None");
+            return new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = secure,
+                SameSite = sameSite,
+                Expires = expires,
+                Path = "/",
+            };
+        }
+
+        private void DeleteCookie(string name)
+        {
+            var secure = bool.Parse(_config["Cookies:Secure"] ?? "true");
+            var sameSite = Enum.Parse<SameSiteMode>(_config["Cookies:SameSite"] ?? "None");
+            Response.Cookies.Append(name, "", new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = secure,
+                SameSite = sameSite,
+                Expires = DateTime.UtcNow.AddDays(-1),
+                Path = "/",
+            });
         }
     }
 }

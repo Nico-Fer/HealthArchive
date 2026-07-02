@@ -32,17 +32,6 @@ const RegisterForm = () => {
     Tuition: '',
   });
 
-  const createProfessional = (data : any) : ProfessionalForRedux => {
-    const p : ProfessionalForRedux = {
-      name: data.name,
-      lastName: data.lastName,
-      email: data.email,
-      tuition: data.tuition,
-    }
-
-    return p;
-  }
-
   const createUser = async() =>{
     try{
       const response = await apiFetch('/api/Doctor/CreateDoctor', {
@@ -58,9 +47,22 @@ const RegisterForm = () => {
           throw new Error(errorMsg);
       }
 
-      const data = await response.json();
-      const professional = createProfessional(data);
-      dispatch(createProfessionalRed(professional));
+      // El registro no setea cookies: iniciamos sesión con las credenciales nuevas
+      // para establecer la sesión (cookies httpOnly) y obtener el AuthUserDto canónico.
+      const loginRes = await apiFetch('/api/AuthService/Login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ Email: formData.Email, Password: formData.Password }),
+      });
+
+      if (!loginRes.ok) {
+        setErrorMessage('Usuario creado, pero falló el inicio de sesión automático. Iniciá sesión manualmente.');
+        setError(true);
+        throw new Error('login-after-register-failed');
+      }
+
+      const userData : ProfessionalForRedux = await loginRes.json();
+      dispatch(createProfessionalRed(userData));
 
       return true;
     }catch(error){

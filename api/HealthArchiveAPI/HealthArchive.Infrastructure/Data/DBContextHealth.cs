@@ -25,9 +25,19 @@ namespace HealthArchive.Infrastructure.Data
                 });
 
             modelBuilder.Entity<Evolution>().OwnsOne(e => e.EvolutionInfo);
+
+            modelBuilder.Entity<RefreshToken>(rt =>
+            {
+                rt.HasIndex(t => t.Token).IsUnique();
+                rt.HasOne<Doctor>()
+                    .WithMany()
+                    .HasForeignKey(t => t.DoctorId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
         }
 
         public DbSet<Doctor> Doctors { get; set; }
+        public DbSet<RefreshToken> RefreshTokens { get; set; }
         public DbSet<Patient> Patients { get; set; }
         public DbSet<HCE> HCEs { get; set; }
         public DbSet<Evolution> Evolutions { get; set; }

@@ -3,4 +3,5 @@ export interface ProfessionalForRedux{
     lastName: string;
     email: string;
     tuition: string;
+    role: string;
 }

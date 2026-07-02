@@ -16,5 +16,6 @@ namespace HealthArchive.Domain
         public Phone? PhoneNumber { get; set; }
         public string Tuition { get; set; }
         public string? Description { get; set; } = "";
+        public string Role { get; set; } = "Doctor";
     }
 }
