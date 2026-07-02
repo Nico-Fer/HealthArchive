@@ -2,22 +2,26 @@ using AutoMapper;
 using HealthArchive.Application.DTOs;
 using HealthArchive.Application.Interfaces;
 using HealthArchive.Domain;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HealthArchiveAPI.Controllers
 {
+    [Authorize]
     [EnableCors("CorsRules")]
     [Route("api/[controller]")]
     [ApiController]
     public class DoctorController : ControllerBase
     {
         private readonly IDoctorRepository _repository;
+        private readonly IPasswordHasher _passwordHasher;
         private readonly IMapper _mapper;
 
-        public DoctorController(IDoctorRepository repository, IMapper mapper)
+        public DoctorController(IDoctorRepository repository, IPasswordHasher passwordHasher, IMapper mapper)
         {
             _repository = repository;
+            _passwordHasher = passwordHasher;
             _mapper = mapper;
         }
 
@@ -63,6 +67,7 @@ namespace HealthArchiveAPI.Controllers
             return Ok(doctor);
         }
 
+        [AllowAnonymous]
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -86,6 +91,8 @@ namespace HealthArchiveAPI.Controllers
 
             var doctor = _mapper.Map<Doctor>(doctorDto);
             if (doctor == null) return BadRequest(ModelState);
+
+            doctor.Password = _passwordHasher.Hash(doctor.Password);
 
             if (!_repository.CreateDoctor(doctor))
             {

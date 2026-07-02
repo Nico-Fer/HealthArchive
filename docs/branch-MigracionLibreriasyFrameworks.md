@@ -5,7 +5,7 @@
 > tomaron y la **visión a futuro**. Ante dudas, verificar siempre contra el código
 > actual: este documento es una foto en el tiempo, no estado vivo.
 
-Última actualización: 2026-07-01.
+Última actualización: 2026-07-02.
 
 ---
 
@@ -131,6 +131,73 @@ Motivación: durante los fetch, las vistas quedaban **en blanco** sin feedback.
   agente (dotnet-webapi, ef-core, react-expert, typescript-pro, testing, etc.).
   Son material de apoyo para agentes; no son código de la app.
 
+### 3.5 Autenticación + autorización reales (JWT en cookies httpOnly + roles + refresh)
+Motivación: la auth estaba **sin cablear**. `JwtBearer` estaba referenciado pero no
+había `AddAuthentication`/`UseAuthentication`, ningún `[Authorize]`, y
+`AuthServiceRepository.Authenticate` comparaba **contraseñas en texto plano**. Los
+endpoints eran públicos. Objetivo: implementar auth real **corriendo en local**, pero
+diseñada para que el salto a **Railway (API) + Vercel (front)** sea **solo variables de
+entorno**, sin cambios de código.
+
+Decisiones de producto tomadas antes de implementar (ver justificación en §4):
+tokens en **cookies httpOnly** (no localStorage), **roles** (`Admin`/`Doctor`), y
+esquema **access token corto + refresh token rotatorio**.
+
+- **Dominio:**
+  - `Doctor.Role` (nuevo, default `"Doctor"`).
+  - `RefreshToken` (entidad nueva): `Token`, `DoctorId`, `CreatedAt`, `ExpiresAt`,
+    `RevokedAt?`, `ReplacedByToken?`, con helper `IsActive` (no revocado y no vencido).
+- **Application (contratos):**
+  - `IPasswordHasher` (Hash/Verify), `ITokenService` (CreateAccessToken/CreateRefreshToken),
+    `IRefreshTokenRepository` (GetByToken/Add/Update/Save).
+  - `AuthUserDto` (`Name`, `LastName`, `Email`, `Tuition`, `Role`) — el shape que
+    devuelven `Login`/`Refresh`/`Me`. **Corrige un bug preexistente:** `Login` devolvía
+    `EditDoctorDto`, que **no incluía `Email`** aunque el front leía `data.email`.
+  - `DoctorMapper`: nuevo `CreateMap<Doctor, AuthUserDto>()`.
+- **Infrastructure:**
+  - `PasswordHasherService`: envuelve `PasswordHasher<Doctor>` de ASP.NET Identity
+    (reusa `Identity.EntityFrameworkCore` ya referenciado; **sin agregar BCrypt**).
+  - `TokenService`: firma el JWT (claims `sub`/`email`/`role`/`jti`, HMAC-SHA256) con
+    `Jwt:*` de `IConfiguration`; refresh tokens = 64 bytes aleatorios
+    (`RandomNumberGenerator`) en Base64. Requirió el paquete
+    `System.IdentityModel.Tokens.Jwt` (8.19.1) en Infrastructure.
+  - `RefreshTokenRepository` (sigue el patrón repo existente con `bool Save()`).
+  - `AuthServiceRepository.Authenticate`: pasó de `user.Password != password` a
+    `_passwordHasher.Verify(user.Password, password)`.
+  - `DBContextHealth`: `DbSet<RefreshToken>` + config en `OnModelCreating` (FK a Doctor
+    con cascade, índice único en `Token`).
+  - Migración `AuthAndRoles` (columna `Role` + tabla `RefreshTokens`), ya aplicada a
+    la base local.
+- **API (`HealthArchiveAPI`):**
+  - `Program.cs`: `AddAuthentication`/`AddJwtBearer` con `TokenValidationParameters`
+    desde `Jwt:*` y `JwtBearerEvents.OnMessageReceived` que **lee el access token de la
+    cookie `access_token`** (no del header `Authorization`). `AddAuthorization`. CORS
+    pasó de `AllowAnyOrigin()` a `WithOrigins(Cors:AllowedOrigins)` +
+    `AllowCredentials()`. Pipeline: `UseCors` → `UseAuthentication` → `UseAuthorization`.
+  - `AuthServiceController`: `Login` / `Refresh` (rota: revoca el viejo, encadena con
+    `ReplacedByToken`) / `Logout` (revoca + borra cookies) / `Me` (rehidrata desde el
+    claim). Cookies `HttpOnly` `Secure` `SameSite=None`, con flags leídos de
+    `Cookies:*`. `Login`/`Refresh` son `[AllowAnonymous]`.
+  - `DoctorController.CreateDoctor`: `[AllowAnonymous]` (registro) + hashea el password
+    antes de guardar. `[Authorize]` a nivel clase en Doctor, y en Patient/Hce/Evolution.
+  - `appsettings.json`: secciones `Jwt` (Key vacía; va por user-secrets/env),
+    `Cors:AllowedOrigins`, `Cookies:Secure`/`SameSite`.
+- **Frontend:**
+  - `api/client.ts`: `credentials: 'include'` en todos los wrappers; en un **401**
+    intenta **un** `/Refresh` (deduplicado con un promise compartido) y reintenta; si
+    falla, limpia sesión y redirige a Login.
+  - `ProfessionalForRedux` + slice `professional.ts`: se agrega `role`; nuevo thunk
+    `logout` (llama `/Logout` y luego `resetProfessionalRed`).
+  - `pages/App/AuthBootstrap.tsx` (nuevo): al montar, si localStorage dice que hay
+    sesión, valida contra `/Me` y rehidrata o limpia Redux.
+  - `RegisterForm.tsx`: tras registrar, hace **auto-login** (`/Login`) para dejar la
+    sesión (cookies) establecida, ya que el registro no setea cookies.
+  - `NavBar.tsx`: "Cerrar Sesión" ahora dispara el thunk `logout` (revoca server-side),
+    no solo el reset local.
+- **Doc de operación:** `docs/todo-jwt-auth.md` — checklist de config local (setear
+  `Jwt:Key`), datos (re-seedear passwords hasheados), verificación end-to-end y env
+  vars de deploy.
+
 ---
 
 ## 4. Decisiones de diseño (resumen del "por qué")
@@ -152,16 +219,67 @@ Motivación: durante los fetch, las vistas quedaban **en blanco** sin feedback.
   `EnableLegacyTimestampBehavior = true` para mapear `DateTime` a `timestamp without
   time zone`. Marcado para remover cuando los repos pasen a async + UTC (fase 7).
 
+### Decisiones de auth (§3.5)
+
+- **Token en cookies httpOnly, no en localStorage.** Un token en localStorage es
+  legible por cualquier JS y por lo tanto robable vía **XSS**. La cookie `HttpOnly` no
+  es accesible desde JS (ni el nuestro ni el de un atacante inyectado). El costo es que
+  el manejo de CORS se complica (ver abajo) y hay que resolver el cross-domain del
+  deploy, pero se priorizó la superficie de ataque XSS sobre la simplicidad.
+- **Cookie `Secure` + `SameSite=None`.** `SameSite=None` es **obligatorio** para que la
+  cookie viaje entre dominios distintos (Vercel ↔ Railway); y `None` **exige** `Secure`
+  (solo HTTPS). Se eligió esta combinación única porque funciona igual en prod (ambos
+  lados HTTPS) y en local (el browser trata `localhost` como contexto seguro), evitando
+  ramas de config distintas por entorno.
+- **CORS con orígenes explícitos + `AllowCredentials()`.** Con cookies **no se puede**
+  usar `AllowAnyOrigin()` (el browser lo prohíbe). Por eso los orígenes salen de
+  `Cors:AllowedOrigins` (config). Esto es lo que hace el deploy "config-only": en
+  Railway se setea el dominio de Vercel en una env var, sin tocar código.
+- **JWT leído desde cookie vía `OnMessageReceived`.** `AddJwtBearer` por defecto espera
+  el token en el header `Authorization`. Como viaja en cookie, se puentea con el evento
+  `OnMessageReceived`. Alternativa descartada: middleware propio que copie la cookie al
+  header — más código y más frágil.
+- **Access corto + refresh rotatorio, con el refresh en DB.** El JWT es autocontenido
+  (se valida por firma, sin DB) y por eso **no se puede revocar**: se lo hace **corto**
+  (15 min) para acotar el daño si se filtra. El refresh **sí** se persiste para poder
+  **revocarlo** (logout) y **rotarlo** (cada uso quema el anterior y encadena con
+  `ReplacedByToken`), lo que permite detectar reuso de un token robado. Es más
+  infra (tabla + endpoint) pero es el estándar de la industria y lo pidió el caso.
+- **Hashing con `PasswordHasher<Doctor>` de Identity, no BCrypt.** `Identity.EntityFrameworkCore`
+  **ya estaba referenciado**, así que se reusó su hasher (PBKDF2 con salt) en vez de
+  sumar una dependencia nueva (BCrypt.Net). Menos superficie, mismo objetivo: nunca
+  guardar contraseñas en claro.
+- **Roles como claim + `Doctor.Role` string.** Un simple string por doctor y un claim
+  `role` en el JWT alcanza para `[Authorize(Roles="Admin")]`. No se trajo el modelo
+  completo de roles/claims de Identity (tablas `AspNetRoles`, etc.) por ser
+  sobredimensionado para un dominio con dos roles.
+- **Toda la config sensible/ambiental por `IConfiguration`.** `Jwt:Key` (secreta),
+  orígenes CORS, flags de cookie y expiraciones salen de config → user-secrets en local,
+  env vars en prod. Es el mecanismo concreto que cumple el objetivo "deploy sin tocar
+  código".
+- **`AuthUserDto` propio para la respuesta de auth.** Se separó del `EditDoctorDto`
+  (que se usa para edición y no traía `Email` ni `Role`). De paso quedó corregido el
+  bug de `email` faltante en el login.
+- **Auto-login tras registro (front).** El endpoint de registro se mantuvo limpio
+  (`[AllowAnonymous]`, sin emitir cookies); la sesión se establece haciendo un `/Login`
+  desde el front tras el alta. Evita duplicar la lógica de emisión de tokens en dos
+  endpoints y mantiene una sola fuente de verdad para "iniciar sesión".
+
 ---
 
 ## 5. Visión a futuro / pendientes
 
 - **Fase 7 (backend):** repos async + `DateTime` en UTC; una vez hecho, quitar el
   switch legacy de Npgsql.
-- **Auth real:** hoy no está cableada. `JwtBearer` está referenciado pero no hay
-  `AddAuthentication`/`UseAuthentication`, y `AuthServiceRepository.Authenticate`
-  compara contraseñas en texto plano. Tratar la capa de auth como **incompleta**,
-  no como baseline de seguridad. Pendiente: hashing + JWT + guard server-side.
+- **Auth real: hecha** (ver §3.5). Hashing + JWT en cookies httpOnly + roles + refresh
+  rotatorio + `[Authorize]` server-side. Sub-pendientes:
+  - Setear `Jwt:Key` en user-secrets y **re-seedear** los doctores (los de texto plano
+    ya no loguean). Detalle en `docs/todo-jwt-auth.md`.
+  - Restringir por rol los endpoints que lo ameriten con `[Authorize(Roles="Admin")]`
+    (hoy todos los protegidos usan `[Authorize]` = cualquier logueado).
+  - Limpieza de refresh tokens vencidos/revocados (job o purga on-login).
+  - `consultoryCode` de registro está hardcodeado (`"1234"`) en `CreateDoctor`; mover a
+    config si se quiere.
 - **Front, opcionales evaluados y postergados:** React 19 y react-router 7 (no
   urgentes). **Next.js quedó descartado** para este repo (ver §6).
 - **No hay proyecto de tests** en el backend ni runner de tests en el front (aunque
@@ -177,5 +295,8 @@ Motivación: durante los fetch, las vistas quedaban **en blanco** sin feedback.
   y la trampa de licencia de AutoMapper.
 - Memoria de proyecto `frontend-react-vite-decision`: por qué React SPA + Vite y por
   qué **no** Next.js (app tras login, sin SEO/SSR; evita backend Node duplicado).
-- `CLAUDE.md` (raíz): guía viva de arquitectura, comandos y gotchas del repo.
+- `CLAUDE.md` (raíz): guía viva de arquitectura, comandos y gotchas del repo. Incluye
+  la subsección "Authentication & authorization" con el detalle del flujo de auth.
+- `docs/todo-jwt-auth.md`: checklist operativo para terminar de configurar la auth
+  (setear `Jwt:Key`, re-seedear, verificación end-to-end, env vars de deploy).
 - Commit `2ea3b4a` "Modernización fases 1-6": detalle fase por fase del upgrade.

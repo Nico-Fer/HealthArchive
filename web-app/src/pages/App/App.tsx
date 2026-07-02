@@ -15,15 +15,15 @@ import NewPatient from "../NewPatient";
 import AuthGuard from "../../Guards";
 import { Provider } from "react-redux";
 import  store  from "../../Redux/Store";
+import AuthBootstrap from "./AuthBootstrap";
 
 const App = () => {
-
-  let isLogged = false;
 
   return (
     <div>
       <Provider store={store}>
         <BrowserRouter>
+            <AuthBootstrap/>
             <NavBar/>
             <Routes>
               <Route path="/" element={<Login />} />

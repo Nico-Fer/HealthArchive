@@ -7,17 +7,19 @@ namespace HealthArchive.Infrastructure.Repositories
     public class AuthServiceRepository : IAuthServiceRepository
     {
         private readonly DBContextHealth _db;
+        private readonly IPasswordHasher _passwordHasher;
 
-        public AuthServiceRepository(DBContextHealth db)
+        public AuthServiceRepository(DBContextHealth db, IPasswordHasher passwordHasher)
         {
             _db = db;
+            _passwordHasher = passwordHasher;
         }
 
         public Doctor Authenticate(string doctorEmail, string password)
         {
             var user = _db.Doctors.FirstOrDefault(u => u.Email == doctorEmail);
 
-            if (user == null || user.Password != password)
+            if (user == null || !_passwordHasher.Verify(user.Password, password))
             {
                 return null;
             }

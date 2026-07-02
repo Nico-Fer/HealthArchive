@@ -11,6 +11,7 @@ namespace HealthArchive.Application.Mapping
             CreateMap<Doctor, DoctorRegisterDto>().ReverseMap();
             CreateMap<Doctor, DoctorLoginDto>().ReverseMap();
             CreateMap<Doctor, EditDoctorDto>().ReverseMap();
+            CreateMap<Doctor, AuthUserDto>();
         }
     }
 }
