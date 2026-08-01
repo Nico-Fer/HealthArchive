@@ -1,0 +1,32 @@
+// Design tokens — única fuente de verdad (paleta de Design/clinical_precision/DESIGN.md)
+// Paleta blanco/azul/gris; rojo reservado a acciones destructivas.
+
+// Color
+$ha-primary:        #0056b3; // acciones primarias, nav activo, links
+$ha-primary-dark:   #003f87; // hover/pressed, títulos de página
+$ha-primary-soft:   #e7f1ff; // chips, hover de filas, fondo de avatares, ítem activo
+$ha-bg:             #f8f9fa; // fondo de la app
+$ha-surface:        #ffffff; // cards, navbar, tablas
+$ha-border:         #e9ecef; // separadores de filas, bordes de cards
+$ha-outline:        #ced4da; // bordes de inputs
+$ha-text:           #212529; // texto principal
+$ha-text-secondary: #6c757d; // labels, metadata
+$ha-danger:         #dc3545; // solo destructivo (Borrar, Cerrar Sesión)
+
+// Tipografía (generosa: público mayor)
+$ha-font: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+$ha-fs-headline-lg: 2rem;     // títulos de página (weight 700)
+$ha-fs-headline-md: 1.5rem;   // títulos de card (weight 600)
+$ha-fs-headline-sm: 1.25rem;  // títulos de sección (weight 600)
+$ha-fs-body-lg: 1.125rem;     // notas de evolución, datos del paciente
+$ha-fs-body:    1rem;         // base — nunca menos de 16px para contenido
+$ha-fs-label:   0.875rem;     // headers de tabla, labels de campos
+
+// Forma / profundidad / ritmo
+$ha-radius-sm:   0.25rem;
+$ha-radius:      0.5rem;
+$ha-radius-lg:   1rem;
+$ha-radius-pill: 50rem;
+$ha-shadow-card:  0 2px 8px rgba(0, 0, 0, 0.05);
+$ha-shadow-modal: 0 8px 24px rgba(0, 0, 0, 0.12);
+$ha-space: 8px; // unidad base; stacks de 16/24/32

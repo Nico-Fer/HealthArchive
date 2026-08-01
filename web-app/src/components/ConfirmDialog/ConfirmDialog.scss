@@ -1,0 +1,38 @@
+.ha-confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(33, 37, 41, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1060;
+  padding: 24px;
+}
+
+.ha-confirm-card {
+  background-color: var(--ha-surface);
+  border-radius: var(--ha-radius-lg);
+  box-shadow: var(--ha-shadow-modal);
+  padding: 32px;
+  max-width: 480px;
+  width: 100%;
+
+  .ha-confirm-title {
+    font-size: var(--ha-fs-headline-sm);
+    font-weight: 600;
+    color: var(--ha-text);
+    margin-bottom: 12px;
+  }
+
+  .ha-confirm-message {
+    font-size: var(--ha-fs-body-lg);
+    color: var(--ha-text-secondary);
+    margin-bottom: 24px;
+  }
+
+  .ha-confirm-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+  }
+}

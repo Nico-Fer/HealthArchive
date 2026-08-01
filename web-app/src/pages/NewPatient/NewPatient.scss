@@ -1,0 +1,11 @@
+.new-patient {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 32px;
+
+  .new-patient-title {
+    font-size: var(--ha-fs-headline-md);
+    font-weight: 600;
+    margin-bottom: 24px;
+  }
+}

@@ -295,7 +295,7 @@ class RichEditorExample extends Component<Props, State> {
               handleKeyCommand={this.handleKeyCommand}
               keyBindingFn={this.mapKeyToEditorCommand}
               onChange={this.onChange}
-              placeholder="Ecriba aqui..."
+              placeholder="Escriba aquí..."
               ref={this.editor}
               spellCheck={true}
           />

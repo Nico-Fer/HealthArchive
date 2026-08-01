@@ -22,6 +22,7 @@ import convertJsonToHtml from '../../Functions/ConvertJsonToHTML';
 import { apiGet, apiPost } from '../../api/client';
 import { clearHceDraft, readHceDraft } from '../../Functions/hceDraft';
 import Spinner from '../../components/Spinner';
+import SideNav from './SideNav';
 
 
 interface EvolutionFormData {
@@ -157,37 +158,49 @@ const HistoriaClinica = () => {
 
 
   return (
-    <div className="historia-clinica-container">
-      <div className="sidebar">
-        <PersonalInfo patient={patient} />
-        <div className="formularios-agregados">
-          {isLoading ? (
-            <Spinner label="Cargando historia clínica..." />
-          ) : (
-            formularios.map((formulario, index) => (
-            <div key={index} className="formulario-agregado">
-              <div className='d-flex justify-content-between align-items-center'>
-                <h3>Evolución</h3>
-                <p className="text-secondary mb-0 fs-6">Nro. Matricula: {formulario.ModifiedBy.tuition}</p>
+    <div className="hce-layout">
+      <SideNav />
+      <div className="hce-content">
+        <div className="hce-header">
+          <h1 className="ha-page-title">Historia Clínica</h1>
+          <div className="hce-actions d-print-none">
+            <button className="btn btn-primary" onClick={handleShowEvolutionForm}>Agregar Evolución</button>
+            <AddHceFile HceId={hce.Id} onFileAdded={addNewFileToHce}/>
+            <button className="btn btn-soft-primary" onClick={() => setShowPrintView(true)}>Imprimir HCE</button>
+            <button className="btn btn-soft-primary" onClick={() => setShowFiles(true)}>Ver Archivos</button>
+          </div>
+        </div>
+
+        <div className="hce-grid">
+          <PersonalInfo patient={patient} />
+
+          <div className="hce-evolutions ha-card">
+            <h2 className="hce-evolutions-title">Evoluciones Clínicas</h2>
+
+            {showEvolutionForm && <EvolutionForm key={patient.DNI} onAddEvolution={handleAddEvolution} onClose={() => setShowEvolutionForm(false)} patientDni={patient.DNI} />}
+            {showFiles && <FilesCollection files={hce.Files} onClose={() => setShowFiles(false)} />}
+            {showPrintView && <PrintHCE evoluciones={hce.Evolutions} patient={patient} onClose={() => setShowPrintView(false)} />}
+
+            {isLoading ? (
+              <Spinner label="Cargando historia clínica..." />
+            ) : formularios.length === 0 ? (
+              <p className="text-secondary mb-0">Todavía no hay evoluciones cargadas.</p>
+            ) : (
+              formularios.map((formulario, index) => (
+              <div key={index} className="hce-evolution">
+                <div className="hce-evolution-meta">
+                  <span className="hce-evolution-date">Fecha: {formatDate(formulario.DateAdded)}</span>
+                  <span className="hce-evolution-doctor">
+                    <span>Médico: {formulario.ModifiedBy.modifiedBy}</span>
+                    <span>Matrícula: {formulario.ModifiedBy.tuition}</span>
+                  </span>
+                </div>
+                <div className="hce-evolution-note" dangerouslySetInnerHTML={{ __html: formulario.Notes }} />
               </div>
-              <p><strong>Nombre del Médico:</strong> {formulario.ModifiedBy.modifiedBy}</p>
-              <p><strong>Fecha:</strong> {formatDate(formulario.DateAdded)}</p>
-              <div dangerouslySetInnerHTML={{ __html: formulario.Notes }} />
-            </div>
-            ))
-          )}
+              ))
+            )}
+          </div>
         </div>
-      </div>
-      <div className="main-content">
-        <div className="buttons-container d-flex align-items-center">
-          <button className="agregar-btn" onClick={handleShowEvolutionForm}>Agregar Evolución</button>
-          <AddHceFile HceId={hce.Id} onFileAdded={addNewFileToHce}/>
-          <button className="agregar-btn" onClick={() => setShowPrintView(true)}>Imprimir HCE</button>
-          <button className="btn text-secondary opacity-75" onClick={() => setShowFiles(true)}>VerArchivos</button>
-        </div>
-        {showEvolutionForm && <EvolutionForm key={patient.DNI} onAddEvolution={handleAddEvolution} onClose={() => setShowEvolutionForm(false)} patientDni={patient.DNI} />}
-        {showPrintView && <PrintHCE evoluciones={hce.Evolutions} patient={patient} onClose={() => setShowPrintView(false)} />}
-        {showFiles && <FilesCollection files={hce.Files} onClose={() => setShowFiles(false)} />}
       </div>
     </div>
   );

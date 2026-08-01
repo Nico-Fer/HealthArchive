@@ -1,0 +1,36 @@
+// Bootstrap compilado desde SCSS con los tokens del tema.
+// Las variables deben definirse ANTES del import para pisar los !default.
+@use 'tokens' as *;
+
+$primary: $ha-primary;
+$secondary: $ha-text-secondary;
+$danger: $ha-danger;
+
+$body-bg: $ha-bg;
+$body-color: $ha-text;
+$border-color: $ha-border;
+
+$font-family-sans-serif: $ha-font;
+$font-size-base: 1rem;
+$headings-font-weight: 600;
+
+$border-radius: $ha-radius;
+$border-radius-sm: $ha-radius-sm;
+$border-radius-lg: $ha-radius-lg;
+$border-radius-pill: $ha-radius-pill;
+
+// Touch targets ~44px y filas de tabla altas (≥56px) para lectura cómoda
+$input-btn-padding-y: 0.625rem;
+$input-btn-padding-x: 1rem;
+$btn-font-weight: 600;
+$input-border-color: $ha-outline;
+$input-focus-border-color: $ha-primary;
+$input-focus-box-shadow: 0 0 0 0.15rem rgba($ha-primary, 0.2);
+$table-cell-padding-y: 1rem;
+$table-border-color: $ha-border;
+
+$link-color: $ha-primary;
+$link-hover-color: $ha-primary-dark;
+
+// stylelint-disable-next-line
+@import 'bootstrap/scss/bootstrap';

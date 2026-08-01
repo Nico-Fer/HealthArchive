@@ -1,0 +1,41 @@
+.ha-page-header {
+  margin-bottom: 24px;
+
+  .ha-page-header-tools {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+
+  .ha-page-header-search {
+    position: relative;
+    flex: 1 1 320px;
+    max-width: 640px;
+
+    .ha-page-header-search-icon {
+      position: absolute;
+      left: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--ha-text-secondary);
+      pointer-events: none;
+    }
+
+    input {
+      padding-left: 2.75rem;
+      min-height: 48px;
+      border-radius: var(--ha-radius);
+      background-color: var(--ha-surface);
+    }
+  }
+
+  .ha-page-header-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 48px;
+    white-space: nowrap;
+  }
+}
