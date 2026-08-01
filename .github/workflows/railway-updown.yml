@@ -67,11 +67,14 @@ jobs:
       - name: Instalar Railway CLI
         run: npm install -g @railway/cli
 
-      # `railway up` sube el contenido del directorio y construye con el Dockerfile
-      # que encuentra ahí, por eso corre desde el directorio de la solución.
+      # Corre desde la RAÍZ del repo a propósito: `railway up` sube el contenido del
+      # directorio donde se ejecuta, y las settings del servicio (Root Directory y
+      # Dockerfile Path) están expresadas relativas a la raíz. Si se corriera desde
+      # api/HealthArchiveAPI, el snapshot arrancaría en esa carpeta y Railway fallaría
+      # con "failed to read Dockerfile at 'api/HealthArchiveAPI/Dockerfile'".
+      # Subir el repo entero replica exactamente lo que manda la integración de GitHub.
       - name: Levantar la API
         if: inputs.accion == 'up'
-        working-directory: api/HealthArchiveAPI
         run: railway up --ci --service "$RAILWAY_SERVICE"
 
       # Espera a que el healthcheck responda: sin esto el workflow termina en verde
