@@ -1,9 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { FaEnvelope, FaLock } from "react-icons/fa";
 
-import "./Form.scss";
-
-import InputComponent from "../Input/InputComponent";
+import InputComponent from "../../../../components/Input";
 import { useDispatch } from "react-redux";
 import { createProfessionalRed } from "../../../../Redux/States/professional";
 import { apiFetch } from '../../../../api/client';
@@ -66,28 +65,30 @@ const Form = () => {
       };
 
     return(
-        <div className="container w-100">
-        <form onSubmit={handleSubmit} className="d-flex flex-column align-items-center">
+        <form onSubmit={handleSubmit} className="ha-form">
           <InputComponent
-             type="text" 
+             type="email"
              id="Email"
              value={formData.Email}
              onChange={handleChange}
-             placeholder="Email"             
+             placeholder="nombre@clinica.com"
+             label="Email"
+             icon={<FaEnvelope />}
           />
           <InputComponent
-            type="text" 
+            type="password"
             id="Password"
             value={formData.Password}
             onChange={handleChange}
             placeholder="Contraseña"
+            label="Contraseña"
+            icon={<FaLock />}
           />
-          {error && <div className="alert alert-danger p-1">
+          {error && <div className="alert alert-danger" role="alert">
                   {errorMessage}
                 </div>}
-          <button className="btn btn-primary  rounded w-100 mb-2 mt-2" style={{backgroundColor: '#004EB8', color:'white', height:'50px'}} type="submit">Iniciar Sesion</button>
+          <button className="btn btn-primary w-100 mt-2" type="submit">Iniciar Sesión</button>
         </form>
-      </div>
     );
 };
 

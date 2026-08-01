@@ -1,21 +1,24 @@
 import Form from "./Components/Form/Form";
 
 import { Link } from 'react-router-dom';
+import { FaPlus } from 'react-icons/fa';
 
-import "./Login.scss";
 import { PrivateRoutes } from "../../Types/Routes";
 
 const Login = () => {
     return (
-        <div className="login-container d-flex justify-content-center align-items-center" style={{ height: '100vh', backgroundColor: '#EAEAEA', margin: 'auto'}}>
-            <div className="Card border-primary rounded" style={{ width: '30rem', backgroundColor: 'white', margin: '', height: '30rem', padding: '20px' }}>
-            <div className="text-left" style={{marginLeft:'1em'}}>
-                <h1 className="title">Inicia Sesion</h1>
-                <h2 className="secondary-text">Para empezar</h2>
+        <div className="ha-auth">
+            <div className="ha-auth-brand">
+                <span className="ha-auth-logo" aria-hidden="true"><FaPlus /></span>
+                <h1 className="ha-auth-title">HealthArchive</h1>
+                <p className="ha-auth-subtitle">Gestión Médica Profesional</p>
             </div>
+            <div className="ha-auth-card">
+                <h2 className="ha-auth-card-title">Inicia Sesión</h2>
+                <p className="ha-auth-card-subtitle">Para empezar</p>
                 <Form/>
-                <p className="small-text text-center">
-                    ¿Usuario Nuevo? <Link to={PrivateRoutes.REGISTER} style={{ color: 'black', fontWeight: 'bold', textDecoration: 'none' }}>Registrarse</Link>
+                <p className="ha-auth-footer">
+                    ¿Usuario Nuevo? <Link to={PrivateRoutes.REGISTER}>Registrarse</Link>
                 </p>
             </div>
         </div>

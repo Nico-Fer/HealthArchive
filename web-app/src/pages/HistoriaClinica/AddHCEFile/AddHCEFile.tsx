@@ -54,7 +54,7 @@ const AddHceFile: React.FC<AddFileProps> = ({ HceId, onFileAdded }) => {
                 ref={fileInputRef}
                 onChange={handleFileSelect}
             />
-            <button className="agregar-btn" onClick={handleButtonClick}>Agregar Archivo</button>
+            <button className="btn btn-soft-primary" onClick={handleButtonClick}>Agregar Archivo</button>
         </div>
     );
 }

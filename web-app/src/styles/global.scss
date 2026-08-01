@@ -1,0 +1,350 @@
+@use 'tokens' as *;
+
+// Tokens como CSS custom properties: los .scss por página usan var(--ha-*)
+// sin necesidad de @use en cada archivo.
+:root {
+  --ha-primary: #{$ha-primary};
+  --ha-primary-dark: #{$ha-primary-dark};
+  --ha-primary-soft: #{$ha-primary-soft};
+  --ha-bg: #{$ha-bg};
+  --ha-surface: #{$ha-surface};
+  --ha-border: #{$ha-border};
+  --ha-outline: #{$ha-outline};
+  --ha-text: #{$ha-text};
+  --ha-text-secondary: #{$ha-text-secondary};
+  --ha-danger: #{$ha-danger};
+  --ha-fs-headline-lg: #{$ha-fs-headline-lg};
+  --ha-fs-headline-md: #{$ha-fs-headline-md};
+  --ha-fs-headline-sm: #{$ha-fs-headline-sm};
+  --ha-fs-body-lg: #{$ha-fs-body-lg};
+  --ha-fs-body: #{$ha-fs-body};
+  --ha-fs-label: #{$ha-fs-label};
+  --ha-radius-sm: #{$ha-radius-sm};
+  --ha-radius: #{$ha-radius};
+  --ha-radius-lg: #{$ha-radius-lg};
+  --ha-radius-pill: #{$ha-radius-pill};
+  --ha-shadow-card: #{$ha-shadow-card};
+  --ha-shadow-modal: #{$ha-shadow-modal};
+}
+
+body {
+  font-family: $ha-font;
+  background-color: $ha-bg;
+  color: $ha-text;
+}
+
+a {
+  color: $ha-primary;
+  text-decoration: none;
+
+  &:hover {
+    color: $ha-primary-dark;
+    text-decoration: underline;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid rgba($ha-primary, 0.6);
+  outline-offset: 2px;
+}
+
+// ---------- Utilidades del tema ----------
+
+.ha-page {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.ha-page-title {
+  font-size: $ha-fs-headline-lg;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: $ha-primary-dark;
+  margin-bottom: 0;
+}
+
+.ha-card {
+  background-color: $ha-surface;
+  border: 1px solid $ha-border;
+  border-radius: $ha-radius-lg;
+  box-shadow: $ha-shadow-card;
+}
+
+// Botón terciario sin borde (Cerrar, acciones suaves)
+.btn-ghost {
+  color: $ha-text-secondary;
+  background: transparent;
+  border: 1px solid transparent;
+
+  &:hover,
+  &:focus {
+    color: $ha-text;
+    background-color: $ha-border;
+  }
+}
+
+// Botón secundario azul suave (Agregar Archivo, Imprimir HCE, Ver Archivos)
+.btn-soft-primary {
+  color: $ha-primary;
+  background-color: $ha-primary-soft;
+  border: 1px solid transparent;
+  font-weight: 600;
+
+  &:hover,
+  &:focus {
+    color: $ha-primary-dark;
+    background-color: #d7e9ff; // $ha-primary-soft un paso más oscuro
+  }
+}
+
+// ---------- Tablas de directorio (Pacientes / Profesionales) ----------
+
+.ha-table {
+  margin-bottom: 0;
+
+  thead th {
+    font-size: $ha-fs-label;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: $ha-text-secondary;
+    background-color: $ha-bg;
+    border-bottom: 1px solid $ha-border;
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+  }
+
+  tbody td {
+    border-bottom: 1px solid $ha-border;
+    vertical-align: middle;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: 0;
+  }
+
+  tbody tr:hover td {
+    background-color: $ha-primary-soft;
+  }
+}
+
+// Card contenedora de tablas: clipea las esquinas y deja scrollear horizontal adentro
+.ha-table-card {
+  overflow: hidden;
+}
+
+// Celdas de directorio
+.ha-row-title {
+  font-weight: 600;
+  color: $ha-primary;
+  text-decoration: none;
+
+  &:hover {
+    color: $ha-primary-dark;
+    text-decoration: underline;
+  }
+}
+
+.ha-row-sub {
+  color: $ha-text-secondary;
+  font-size: $ha-fs-label;
+  margin-top: 2px;
+}
+
+.ha-row-strong {
+  font-weight: 600;
+}
+
+.ha-contact-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: $ha-text-secondary;
+
+  a {
+    color: $ha-text-secondary;
+
+    &:hover {
+      color: $ha-primary;
+    }
+  }
+}
+
+// ---------- Shell de autenticación (Login / Register) ----------
+
+.ha-auth {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: 32px 24px;
+  background-color: $ha-bg;
+
+  .ha-auth-brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .ha-auth-logo {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 0.75rem;
+    background-color: $ha-primary;
+    color: #ffffff;
+    font-size: 1.5rem;
+    margin-bottom: 12px;
+  }
+
+  .ha-auth-title {
+    font-size: $ha-fs-headline-md;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: $ha-primary;
+    margin-bottom: 4px;
+  }
+
+  .ha-auth-subtitle {
+    color: $ha-text-secondary;
+    margin-bottom: 0;
+  }
+
+  .ha-auth-card {
+    width: 100%;
+    max-width: 30rem;
+    background-color: $ha-surface;
+    border-radius: $ha-radius-lg;
+    box-shadow: $ha-shadow-card;
+    padding: 32px;
+
+    .ha-auth-card-title {
+      font-size: $ha-fs-headline-md;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .ha-auth-card-subtitle {
+      color: $ha-text-secondary;
+      margin-bottom: 24px;
+    }
+  }
+
+  .ha-auth-footer {
+    text-align: center;
+    color: $ha-text-secondary;
+    border-top: 1px solid $ha-border;
+    padding-top: 16px;
+    margin: 24px 0 0;
+
+    a {
+      font-weight: 600;
+    }
+  }
+}
+
+// ---------- Modales ----------
+
+.ha-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(33, 37, 41, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050;
+  padding: 24px;
+}
+
+.ha-modal {
+  background-color: $ha-surface;
+  border-radius: $ha-radius-lg;
+  box-shadow: $ha-shadow-modal;
+  padding: 32px;
+  width: 100%;
+  max-width: 560px;
+  max-height: 85vh;
+  overflow-y: auto;
+
+  .ha-modal-title {
+    font-size: $ha-fs-headline-md;
+    font-weight: 600;
+    margin-bottom: 24px;
+  }
+}
+
+// ---------- Formularios ----------
+
+.ha-form {
+  .phone-input {
+    display: flex;
+
+    > * {
+      border-radius: 0;
+    }
+
+    > :first-child {
+      border-radius: $ha-radius 0 0 $ha-radius;
+    }
+
+    > :last-child {
+      border-radius: 0 $ha-radius $ha-radius 0;
+    }
+
+    span {
+      display: inline-flex;
+      align-items: center;
+      padding: 0 12px;
+      background-color: $ha-bg;
+      border: 1px solid $ha-outline;
+      border-right: 0;
+      color: $ha-text-secondary;
+      white-space: nowrap;
+    }
+
+    select {
+      border-right: 0;
+    }
+  }
+  label,
+  .ha-form-label {
+    display: block;
+    font-size: $ha-fs-label;
+    font-weight: 500;
+    color: $ha-text;
+    margin-bottom: 0.375rem;
+  }
+
+  .ha-form-field {
+    margin-bottom: 16px;
+  }
+
+  .ha-form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+
+    @media (max-width: 575.98px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .ha-form-error {
+    color: $ha-danger;
+    font-size: $ha-fs-label;
+    margin-top: 0.25rem;
+  }
+
+  .ha-form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 24px;
+  }
+}

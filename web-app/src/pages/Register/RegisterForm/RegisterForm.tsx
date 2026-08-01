@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import InputComponent from "../../Login/Components/Input/InputComponent";
+import { FaEnvelope, FaLock, FaUser, FaIdCard, FaHospital } from "react-icons/fa";
+import InputComponent from "../../../components/Input";
 import { Phone } from "../../../Types/Phone";
 import { useNavigate } from 'react-router-dom';
 import { ProfessionalForRedux } from "../../../Types/ProfessionalForRedux";
@@ -96,63 +97,77 @@ const RegisterForm = () => {
   };
 
   return (
-    <div className="container w-100">
-      <form onSubmit={handleSubmit} className="d-flex flex-column align-items-center">
+      <form onSubmit={handleSubmit} className="ha-form">
+        <div className="ha-form-row">
             <InputComponent
-              type="text" 
+              type="text"
               id="Name"
               value={formData.Name}
               onChange={handleChange}
-              placeholder="Nombre"
+              placeholder="Ej: Carlos"
+              label="Nombre"
+              icon={<FaUser />}
             />
 
             <InputComponent
-              type="text" 
+              type="text"
               id="LastName"
               value={formData.LastName}
               onChange={handleChange}
-              placeholder="Apellido"
+              placeholder="Ej: Rodríguez"
+              label="Apellido"
+              icon={<FaUser />}
             />
+        </div>
 
           <InputComponent
-             type="text" 
+             type="email"
              id="Email"
              value={formData.Email}
              onChange={handleChange}
-             placeholder="Email"             
+             placeholder="doctor@clinica.com"
+             label="Correo Electrónico"
+             icon={<FaEnvelope />}
           />
 
           <InputComponent
-            type="text" 
+            type="password"
             id="Password"
             value={formData.Password}
             onChange={handleChange}
             placeholder="Contraseña"
+            label="Contraseña"
+            icon={<FaLock />}
           />
 
+        <div className="ha-form-row">
           <InputComponent
-            type="text" 
+            type="text"
             id="Tuition"
             value={formData.Tuition}
             onChange={handleChange}
-            placeholder="Nro. Matricula"
+            placeholder="123456"
+            label="Nro. Matrícula"
+            icon={<FaIdCard />}
           />
-        
+
           <InputComponent
-              type="text" 
+              type="text"
               id="ConsultoryCode"
               value={formData.ConsultoryCode}
               onChange={handleChange}
-              placeholder="Codigo del Consultorio"
+              placeholder="CLIN-99"
+              label="Código del Consultorio"
+              icon={<FaHospital />}
             />
+        </div>
 
-            {error && <div className="alert alert-danger p-1 mb-0">
+            {error && <div className="alert alert-danger" role="alert">
                   {errorMessage}
                 </div>}
 
-        <button className="btn btn-primary rounded w-100 mb-2 mt-2" style={{ backgroundColor: '#004EB8', color: 'white', height: '50px' }} type="submit">Registrarse</button>
+        <button className="btn btn-primary w-100 mt-2" type="submit">Registrarse</button>
       </form>
-    </div>
   );
 };
 

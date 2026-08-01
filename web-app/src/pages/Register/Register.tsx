@@ -1,17 +1,22 @@
 import { Link } from 'react-router-dom';
+import { FaPlus } from 'react-icons/fa';
 
 import RegisterForm from './RegisterForm/RegisterForm';
 
 const Register = () => {
     return (
-        <div className="login-container d-flex justify-content-center align-items-center" style={{ height: '120vh', backgroundColor: '#EAEAEA', margin: 'auto'}}>
-            <div className="Card border-primary rounded" style={{ width: '30rem', backgroundColor: 'white', margin: '', height: '40rem', padding: '20px' }}>
-            <div>
-                <h1 className="title text-center">Registro</h1>
+        <div className="ha-auth">
+            <div className="ha-auth-brand">
+                <span className="ha-auth-logo" aria-hidden="true"><FaPlus /></span>
+                <h1 className="ha-auth-title">HealthArchive</h1>
+                <p className="ha-auth-subtitle">Gestión Médica Profesional</p>
             </div>
+            <div className="ha-auth-card">
+                <h2 className="ha-auth-card-title">Crear nueva cuenta</h2>
+                <p className="ha-auth-card-subtitle">Ingrese sus credenciales profesionales para comenzar.</p>
                 <RegisterForm/>
-                <p className="small-text text-center">
-                    ¿Ya tenes una cuenta creada? <Link to="/" style={{ color: 'black', fontWeight: 'bold', textDecoration: 'none' }}>Inicio Sesion</Link>
+                <p className="ha-auth-footer">
+                    ¿Ya tenes una cuenta creada? <Link to="/">Inicio Sesion</Link>
                 </p>
             </div>
         </div>
