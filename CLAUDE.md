@@ -16,7 +16,7 @@ The frontend talks to the API purely over HTTP; there is no shared code. Naming 
 ### Backend (`api/HealthArchiveAPI/`)
 - Build: `dotnet build HealthArchiveAPI.sln`
 - Run API (Swagger at `/swagger`): `dotnet run --project HealthArchiveAPI` serves on `https://localhost:7217`. Running via IIS Express (Visual Studio) instead serves on `https://localhost:44393` (the `sslPort` in `launchSettings.json`). The frontend `web-app/.env.local` `VITE_API_URL` must point at whichever you use.
-- EF migrations (run from the solution dir; `dotnet-ef` is pinned in `.config/dotnet-tools.json`, so `dotnet tool restore` once first):
+- EF migrations — **CLI only**, run from the solution dir. The design-time pieces live in `HealthArchiveAPI` (`Microsoft.EntityFrameworkCore.Design`); `Microsoft.EntityFrameworkCore.Tools` was removed from `HealthArchive.Infrastructure` on purpose (it only added Visual Studio's Package Manager Console cmdlets and dragged in a vulnerable transitive dependency), so **`Add-Migration`/`Update-Database` in the PMC no longer work** — use `dotnet ef`. The manifest pinning `dotnet-ef` is at `HealthArchiveAPI/.config/dotnet-tools.json` (`dotnet tool restore` once first, or use a global install).
   - Add: `dotnet ef migrations add <Name> --project HealthArchive.Infrastructure --startup-project HealthArchiveAPI`
   - Apply: `dotnet ef database update --project HealthArchive.Infrastructure --startup-project HealthArchiveAPI`
 - SDK is pinned to 10.0.301 via `global.json`. There is no test project.
@@ -33,21 +33,30 @@ The frontend talks to the API purely over HTTP; there is no shared code. Naming 
 Clean Architecture, four projects with strict inward dependencies (API → Infrastructure → Application → Domain):
 
 - **HealthArchive.Domain** — POCO entities only (`Patient`, `Doctor`, `HCE`, `Evolution`, `HCEFile`, and owned value objects `Phone`, `MedicalCoverage`, `EvolutionInfo`). No dependencies.
-- **HealthArchive.Application** — DTOs, repository interfaces (`I*Repository`), and AutoMapper profiles (`*Mapper`). Defines the contracts; no EF here.
+- **HealthArchive.Application** — DTOs, repository interfaces (`I*Repository`), and the hand-written mappers (`Mapping/*Mapper.cs`). Defines the contracts; no EF here.
 - **HealthArchive.Infrastructure** — `DBContextHealth` (EF Core, owned-type config in `OnModelCreating`), repository implementations, and Migrations.
 - **HealthArchiveAPI** — Controllers + `Program.cs` (composition root: DI registration, CORS, Swagger).
 
 Conventions:
-- **Repository pattern.** Controllers depend only on `I*Repository` + `IMapper`, never on `DBContextHealth`. Register new repos as scoped in `Program.cs`. Repos expose a `bool Save()` wrapping `SaveChanges()`, and mutation methods return `bool`.
+- **Repository pattern.** Controllers depend only on `I*Repository`, never on `DBContextHealth`. Register new repos as scoped in `Program.cs`. Repos expose a `bool Save()` wrapping `SaveChanges()`, and mutation methods return `bool`.
 - Controllers use attribute routing with explicit `[Route("Verb")]` action names (e.g. `api/Patient/GetPatients`), not REST resource conventions.
 - Owned types (`OwnsOne`) map value objects into the parent table — see `DBContextHealth.OnModelCreating`.
-- AutoMapper is wired via a single assembly scan: `AddAutoMapper(typeof(DoctorMapper).Assembly)`.
+- **Mapping is hand-written, no AutoMapper.** `HealthArchive.Application/Mapping/*Mapper.cs` are static classes of extension methods, so there is nothing to register in DI and the compiler checks every assignment. Conventions: `dto.ToEntity()` builds a new entity, `dto.ApplyTo(entity)` overwrites an entity already tracked by EF (partial update), `entity.To*Dto()` goes the other way. When a DTO or entity gains a property, update the mapper — nothing does it by reflection anymore.
 
 Gotchas:
 - **Connection string is intentionally empty** in `appsettings.json` — set `ConnectionStrings:DbContext` via user-secrets (`UserSecretsId` is in the csproj) or environment. Postgres, not SQL Server.
 - `Program.cs` sets `Npgsql.EnableLegacyTimestampBehavior = true` so `DateTime`s map to `timestamp without time zone`. A comment marks this for removal once repos go async + UTC.
-- **Do not bump AutoMapper to v15+** — it became commercially licensed. Stay on 13/14 or map by hand. (See project memory `modernization-plan`.)
+- **Never reintroduce AutoMapper.** v15+ is commercially licensed and the last free versions (13/14) carry a High-severity advisory. It was removed on purpose.
 - `seed_testdata.sql` / `seed_test_data.sql` exist for local data.
+
+### Configuración por ambiente (backend)
+
+`appsettings.json` es la base común y **no lleva secretos ni URLs**; encima se aplica `appsettings.{Environment}.json`:
+
+- `appsettings.Development.json` — CORS a `localhost:3000`/`4173`, logging del SQL de EF. `ConnectionStrings:DbContext` y `Jwt:Key` van en **user-secrets**.
+- `appsettings.Production.json` — logging en `Warning`. Todo lo del deploy llega por **env vars** (`DATABASE_URL`, `Jwt__Key`, `Cors__AllowedOrigins`, `RunMigrationsOnStartup`), nunca versionado.
+
+En Production, `Program.cs` valida al arrancar que `Jwt:Key` tenga ≥32 bytes y que `Cors:AllowedOrigins` no esté vacío, y tira excepción si no — es preferible que no arranque a que falle request por request.
 
 ### Authentication & authorization
 
@@ -60,13 +69,19 @@ JWT-based auth is wired (real). The access + refresh tokens travel in **httpOnly
 - **Roles:** `Doctor.Role` (default `"Doctor"`). Use `[Authorize(Roles="Admin")]` for admin-only endpoints — the role claim is already emitted.
 - **Config (env-var driven for deploy):** `Jwt:Key` (set via user-secrets locally; **≥32 bytes** or HMAC signing throws), `Jwt:Issuer`/`Audience`/`AccessTokenMinutes`/`RefreshTokenDays`, `Cors:AllowedOrigins`, `Cookies:Secure`/`SameSite`. On Railway set `Jwt__Key`, `Cors__AllowedOrigins=<vercel-url>`, etc.
 
+### Deploy
+
+API en **Railway** (container Docker, `api/HealthArchiveAPI/Dockerfile`, Root Directory = `api/HealthArchiveAPI`) + Postgres de Railway; front en **Vercel** (Root Directory = `web-app`, config en `web-app/vercel.json`). Procedimiento completo y troubleshooting en `docs/deploy.md`.
+
+Lo que `Program.cs` hace específicamente para ese entorno: bindea Kestrel a `$PORT` si existe; traduce `DATABASE_URL` (URI de Railway) al formato key=value de Npgsql cuando no hay `ConnectionStrings:DbContext`; `UseForwardedHeaders` con `KnownProxies`/`KnownNetworks` limpios (el proxy no tiene IP fija); `UseHttpsRedirection` y Swagger quedan **solo en Development** (en prod el TLS lo termina el proxy); expone `/health` sin auth para el healthcheck; y aplica migraciones al arrancar si `RunMigrationsOnStartup=true` (default `false`).
+
 ## Frontend architecture
 
 - **Entry/routing:** `pages/App/App.tsx` wires `react-router` v6. Public routes (`/`, `/Login`, `/Register`) are open; everything under the `<AuthGuard>` layout route (Pacientes, Profesionales, HistoriaClinica) is protected.
 - **Auth state:** `Guards/AuthGuard.tsx` gates routes on `store.Professional.name` from Redux — if empty, it redirects to Login. This is only the client-side gate; the real token lives in an **httpOnly cookie the JS never reads**, and every API call is validated server-side. On startup `pages/App/AuthBootstrap.tsx` calls `/api/AuthService/Me` to validate the cookie and rehydrate (or clear) Redux. Logout is the `logout` thunk in `Redux/States/professional.ts` (calls `/Logout`, then resets).
 - **State:** Redux Toolkit, single store in `Redux/Store.ts` with one `Professional` slice (`Redux/States/professional.ts`); the slice mirrors the backend `AuthUserDto` (`name`, `lastName`, `email`, `tuition`, `role`) and persists to localStorage.
 - **API access:** All HTTP goes through `src/api/client.ts` — thin typed wrappers (`apiGet`, `apiPost`, `apiPatch`, `apiDelete`, `apiPostFile`) over `fetch`. Every call sends `credentials: 'include'` (cookies); on a 401 the client attempts a single `/Refresh` then retries, and on failure clears the session and redirects to Login. Base URL comes from `import.meta.env.VITE_API_URL`. Add new calls here rather than calling `fetch` directly.
-- **Env:** copy `.env.example` to `.env.local` and set `VITE_API_URL` (points at the running API). Vite env vars must be prefixed `VITE_`.
+- **Env:** vars must be prefixed `VITE_`. `.env.development` is committed and holds the local default (`VITE_API_URL=https://localhost:7217`, the `dotnet run` https profile); override it in `.env.local` (gitignored) if your API listens elsewhere — e.g. `https://localhost:44393` for IIS Express. There is **no committed `.env.production`**: on Vercel the value is a project Environment Variable, and `vite.config.ts` throws if it's missing from a production build. See `.env.example`.
 - **Pages** live in `src/pages/<Feature>/`, each co-located with its `.scss` (Sass) and an `index.ts` barrel. Bootstrap 5 is the CSS base.
 - Rich text uses `draft-js`; PDF export uses `jspdf` + `html2canvas`.
 

@@ -1,6 +1,6 @@
-using AutoMapper;
 using HealthArchive.Application.DTOs;
 using HealthArchive.Application.Interfaces;
+using HealthArchive.Application.Mapping;
 using HealthArchive.Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
@@ -18,7 +18,6 @@ namespace HealthArchiveAPI.Controllers
         private readonly IDoctorRepository _doctorRepo;
         private readonly ITokenService _tokenService;
         private readonly IRefreshTokenRepository _refreshTokenRepo;
-        private readonly IMapper _mapper;
         private readonly IConfiguration _config;
 
         public AuthServiceController(
@@ -26,14 +25,12 @@ namespace HealthArchiveAPI.Controllers
             IDoctorRepository doctorRepo,
             ITokenService tokenService,
             IRefreshTokenRepository refreshTokenRepo,
-            IMapper mapper,
             IConfiguration config)
         {
             _authServiceRepo = authServiceRepo;
             _doctorRepo = doctorRepo;
             _tokenService = tokenService;
             _refreshTokenRepo = refreshTokenRepo;
-            _mapper = mapper;
             _config = config;
         }
 
@@ -48,7 +45,7 @@ namespace HealthArchiveAPI.Controllers
             if (user == null) return NotFound();
 
             IssueTokens(user);
-            return Ok(_mapper.Map<AuthUserDto>(user));
+            return Ok(user.ToAuthUserDto());
         }
 
         [AllowAnonymous]
@@ -74,7 +71,7 @@ namespace HealthArchiveAPI.Controllers
             _refreshTokenRepo.Update(stored);
 
             IssueTokens(user, newRefresh);
-            return Ok(_mapper.Map<AuthUserDto>(user));
+            return Ok(user.ToAuthUserDto());
         }
 
         [Authorize]
@@ -113,7 +110,7 @@ namespace HealthArchiveAPI.Controllers
             var user = _doctorRepo.GetDoctor(doctorId);
             if (user == null) return Unauthorized();
 
-            return Ok(_mapper.Map<AuthUserDto>(user));
+            return Ok(user.ToAuthUserDto());
         }
 
         // Issues the access + refresh cookies. If a refresh token is provided (rotation),
