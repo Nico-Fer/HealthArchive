@@ -202,7 +202,7 @@ eligiendo la acción en el desplegable.
 
 | Acción | Qué hace |
 |---|---|
-| `up` | `railway up --ci` desde `api/HealthArchiveAPI` (build + deploy) y después espera a que `/health` devuelva 200, hasta 5 minutos |
+| `up` | `railway up --ci` desde la **raíz del repo** (build + deploy) y después espera a que `/health` devuelva 200, hasta 5 minutos |
 | `down` | `railway down --yes`, que elimina el último deployment del servicio |
 | `status` | `railway status` + un GET a `/health`, sin tocar nada |
 
@@ -231,3 +231,9 @@ Si falta algo, el primer step corta con un mensaje que dice exactamente qué.
   desde el dashboard, y eso **borra los datos**.
 - El `up` reconstruye la imagen en Railway, así que tarda lo que tarde el build de
   Docker — no son segundos.
+- **El workflow sube el repo completo, no solo `api/`.** Es a propósito: las settings del
+  servicio (Root Directory `api/HealthArchiveAPI` y Dockerfile Path) están expresadas
+  relativas a la raíz, así que el snapshot tiene que arrancar ahí para que resuelvan. Es
+  exactamente lo que manda la integración de GitHub. Si se corriera `railway up` desde
+  `api/HealthArchiveAPI`, el build falla con
+  `failed to read Dockerfile at 'api/HealthArchiveAPI/Dockerfile'`.
