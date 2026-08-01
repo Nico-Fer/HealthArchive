@@ -14,7 +14,6 @@ const  convertJsonToHtml = (serializedDraftJsContent: string): string => {
     }
 
   const html = stateToHTML(contentState, options);
-  console.log(html);
   return html;
 }
 

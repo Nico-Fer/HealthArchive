@@ -43,7 +43,6 @@ interface FormProps {
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (validateForm()) {
-      console.log(formData);
       setOriginalFormData({ ...formData });
     }
   };

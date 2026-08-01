@@ -9,6 +9,7 @@ using Microsoft.IdentityModel.Tokens;
 using Npgsql;
 using System.Security.Claims;
 using System.Text;
+using System.Threading.RateLimiting;
 using System.Text.Json.Serialization;
 
 // Npgsql: map all DateTime to 'timestamp without time zone' (no UTC enforcement).
@@ -107,9 +108,43 @@ builder.Services.AddCors(opt =>
     });
 });
 
+// Rate limiting. Particiona por IP del cliente, que es correcta gracias al
+// UseForwardedHeaders de más arriba: sin eso, detrás del proxy de Railway todas las
+// requests parecerían venir de la misma IP y el límite global se aplicaría a todos juntos.
+builder.Services.AddRateLimiter(opt =>
+{
+    opt.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    // Límite general, pensado para navegación normal de la app.
+    opt.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(ctx =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: ClientIp(ctx),
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 100,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+            }));
+
+    // Mucho más estricta, para los endpoints anónimos: son los que permiten fuerza
+    // bruta de contraseñas y alta masiva de cuentas.
+    opt.AddPolicy("auth", ctx =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: ClientIp(ctx),
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+            }));
+
+    static string ClientIp(HttpContext ctx) =>
+        ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+});
+
 var app = builder.Build();
 
-// Fail-fast en prod: estas dos rompen el deploy de formas difíciles de diagnosticar
+// Fail-fast en prod: estas rompen el deploy de formas difíciles de diagnosticar
 // (500 en cada request firmado, o CORS bloqueando todo el front). Mejor no arrancar.
 if (app.Environment.IsProduction())
 {
@@ -123,6 +158,12 @@ if (app.Environment.IsProduction())
     {
         throw new InvalidOperationException(
             "Cors:AllowedOrigins está vacío: el front no va a poder llamar al API. Setear Cors__AllowedOrigins.");
+    }
+
+    if (string.IsNullOrWhiteSpace(builder.Configuration["Registration:ConsultoryCode"]))
+    {
+        throw new InvalidOperationException(
+            "Registration:ConsultoryCode está vacío: nadie podría registrarse. Setear Registration__ConsultoryCode.");
     }
 }
 
@@ -145,6 +186,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors(corsRules);
+// Después de UseCors a propósito: así las respuestas 429 llevan los headers de CORS y
+// el browser muestra el 429 real en vez de un error de CORS engañoso.
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

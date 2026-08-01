@@ -66,8 +66,21 @@ JWT-based auth is wired (real). The access + refresh tokens travel in **httpOnly
 - **Tokens:** `TokenService` (`ITokenService`) signs the access JWT (claims `sub`/`email`/`role`) from `Jwt:*` config and mints random refresh tokens. Refresh tokens are persisted/rotated via `RefreshToken` entity + `RefreshTokenRepository`.
 - **Program.cs:** `AddAuthentication`/`AddJwtBearer` reads the access token from the `access_token` cookie via `JwtBearerEvents.OnMessageReceived`. CORS uses explicit origins from `Cors:AllowedOrigins` + `AllowCredentials()` (cookies forbid `AllowAnyOrigin`). Pipeline order: `UseCors` → `UseAuthentication` → `UseAuthorization`.
 - **Endpoints (`AuthServiceController`):** `Login` / `Refresh` (rotates) / `Logout` (revokes) / `Me` (rehydrate). Cookies are `HttpOnly` `Secure` `SameSite=None`. `[Authorize]` guards Doctor/Patient/Hce/Evolution controllers; registration/login/refresh are `[AllowAnonymous]`.
-- **Roles:** `Doctor.Role` (default `"Doctor"`). Use `[Authorize(Roles="Admin")]` for admin-only endpoints — the role claim is already emitted.
-- **Config (env-var driven for deploy):** `Jwt:Key` (set via user-secrets locally; **≥32 bytes** or HMAC signing throws), `Jwt:Issuer`/`Audience`/`AccessTokenMinutes`/`RefreshTokenDays`, `Cors:AllowedOrigins`, `Cookies:Secure`/`SameSite`. On Railway set `Jwt__Key`, `Cors__AllowedOrigins=<vercel-url>`, etc.
+- **Roles:** `Doctor.Role` (default `"Doctor"`), emitido como claim por `TokenService`. Designar un admin es `UPDATE "Doctors" SET "Role"='Admin' WHERE "Email"='...'` — no hay migración ni UI para esto, y **el doctor tiene que volver a loguearse** porque el rol viaja dentro del JWT.
+- **Config (env-var driven for deploy):** `Jwt:Key` (set via user-secrets locally; **≥32 bytes** or HMAC signing throws), `Jwt:Issuer`/`Audience`/`AccessTokenMinutes`/`RefreshTokenDays`, `Cors:AllowedOrigins`, `Cookies:Secure`/`SameSite`, `Registration:ConsultoryCode`. On Railway set `Jwt__Key`, `Cors__AllowedOrigins=<vercel-url>`, `Registration__ConsultoryCode`, etc.
+
+### Modelo de seguridad
+
+Decisión explícita: **el acceso a pacientes es compartido**. Cualquier doctor autenticado ve todas las historias clínicas — el modelo es un consultorio donde los profesionales se cubren entre sí, y la trazabilidad se resuelve con `Evolution.EvolutionInfo` (`ModifiedBy`/`Tuition`), no restringiendo lectura. No hay FK de `Patient` a `Doctor` y no debe agregarse una sin revisar esta decisión.
+
+Consecuencia directa: **el registro es el único perímetro del sistema**. De ahí los controles que existen:
+
+- `Registration:ConsultoryCode` — el código de alta **nunca va en el código fuente** (el repo es público). Vacío en `appsettings.json`, `"1234"` solo en Development, y en Production `Program.cs` no arranca si falta. `DoctorController` además devuelve 503 si está sin configurar, para que un código vacío más un `consultoryCode` nulo en el body no comparen iguales.
+- `Doctor.Password` lleva `[JsonIgnore]`. Varios endpoints devuelven la entidad `Doctor` completa; el atributo protege a todos de una sola vez, presente y futuro. **No quitarlo.**
+- `DoctorController.CanActOn()` — un doctor solo se edita/borra a sí mismo; para tocar a otro hace falta `Admin`. Los pacientes, en cambio, no llevan chequeo de pertenencia a propósito (ver decisión de arriba).
+- Rate limiting global (100/min por IP) y política `"auth"` (10/min) sobre `Login`, `Refresh` y `CreateDoctor`, que son los tres anónimos. Particiona por IP, lo que **depende de `UseForwardedHeaders`**; y `UseRateLimiter()` va después de `UseCors` para que los 429 lleguen al browser como 429 y no como error de CORS.
+
+RLS de Postgres está desactivado y no aplica acá: la app se conecta con un único rol dueño de las tablas (que bypasea RLS), la conexión no lleva identidad de usuario, y no hay columna de pertenencia sobre la cual filtrar.
 
 ### Deploy
 

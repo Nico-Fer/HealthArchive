@@ -17,6 +17,10 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
+    // En producción se descarta toda salida por consola. Los console.error siguen en
+    // el código porque son útiles en desarrollo, pero varios imprimen la respuesta del
+    // servidor y eso no tiene por qué quedar visible en la consola del browser.
+    esbuild: mode === 'production' ? { drop: ['console', 'debugger'] } : {},
     // draft-js (y otras libs pensadas para webpack) referencian `global`,
     // que Vite no define. Sin esto la app crashea con "global is not defined".
     define: {

@@ -78,7 +78,6 @@ const HistoriaClinica = () => {
     try{
       setIsLoading(true);
       const data = await apiGet<any>(`/api/Patient/GetClinicHistory/${patient.DNI}`);
-      console.log(data);
 
       const mappedHce ={
         Id: data.id,
@@ -97,7 +96,6 @@ const HistoriaClinica = () => {
       };
 
       setHce(mappedHce);
-      console.log(mappedHce);
 
       setFormularios(mappedHce.Evolutions);
     }catch (error){
@@ -109,8 +107,7 @@ const HistoriaClinica = () => {
 
   const fetchCreateEvolution = async(evolution : Evolution) => {
     try{
-      const data = await apiPost<any>(`/api/Evolution/CreateEvolution/${hce.Id}`, evolution);
-      console.log(data);
+      await apiPost<any>(`/api/Evolution/CreateEvolution/${hce.Id}`, evolution);
     }catch(error){
       console.error('Error:', error);
       throw error; // que el llamador sepa que falló y NO limpie el borrador
@@ -150,7 +147,6 @@ const HistoriaClinica = () => {
       setFormularios(prev => [...prev, newFormulario]);
 
       clearHceDraft(patient.DNI);
-      console.log('Evolución agregada exitosamente');
     } catch (error) {
       console.error('Error al agregar la evolución:', error);
     }

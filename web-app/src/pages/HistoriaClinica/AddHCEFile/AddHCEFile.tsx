@@ -38,7 +38,6 @@ const AddHceFile: React.FC<AddFileProps> = ({ HceId, onFileAdded }) => {
 
     try{
         const result = await apiPostFile<HCEFile>(`/api/Hce/AddFile/${HceId}`, formData);
-        console.log("Archivo cargado con éxito:", result);
         onFileAdded(result);
     }catch(error){
         console.error("Error al cargar el archivo:", error);

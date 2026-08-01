@@ -91,9 +91,19 @@ error en vez de generar un bundle con `undefined` como base URL.
 | `Jwt__Issuer` | `HealthArchive` | opcional, hay default en `appsettings.json` |
 | `Jwt__Audience` | `HealthArchiveClient` | opcional |
 | `Cors__AllowedOrigins` | `https://<app>.vercel.app` | CSV; **sin barra final** |
+| `Registration__ConsultoryCode` | código de alta | **obligatoria**: sin ella la app no arranca. Ver abajo |
 | `Cookies__Secure` | `true` | |
 | `Cookies__SameSite` | `None` | requerido para cross-domain |
 | `RunMigrationsOnStartup` | `true` | ver abajo |
+
+> ⚠️ **`Registration__ConsultoryCode` hay que setearla ANTES de deployar** la versión que
+> la introduce. `Program.cs` valida en Production que no esté vacía y tira excepción si
+> falta, igual que con `Jwt__Key`: si deployás primero, la API no levanta.
+>
+> Es el código que pide `/Register` para dar de alta un doctor. Antes estaba hardcodeado
+> como `"1234"` en el código fuente, o sea público en el repo. **Es el único perímetro del
+> sistema**: cualquier doctor registrado ve todas las historias clínicas, así que elegí un
+> valor que no sea adivinable y no lo compartas de más.
 
 Generar la clave JWT (PowerShell):
 
@@ -112,9 +122,21 @@ crea el esquema en el primer deploy. Una vez aplicado se puede pasar a `false`
 
 **Datos iniciales**
 
-La base arranca vacía. Para crear el primer doctor, usar `/Register` desde el front
-(esa ruta hashea la password). Los `seed_*.sql` del repo tienen passwords en texto
-plano y **no sirven para loguearse** con el hashing actual.
+La base arranca vacía. Para crear el primer doctor, usar `/Register` desde el front con el
+valor de `Registration__ConsultoryCode` (esa ruta hashea la password). Los `seed_*.sql` del
+repo tienen passwords en texto plano y **no sirven para loguearse** con el hashing actual.
+
+**Designar un administrador**
+
+Un doctor común solo puede editarse o borrarse a sí mismo; para administrar a otros hace
+falta el rol `Admin`. No hay UI para asignarlo, es un UPDATE directo:
+
+```sql
+UPDATE "Doctors" SET "Role" = 'Admin' WHERE "Email" = 'tu@email.com';
+```
+
+El rol viaja dentro del JWT, así que **el doctor tiene que cerrar sesión y volver a
+entrar** para que el cambio tenga efecto.
 
 ---
 
