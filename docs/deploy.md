@@ -15,6 +15,21 @@ que estar en HTTPS** o el browser descarta la cookie.
 [ Railway ] postgres.railway.internal:5432    (Postgres administrado)
 ```
 
+> ### Costo: Railway no tiene free tier sostenido
+>
+> Vercel Hobby sí es gratis. Railway **no**: da un **trial de $5 por única vez**
+> (30 días, sin tarjeta), y después pasás a un plan Free con ~$1 de crédito mensual,
+> que no alcanza para tener la API prendida. Hobby son $5/mes y es *mínimo de gasto*,
+> no crédito: si consumís menos, pagás $5 igual.
+>
+> Por eso existe el workflow de la sección 6: para bajar la API cuando no la estás
+> usando y estirar el crédito del trial. **El Postgres no se puede pausar**, así que
+> su almacenamiento sigue consumiendo aunque la API esté abajo.
+>
+> Si en algún momento querés $0 sostenido, la alternativa es Render (free, con
+> spin-down a los 15 min y cold start de 30-60s) + Neon (free, scale-to-zero) para
+> Postgres. El Dockerfile sirve igual; solo cambia dónde se cargan las env vars.
+
 ---
 
 ## 0. Cómo se separan los ambientes
@@ -154,3 +169,43 @@ cada push: o los agregás, o simplemente no van a poder llamar al API).
 | 502 / healthcheck falla en Railway | La app no bindeó a `$PORT`, o crasheó al arrancar (mirar logs: `Jwt__Key` < 32 bytes) |
 | 404 al recargar una ruta del front | Falta el rewrite de `vercel.json` o el Root Directory no es `web-app` |
 | `relation "Doctors" does not exist` | Nunca corrieron las migraciones → `RunMigrationsOnStartup=true` y redeploy |
+
+---
+
+## 6. Levantar y bajar la API desde GitHub Actions
+
+Workflow: [`.github/workflows/railway-updown.yml`](../.github/workflows/railway-updown.yml).
+Se corre a mano desde **Actions → "Railway: levantar / bajar la API" → Run workflow**,
+eligiendo la acción en el desplegable.
+
+| Acción | Qué hace |
+|---|---|
+| `up` | `railway up --ci` desde `api/HealthArchiveAPI` (build + deploy) y después espera a que `/health` devuelva 200, hasta 5 minutos |
+| `down` | `railway down --yes`, que elimina el último deployment del servicio |
+| `status` | `railway status` + un GET a `/health`, sin tocar nada |
+
+### Configuración previa (una sola vez)
+
+1. En Railway: **Settings del proyecto → Tokens → New Token**, scope al environment
+   `production`. Es un **Project Token**; los tokens de cuenta no sirven para deployar
+   (esos van en `RAILWAY_API_TOKEN`, que este workflow no usa).
+2. En GitHub: **Settings → Secrets and variables → Actions**
+   - Secret `RAILWAY_TOKEN` = el token del paso 1.
+   - Variable `RAILWAY_SERVICE` = el nombre del servicio de la API en Railway.
+   - Variable `API_HEALTH_URL` = `https://<tu-api>.up.railway.app/health`.
+
+Si falta algo, el primer step corta con un mensaje que dice exactamente qué.
+
+### Qué esperar
+
+- **La URL no cambia.** `railway down` borra el deployment, no el servicio, así que el
+  dominio queda asignado y al volver a levantar sirve la misma URL. No hay que tocar
+  `Cors__AllowedOrigins` ni `VITE_API_URL` entre un ciclo y otro.
+- **El front sigue arriba.** Vercel Hobby es gratis, no hay razón de costo para bajarlo.
+  Con la API abajo, el SPA carga pero cualquier llamada falla — es lo esperado.
+- **El Postgres sigue arriba.** Railway no expone forma de pausarlo por API (la API
+  pública no tiene mutación de stop/pause, y el CLI tampoco). Su almacenamiento sigue
+  consumiendo crédito. Si querés cortar del todo, hay que borrar el servicio a mano
+  desde el dashboard, y eso **borra los datos**.
+- El `up` reconstruye la imagen en Railway, así que tarda lo que tarde el build de
+  Docker — no son segundos.

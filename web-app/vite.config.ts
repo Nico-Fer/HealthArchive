@@ -25,5 +25,17 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 3000,
     },
+    css: {
+      preprocessorOptions: {
+        scss: {
+          // Bootstrap 5.3 compilado desde source emite deprecations de dart-sass
+          // (@import, funciones de color legacy). Son cosméticas; sin esto el
+          // build es ilegible.
+          api: 'modern-compiler',
+          quietDeps: true,
+          silenceDeprecations: ['import'],
+        },
+      },
+    },
   };
 });
