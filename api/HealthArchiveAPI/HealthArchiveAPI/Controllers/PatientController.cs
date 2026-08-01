@@ -1,6 +1,6 @@
-using AutoMapper;
 using HealthArchive.Application.DTOs;
 using HealthArchive.Application.Interfaces;
+using HealthArchive.Application.Mapping;
 using HealthArchive.Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -13,12 +13,10 @@ namespace HealthArchiveAPI.Controllers
     public class PatientController : ControllerBase
     {
         private readonly IPatientRepository _repository;
-        private readonly IMapper _mapper;
 
-        public PatientController(IPatientRepository repository, IMapper mapper)
+        public PatientController(IPatientRepository repository)
         {
             _repository = repository;
-            _mapper = mapper;
         }
 
         [HttpGet]
@@ -58,21 +56,7 @@ namespace HealthArchiveAPI.Controllers
                 return BadRequest(ModelState);
             }
 
-            var patient = new Patient
-            {
-                Name = patientDto.Name,
-                LastName = patientDto.LastName,
-                DNI = patientDto.DNI,
-                BirthDate = (DateTime)patientDto.BirthDate,
-                Country = patientDto.Country,
-                Email = patientDto.Email,
-                PhoneNumber = patientDto.PhoneNumber,
-                Ocupation = patientDto.Ocupation,
-                HomeAddress = patientDto.HomeAddress,
-                Note = patientDto.Note,
-                MedicalCoverage = patientDto.MedicalCoverage
-            };
-            if (patient == null) return BadRequest(ModelState);
+            var patient = patientDto.ToEntity();
 
             if (!_repository.CreatePatient(patient))
             {
@@ -120,17 +104,7 @@ namespace HealthArchiveAPI.Controllers
                 return BadRequest(ModelState);
             }
 
-            patientToUpdate.Name = patientDto.Name;
-            patientToUpdate.LastName = patientDto.LastName;
-            patientToUpdate.DNI = patientDto.DNI;
-            patientToUpdate.BirthDate = (DateTime)patientDto.BirthDate;
-            patientToUpdate.Country = patientDto.Country;
-            patientToUpdate.Email = patientDto.Email;
-            patientToUpdate.PhoneNumber = patientDto.PhoneNumber;
-            patientToUpdate.Ocupation = patientDto.Ocupation;
-            patientToUpdate.HomeAddress = patientDto.HomeAddress;
-            patientToUpdate.Note = patientDto.Note;
-            patientToUpdate.MedicalCoverage = patientDto.MedicalCoverage;
+            patientDto.ApplyTo(patientToUpdate);
 
             if (!_repository.UpdatePatient(patientToUpdate))
             {
@@ -161,17 +135,7 @@ namespace HealthArchiveAPI.Controllers
                 return BadRequest(ModelState);
             }
 
-            patientToUpdate.Name = patientDto.Name;
-            patientToUpdate.LastName = patientDto.LastName;
-            patientToUpdate.DNI = patientDto.DNI;
-            patientToUpdate.BirthDate = (DateTime)patientDto.BirthDate;
-            patientToUpdate.Country = patientDto.Country;
-            patientToUpdate.Email = patientDto.Email;
-            patientToUpdate.PhoneNumber = patientDto.PhoneNumber;
-            patientToUpdate.Ocupation = patientDto.Ocupation;
-            patientToUpdate.HomeAddress = patientDto.HomeAddress;
-            patientToUpdate.Note = patientDto.Note;
-            patientToUpdate.MedicalCoverage = patientDto.MedicalCoverage;
+            patientDto.ApplyTo(patientToUpdate);
 
             if (!_repository.UpdatePatient(patientToUpdate))
             {

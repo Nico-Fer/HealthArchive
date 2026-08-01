@@ -1,6 +1,6 @@
-using AutoMapper;
 using HealthArchive.Application.DTOs;
 using HealthArchive.Application.Interfaces;
+using HealthArchive.Application.Mapping;
 using HealthArchive.Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -13,12 +13,10 @@ namespace HealthArchiveAPI.Controllers
     public class EvolutionController : ControllerBase
     {
         private readonly IEvolutionRepository _repository;
-        private readonly IMapper _mapper;
 
-        public EvolutionController(IEvolutionRepository repository, IMapper mapper)
+        public EvolutionController(IEvolutionRepository repository)
         {
             _repository = repository;
-            _mapper = mapper;
         }
 
         [HttpPost]
@@ -30,15 +28,8 @@ namespace HealthArchiveAPI.Controllers
             if (!ModelState.IsValid) return BadRequest(ModelState);
             if (evolutionDto == null) return BadRequest(ModelState);
 
-            Evolution evolution = _mapper.Map<Evolution>(evolutionDto);
-            if (evolution == null) return BadRequest(ModelState);
-
+            Evolution evolution = evolutionDto.ToEntity();
             evolution.HCEId = hceId;
-            evolution.EvolutionInfo = new EvolutionInfo
-            {
-                ModifiedBy = evolutionDto.ModifiedBy.ModifiedBy,
-                Tuition = evolutionDto.ModifiedBy.Tuition,
-            };
 
             if (!_repository.CreateEvolution(evolution, hceId))
             {

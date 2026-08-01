@@ -52,19 +52,11 @@
 - [ ] **(Roles)** Con un doctor `Admin` vs uno `Doctor`, probar un endpoint marcado
       `[Authorize(Roles="Admin")]`: Doctor → 403, Admin → 200.
 
-## 4. Deploy Railway (API) + Vercel (front) — cuando toque
+## 4. Deploy Railway (API) + Vercel (front)
 
-El objetivo del diseño es que sea **solo variables de entorno**, sin cambios de código.
-
-- [ ] **Railway** — setear env vars:
-  - [ ] `ConnectionStrings__DbContext`
-  - [ ] `Jwt__Key` (la misma o una nueva clave fuerte)
-  - [ ] `Jwt__Issuer`, `Jwt__Audience` (o dejar los defaults de `appsettings.json`)
-  - [ ] `Cors__AllowedOrigins=https://<tu-app>.vercel.app`
-  - [ ] `Cookies__Secure=true`, `Cookies__SameSite=None`
-- [ ] **Vercel** — setear `VITE_API_URL=https://<tu-api>.up.railway.app`.
-- [ ] Confirmar que ambos lados quedan en **HTTPS** (requisito de `Secure`+`SameSite=None`
-      para que la cookie viaje cross-domain).
+➡️ **Movido a [deploy.md](deploy.md)**, que tiene el procedimiento completo:
+Dockerfile del API, Postgres de Railway, `vercel.json`, las env vars de cada lado,
+el orden de deploy y la verificación post-deploy.
 
 ## 5. Mejoras opcionales / deuda (no bloquean)
 

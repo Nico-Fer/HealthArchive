@@ -1,6 +1,6 @@
-using AutoMapper;
 using HealthArchive.Application.DTOs;
 using HealthArchive.Application.Interfaces;
+using HealthArchive.Application.Mapping;
 using HealthArchive.Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
@@ -16,13 +16,11 @@ namespace HealthArchiveAPI.Controllers
     {
         private readonly IDoctorRepository _repository;
         private readonly IPasswordHasher _passwordHasher;
-        private readonly IMapper _mapper;
 
-        public DoctorController(IDoctorRepository repository, IPasswordHasher passwordHasher, IMapper mapper)
+        public DoctorController(IDoctorRepository repository, IPasswordHasher passwordHasher)
         {
             _repository = repository;
             _passwordHasher = passwordHasher;
-            _mapper = mapper;
         }
 
         [HttpGet]
@@ -89,9 +87,7 @@ namespace HealthArchiveAPI.Controllers
                 return BadRequest(ModelState);
             }
 
-            var doctor = _mapper.Map<Doctor>(doctorDto);
-            if (doctor == null) return BadRequest(ModelState);
-
+            var doctor = doctorDto.ToEntity();
             doctor.Password = _passwordHasher.Hash(doctor.Password);
 
             if (!_repository.CreateDoctor(doctor))
@@ -116,7 +112,7 @@ namespace HealthArchiveAPI.Controllers
             var doctorToUpdate = _repository.GetDoctor(doctorId);
             if (doctorToUpdate == null) return NotFound();
 
-            _mapper.Map(doctorDto, doctorToUpdate);
+            doctorDto.ApplyTo(doctorToUpdate);
 
             if (!_repository.UpdateDoctor(doctorToUpdate))
             {
