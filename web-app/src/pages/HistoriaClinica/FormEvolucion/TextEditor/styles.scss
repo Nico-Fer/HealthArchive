@@ -1,26 +1,30 @@
 .RichEditor-root {
-  background: #fff;
-  border: 1px solid #ddd;
-  font-family: 'Georgia', serif;
+  background: var(--ha-surface);
+  border: 1px solid var(--ha-outline);
+  border-radius: var(--ha-radius);
   font-size: 14px;
-  padding: 15px;
+  padding: 12px;
 }
 
 .RichEditor-editor {
-  border-top: 1px solid #ddd;
+  border-top: 1px solid var(--ha-border);
   cursor: text;
-  font-size: 16px;
-  margin-top: 10px;
+  font-size: var(--ha-fs-body-lg);
+  margin-top: 8px;
 }
 
 .RichEditor-editor .public-DraftEditorPlaceholder-root,
 .RichEditor-editor .public-DraftEditor-content {
-  margin: 0 -15px -15px;
-  padding: 15px;
+  margin: 0 -12px -12px;
+  padding: 12px;
+}
+
+.RichEditor-editor .public-DraftEditorPlaceholder-root {
+  color: var(--ha-text-secondary);
 }
 
 .RichEditor-editor .public-DraftEditor-content {
-  min-height: 100px;
+  min-height: 160px;
 }
 
 .RichEditor-hidePlaceholder .public-DraftEditorPlaceholder-root {
@@ -28,9 +32,8 @@
 }
 
 .RichEditor-editor .RichEditor-blockquote {
-  border-left: 5px solid #eee;
-  color: #666;
-  font-family: 'Hoefler Text', 'Georgia', serif;
+  border-left: 4px solid var(--ha-outline);
+  color: var(--ha-text-secondary);
   font-style: italic;
   margin: 16px 0;
   padding: 10px 20px;
@@ -41,23 +44,69 @@
   font-family: 'Inconsolata', 'Menlo', 'Consolas', monospace;
   font-size: 16px;
   padding: 20px;
+  border-radius: var(--ha-radius-sm);
 }
 
 .RichEditor-controls {
-  font-family: 'Helvetica', sans-serif;
-  font-size: 14px;
-  margin-bottom: 5px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: var(--ha-fs-label);
+  margin-bottom: 6px;
   user-select: none;
 }
 
 .RichEditor-styleButton {
-  color: #999;
+  color: var(--ha-text-secondary);
   cursor: pointer;
-  margin-right: 16px;
-  padding: 2px 0;
-  display: inline-block;
+  padding: 4px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: var(--ha-radius-pill);
+  background-color: var(--ha-bg);
+  border: 1px solid var(--ha-border);
+  font-weight: 500;
+
+  &:hover {
+    background-color: var(--ha-border);
+    color: var(--ha-text);
+  }
 }
 
 .RichEditor-activeButton {
-  color: #5890ff;
+  background-color: var(--ha-primary-soft);
+  border-color: var(--ha-primary);
+  color: var(--ha-primary);
+
+  &:hover {
+    background-color: var(--ha-primary-soft);
+    color: var(--ha-primary);
+  }
+}
+
+// Botones de resaltado (tercer grupo de controles: Rojo/Verde/Azul/Amarillo).
+// El punto de color anticipa el resaltado que aplican sobre el texto de la nota.
+.RichEditor-controls:nth-of-type(3) .RichEditor-styleButton::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.RichEditor-controls:nth-of-type(3) .RichEditor-styleButton:nth-child(1)::before {
+  background-color: rgba(255, 0, 0, 0.5);
+}
+
+.RichEditor-controls:nth-of-type(3) .RichEditor-styleButton:nth-child(2)::before {
+  background-color: rgba(0, 255, 0, 0.5);
+}
+
+.RichEditor-controls:nth-of-type(3) .RichEditor-styleButton:nth-child(3)::before {
+  background-color: rgba(0, 0, 255, 0.5);
+}
+
+.RichEditor-controls:nth-of-type(3) .RichEditor-styleButton:nth-child(4)::before {
+  background-color: rgba(245, 243, 39, 0.9);
 }

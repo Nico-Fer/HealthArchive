@@ -1,68 +1,156 @@
-.historia-clinica-container {
+.hce-layout {
   display: flex;
+  align-items: stretch;
+  // 64px = alto de la navbar global sticky
+  min-height: calc(100vh - 64px);
+}
+
+.hce-content {
+  flex: 1;
+  min-width: 0;
+  padding: 24px;
+}
+
+.hce-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   justify-content: space-between;
-  padding: 20px;
+  gap: 16px;
+  margin-bottom: 24px;
 
-  .sidebar {
-    width: 30%;
-    padding-right: 20px;
-    box-sizing: border-box;
+  .hce-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+  }
+}
 
-    .formularios-agregados {
-      margin-top: 20px;
+.hce-grid {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 24px;
+  align-items: start;
 
-      .formulario-agregado {
-        background-color: #f9f9f9;
-        border: 1px solid #ccc;
-        padding: 10px;
-        margin-bottom: 10px;
-        border-radius: 5px;
+  @media (max-width: 1199.98px) {
+    grid-template-columns: 1fr;
+  }
+}
 
-        h3 {
-          color: #007bff;
-          margin-top: 0;
-        }
+.hce-evolutions {
+  padding: 24px;
 
-        p {
-          margin: 5px 0;
+  .hce-evolutions-title {
+    font-size: var(--ha-fs-headline-sm);
+    font-weight: 600;
+    margin-bottom: 16px;
+  }
+}
 
-          strong {
-            color: #000;
-          }
-        }
-      }
+.hce-evolution {
+  border: 1px solid var(--ha-border);
+  border-radius: var(--ha-radius);
+  padding: 16px;
+
+  & + .hce-evolution {
+    margin-top: 16px;
+  }
+
+  .hce-evolution-meta {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 8px 16px;
+    margin-bottom: 12px;
+    font-size: var(--ha-fs-label);
+    color: var(--ha-text-secondary);
+
+    .hce-evolution-date {
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .hce-evolution-doctor {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 2px;
+      text-align: right;
     }
   }
 
-.main-content {
-  width: 65%;
+  .hce-evolution-note {
+    background-color: var(--ha-bg);
+    border-left: 4px solid var(--ha-primary);
+    border-radius: var(--ha-radius-sm);
+    padding: 12px 16px;
+    font-size: var(--ha-fs-body-lg);
+    overflow-wrap: break-word;
+
+    p:last-child {
+      margin-bottom: 0;
+    }
+  }
 }
 
-.buttons-container {
-  margin-bottom: 20px;
+// Panel de archivos (FilesCollection)
+.hce-files {
+  border: 1px solid var(--ha-border);
+  border-radius: var(--ha-radius);
+  padding: 16px;
+  margin-bottom: 16px;
+
+  .hce-files-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 8px;
+
+    h3 {
+      font-size: var(--ha-fs-headline-sm);
+      font-weight: 600;
+      margin-bottom: 0;
+    }
+  }
+
+  .hce-files-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+
+    li {
+      border-bottom: 1px solid var(--ha-border);
+
+      &:last-child {
+        border-bottom: 0;
+      }
+
+      a {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 4px;
+        font-weight: 500;
+      }
+    }
+  }
 }
 
-button {
-  margin-right: 10px;
-}
+// Vista previa de impresión (PrintHCE) — el contenido de #download no se toca
+.hce-print {
+  border: 1px solid var(--ha-border);
+  border-radius: var(--ha-radius);
+  padding: 16px;
+  margin-bottom: 16px;
+  background-color: var(--ha-surface);
 
-/* Estilos para los formularios y el componente de subida de archivos */
-form {
-  margin-bottom: 20px;
-}
-
-.file-upload-container {
-  margin-bottom: 20px;
-}
-
-.agregar-btn {
-  background-color: #007bff;
-  color: #fff;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-
+  .hce-print-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 16px;
+  }
 }

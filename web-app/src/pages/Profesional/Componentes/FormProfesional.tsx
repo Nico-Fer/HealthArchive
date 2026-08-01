@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import './FormProfesional.scss'; 
 import { useLocation } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 
@@ -9,8 +8,7 @@ import { FormErrors } from '../../../Types/FormErrors';
 import validateForm from '../../../Functions/validateForm';
 import { apiGet, apiPatch, apiDelete } from '../../../api/client';
 import Spinner from '../../../components/Spinner';
-import { useSelector } from 'react-redux';
-import { store } from '../../../Redux/Store';
+import ConfirmDialog from '../../../components/ConfirmDialog';
 
 interface FormData {
   Name: string;
@@ -44,6 +42,7 @@ const MyForm: React.FC = () => {
   const [originalFormData, setOriginalFormData] = useState<FormData>({ ...formData });
   const [errors, setErrors] = useState<FormErrors>({});
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -123,48 +122,51 @@ const MyForm: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="form-container">
+      <div className="profesional-form ha-card">
         <Spinner label="Cargando datos del profesional..." />
       </div>
     );
   }
 
   return (
-    <div className="form-container">
-      <form onSubmit={handleSubmit} className="form">
-        <div className="form-group">
-          <label htmlFor="Name">Nombre:</label>
-          <input
-            type="text"
-            id="Name"
-            name="Name"
-            value={formData.Name}
-            onChange={handleChange}
-          />{errors.Name && <div className="alert alert-danger p-1">
-          {errors.Name}
-        </div>}
+    <div className="profesional-form ha-card">
+      <h1 className="profesional-form-title">Profesional</h1>
+      <form onSubmit={handleSubmit} className="ha-form">
+        <div className="ha-form-row">
+          <div className="ha-form-field">
+            <label htmlFor="Name">Nombre</label>
+            <input
+              type="text"
+              className="form-control"
+              id="Name"
+              name="Name"
+              value={formData.Name}
+              onChange={handleChange}
+            />
+            {errors.Name && <div className="ha-form-error">{errors.Name}</div>}
+          </div>
+
+          <div className="ha-form-field">
+            <label htmlFor="LastName">Apellido</label>
+            <input
+              type="text"
+              className="form-control"
+              id="LastName"
+              name="LastName"
+              value={formData.LastName}
+              onChange={handleChange}
+            />
+            {errors.LastName && <div className="ha-form-error">{errors.LastName}</div>}
+          </div>
         </div>
 
-        <div className="form-group">
-          <label htmlFor="LastName">Apellido:</label>
-          <input
-            type="text"
-            id="LastName"
-            name="LastName"
-            value={formData.LastName}
-            onChange={handleChange}
-          />
-          {errors.LastName && <div className="alert alert-danger p-1">
-                  {errors.LastName}
-                </div>}
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="telefono">Teléfono:</label>
+        <div className="ha-form-field">
+          <label htmlFor="PhoneNumber.PhoneNumber">Teléfono</label>
           <div className="phone-input">
             <span>{formData.PhoneNumber.CountryCode}</span>
             <input
               type="tel"
+              className="form-control"
               id="PhoneNumber.PhoneNumber"
               name="PhoneNumber.PhoneNumber"
               value={formData.PhoneNumber.PhoneNumber}
@@ -172,25 +174,25 @@ const MyForm: React.FC = () => {
             />
           </div>
         </div>
-        
-        <div className="form-group">
-          <label htmlFor="Email">Email:</label>
+
+        <div className="ha-form-field">
+          <label htmlFor="Email">Email</label>
           <input
             type="text"
+            className="form-control"
             id="Email"
             name="Email"
             value={formData.Email}
             onChange={handleChange}
           />
-          {errors.Email && <div className="alert alert-danger p-1">
-                  {errors.Email}
-                </div>}
-          </div>
+          {errors.Email && <div className="ha-form-error">{errors.Email}</div>}
+        </div>
 
-        <div className="form-group">
-          <label htmlFor="Description">Descripcion:</label>
+        <div className="ha-form-field">
+          <label htmlFor="Description">Descripción</label>
           <input
             type="text"
+            className="form-control"
             id="Description"
             name="Description"
             value={formData.Description}
@@ -198,18 +200,25 @@ const MyForm: React.FC = () => {
           />
         </div>
 
-        <div className="form-group">
-          <div className="buttons-container">
-            <button type="button" className="delete-btn" onClick={handleReset}>
-              Borrar
-            </button>
-            <button type="submit" className="submit-btn" disabled={!isFormChanged()}>
-              Guardar
-            </button>
-            <button className="close-btn d-flex flex-column mb-4" onClick={() => onClose()} style={{color: 'red', background: 'none'}}>Cerrar</button>
-          </div>
+        <div className="ha-form-actions">
+          <button type="submit" className="btn btn-primary" disabled={!isFormChanged()}>
+            Guardar
+          </button>
+          <button type="button" className="btn btn-danger ms-auto" onClick={() => setShowDeleteConfirm(true)}>
+            Borrar
+          </button>
+          <button type="button" className="btn btn-ghost" onClick={() => onClose()}>Cerrar</button>
         </div>
       </form>
+
+      {showDeleteConfirm && (
+        <ConfirmDialog
+          title="Borrar profesional"
+          message={`¿Borrar al profesional ${formData.Name} ${formData.LastName}? Esta acción no se puede deshacer.`}
+          onConfirm={() => { setShowDeleteConfirm(false); handleReset(); }}
+          onCancel={() => setShowDeleteConfirm(false)}
+        />
+      )}
     </div>
   );
 };

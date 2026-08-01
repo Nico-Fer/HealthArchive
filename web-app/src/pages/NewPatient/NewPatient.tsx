@@ -125,179 +125,180 @@ const NewPatient = () => {
   };
 
     return (
-        <div className="page-container" style={{backgroundColor: '#EAEAEA'}}>
-          <div className="form-container">
-            <form  className="form" onSubmit={handleSubmit}>
-              <div className="form-group">
-                <label >Nombre:</label>
-                <input
-                  type="text"
-                  id="Name"
-                  name="Name"
-                  value={patientData.Name}
-                  onChange={handleChange}
-                />
-                {errors.Name && <div className="alert alert-danger p-1">
-                  {errors.Name}
-                </div>}
-              </div>
-    
-              <div className="form-group">
-                <label htmlFor="LastName">Apellido:</label>
-                <input
-                  type="text"
-                  id="LastName"
-                  name="LastName"
-                  value={patientData.LastName}
-                  onChange={handleChange}
-                />
-                {errors.LastName && <div className="alert alert-danger p-1">
-                  {errors.LastName}
-                </div>}
+        <div className="ha-page">
+          <div className="new-patient ha-card">
+            <h1 className="new-patient-title">Nuevo Paciente</h1>
+            <form className="ha-form" onSubmit={handleSubmit}>
+              <div className="ha-form-row">
+                <div className="ha-form-field">
+                  <label htmlFor="Name">Nombre</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    id="Name"
+                    name="Name"
+                    value={patientData.Name}
+                    onChange={handleChange}
+                  />
+                  {errors.Name && <div className="ha-form-error">{errors.Name}</div>}
+                </div>
+
+                <div className="ha-form-field">
+                  <label htmlFor="LastName">Apellido</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    id="LastName"
+                    name="LastName"
+                    value={patientData.LastName}
+                    onChange={handleChange}
+                  />
+                  {errors.LastName && <div className="ha-form-error">{errors.LastName}</div>}
+                </div>
               </div>
 
-              <div className="form-group">
-                <label htmlFor="DNI">DNI:</label>
-                <input
-                  type="text"
-                  id="DNI"
-                  name="DNI"
-                  value={patientData.DNI}
-                  onChange={handleChange}
-                />
-                {errors.DNI && <div className="alert alert-danger p-1">
-                  {errors.DNI}
-                </div>}
-              </div>
-    
-              <div className="form-group">
-                <label htmlFor="BirthDate">Fecha de Nacimiento:</label>
-                <input
-                  type="date"
-                  id="BirthDate"
-                  name="BirthDate"
-                  value={formatDate(patientData.BirthDate)}
-                  onChange={handleDateChange}
-                />
+              <div className="ha-form-row">
+                <div className="ha-form-field">
+                  <label htmlFor="DNI">DNI</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    id="DNI"
+                    name="DNI"
+                    value={patientData.DNI}
+                    onChange={handleChange}
+                  />
+                  {errors.DNI && <div className="ha-form-error">{errors.DNI}</div>}
+                </div>
+
+                <div className="ha-form-field">
+                  <label htmlFor="BirthDate">Fecha de Nacimiento</label>
+                  <input
+                    type="date"
+                    className="form-control"
+                    id="BirthDate"
+                    name="BirthDate"
+                    value={formatDate(patientData.BirthDate)}
+                    onChange={handleDateChange}
+                  />
+                </div>
               </div>
 
-              <div className="form-group"> 
-                <label htmlFor="Country">Pais:</label>
+              <div className="ha-form-field">
+                <label htmlFor="Country">País</label>
                 <input
                   type="text"
+                  className="form-control"
                   id="Country"
                   name="Country"
-                  placeholder='Escriba el pais'
+                  placeholder='Escriba el país'
                   value={patientData.Country}
                   onChange={handleChange}
                 />
-              </div> 
+              </div>
 
-              <div className = "mb-3">
-                <div className='d-flex align-items-center form-label'>
-                  <label>Cobertura</label>
+              <div className="ha-form-row">
+                <div className="ha-form-field">
+                  <label htmlFor="MedicalCoverage.Coverage">Cobertura y Plan</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    id="MedicalCoverage.Coverage"
+                    name="MedicalCoverage.Coverage"
+                    placeholder='Escribir cobertura y plan'
+                    value={patientData.MedicalCoverage.Coverage}
+                    onChange={handleCoverageChange}
+                  />
                 </div>
-                <div className='d-flex mb-2'>
-                    <div className='flex-fill'>
-                      <input
-                        type="text"
-                        id="MedicalCoverage.Coverage"
-                        name="MedicalCoverage.Coverage"
-                        placeholder='Escribir cobertura y plan'
-                        value={patientData.MedicalCoverage.Coverage}
-                        onChange={handleCoverageChange}
-                      />
-                    </div>
-                    <div className='flex-md-fill ms-2 position-relative'>
-                      <input
-                        type="text"
-                        id="MedicalCoverage.Number"
-                        name="MedicalCoverage.Number"
-                        placeholder='Escribir el número'
-                        value={patientData.MedicalCoverage.Number}
-                        onChange={handleCoverageNumberChange}
-                      />
-                    </div>
+                <div className="ha-form-field">
+                  <label htmlFor="MedicalCoverage.Number">Nro. de Cobertura</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    id="MedicalCoverage.Number"
+                    name="MedicalCoverage.Number"
+                    placeholder='Escribir el número'
+                    value={patientData.MedicalCoverage.Number}
+                    onChange={handleCoverageNumberChange}
+                  />
                 </div>
               </div>
-              
-    
-              <div className="form-group">
-                <label htmlFor="Email">Email:</label>
+
+              <div className="ha-form-field">
+                <label htmlFor="Email">Email</label>
                 <input
                   type="text"
+                  className="form-control"
                   id="Email"
                   name="Email"
-                  placeholder='Direccion de Email'
+                  placeholder='Dirección de Email'
                   value={patientData.Email}
                   onChange={handleChange}
                 />
-                {errors.Email && <div className="alert alert-danger p-1">
-                  {errors.Email}
-                </div>}
+                {errors.Email && <div className="ha-form-error">{errors.Email}</div>}
               </div>
-    
-              <div className='mb-3'>
-                <div className="position-relative">
-                  <div className='d-flex mb-2'>
-                    <div className='flex-fill'>
-                      <select className='PhoneCountry'>
-                        <option value = 'AR'> Argentina </option>
-                      </select>
-                    </div>
-                     <input
-                        type="text"
-                        id="phone"
-                        name="phone"
-                        placeholder='+54 '
-                        value={patientData.PhoneNumber.PhoneNumber}
-                        onChange={handleChangePhoneNumber}
-                      />
-                  </div>
+
+              <div className="ha-form-field">
+                <label htmlFor="phone">Teléfono</label>
+                <div className="phone-input">
+                  <select className="form-select flex-grow-0 w-auto" aria-label="País del teléfono">
+                    <option value='AR'>Argentina (+54)</option>
+                  </select>
+                  <input
+                    type="tel"
+                    className="form-control"
+                    id="phone"
+                    name="phone"
+                    placeholder='11 5000 0000'
+                    value={patientData.PhoneNumber.PhoneNumber}
+                    onChange={handleChangePhoneNumber}
+                  />
                 </div>
               </div>
 
-              <div className="form-group">
-                <label htmlFor="Ocupation">Ocupacion:</label>
-                <input
-                  type="text"
-                  id="Ocupation"
-                  name="Ocupation"
-                  value={patientData.Ocupation}
-                  onChange={handleChange}
-                />
+              <div className="ha-form-row">
+                <div className="ha-form-field">
+                  <label htmlFor="Ocupation">Ocupación</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    id="Ocupation"
+                    name="Ocupation"
+                    value={patientData.Ocupation}
+                    onChange={handleChange}
+                  />
+                </div>
+
+                <div className="ha-form-field">
+                  <label htmlFor="HomeAddress">Dirección</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    id="HomeAddress"
+                    name="HomeAddress"
+                    value={patientData.HomeAddress}
+                    onChange={handleChange}
+                  />
+                </div>
               </div>
 
-              <div className="form-group">
-                <label htmlFor="HomeAddress">Direccion:</label>
+              <div className="ha-form-field">
+                <label htmlFor="Note">Notas</label>
                 <input
                   type="text"
-                  id="HomeAddress"
-                  name="HomeAddress"
-                  value={patientData.HomeAddress}
-                  onChange={handleChange}
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="Note">Notas:</label>
-                <input
-                  type="text"
+                  className="form-control"
                   id="Note"
                   name="Note"
                   value={patientData.Note}
                   onChange={handleChange}
                 />
               </div>
-    
-              <div className="form-group">
-                <div className="buttons-container">
-                <button type="submit" className="submit-btn">Guardar</button>
-                  
-                  <button type="button" className="close-btn" onClick={handleClose}>
-                    Cerrar
-                  </button>
-                </div>
+
+              <div className="ha-form-actions">
+                <button type="submit" className="btn btn-primary">Guardar</button>
+                <button type="button" className="btn btn-ghost" onClick={handleClose}>
+                  Cerrar
+                </button>
               </div>
             </form>
           </div>

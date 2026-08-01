@@ -1,0 +1,19 @@
+.ha-chip {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--ha-radius-pill);
+  font-size: var(--ha-fs-label);
+  font-weight: 600;
+  line-height: 1.25;
+  white-space: nowrap;
+
+  &.ha-chip-blue {
+    background-color: var(--ha-primary-soft);
+    color: var(--ha-primary);
+  }
+
+  &.ha-chip-gray {
+    background-color: var(--ha-border);
+    color: #495057;
+  }
+}

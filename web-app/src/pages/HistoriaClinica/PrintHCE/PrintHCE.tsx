@@ -41,8 +41,8 @@ const PrintHCE : React.FC<Props> = ( {evoluciones, patient, onClose} ) =>{
     const stateRedux = useSelector((store: store) => store.Professional);
 
     return (
-        <div className="bg-white p-3 print-body">
-            <div className="modal-body print" id="download"> 
+        <div className="hce-print">
+            <div className="modal-body print" id="download">
                 <div className="d-flex flex-column mb-4">
                     <h2 className="h2 fw-bold mx-4 mt-2">
                         Historia Clínica
@@ -78,9 +78,9 @@ const PrintHCE : React.FC<Props> = ( {evoluciones, patient, onClose} ) =>{
                     </div>
                 </div>
             </div>
-            <div className="buttons-container d-flex align-items-center">
-                <button className="primary-btn d-flex flex-column mb-4" onClick={() => convertToPDF()} style={{backgroundColor: '#007bff', color: '#fff', cursor: 'pointer', border: 'none', marginLeft: 20}}>Imprimir</button>
-                <button className="close-btn d-flex flex-column mb-4" onClick={onClose} style={{color: 'red'}}>Cerrar</button>
+            <div className="hce-print-actions d-print-none">
+                <button className="btn btn-primary" onClick={() => convertToPDF()}>Descargar PDF</button>
+                <button className="btn btn-ghost" onClick={onClose}>Cerrar</button>
             </div>
         </div>
     )

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Table from './Table';
-import PatientHeader from './PersonaHeader';
+import PageHeader from '../../components/PageHeader';
 import PaginationControls from './Pagination/PaginationControls';
 import FormPaciente from './FormPaciente/FormPaciente';
 import { Person, Patient } from "./../../Types/Person";
@@ -12,11 +13,14 @@ const PAGE_SIZE = 30;
 
 const Patients = () => {
 
+  const navigate = useNavigate();
+
   const [patients, setPatients] = useState<Patient[]>([]);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [page, setPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(1);
+  const [totalCount, setTotalCount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const fetchPatients = async () => {
@@ -52,6 +56,7 @@ const Patients = () => {
 
       setPatients(mappedPatients);
       setTotalPages(data.totalPages);
+      setTotalCount(data.totalCount);
 
     } catch (error) {
       console.error('Error:', error);
@@ -100,14 +105,27 @@ const Patients = () => {
   };
 
   return (
-    <div>
-      <PatientHeader onSearchChange={handleSearchChange} />
+    <div className="ha-page">
+      <PageHeader
+        title="Pacientes"
+        searchPlaceholder="Buscar por nombre o DNI..."
+        onSearchChange={handleSearchChange}
+        actionLabel="Nuevo Paciente"
+        onAction={() => navigate('/Pacientes/Nuevo')}
+      />
       {isLoading ? (
         <Spinner label="Cargando pacientes..." />
       ) : (
         <Table data={patients} onPatientClick={handlePatientClick} />
       )}
-      <PaginationControls page={page} totalPages={totalPages} onPageChange={handlePageChange} />
+      <PaginationControls
+        page={page}
+        totalPages={totalPages}
+        onPageChange={handlePageChange}
+        shownCount={patients.length}
+        totalCount={totalCount}
+        itemsLabel="pacientes"
+      />
       {selectedPatient && <FormPaciente patient={selectedPatient} onClose={handleCloseForm} onPatientUpdated={handlePatientUpdated} />}
     </div>
   );

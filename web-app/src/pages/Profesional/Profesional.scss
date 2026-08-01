@@ -1,19 +1,11 @@
-.main-page {
-  display: flex;
-  flex-direction: column;
-  background-color: #e6e2e2;
-  min-height: 100vh;
-  align-items: center; /* Centra el contenido horizontalmente */
+.profesional-form {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 32px;
+
+  .profesional-form-title {
+    font-size: var(--ha-fs-headline-md);
+    font-weight: 600;
+    margin-bottom: 24px;
+  }
 }
-
-.content {
-  width: 100%; /* Ancho completo del contenido */
-  max-width: 1000px; /* Ancho máximo del formulario */
-  padding: 10px; /* Añadir un espacio alrededor del contenido */
-  margin-top: 10px; /* Espacio entre la barra de navegación y el formulario */
-}
-
-
-  
-  
-  

@@ -4,6 +4,9 @@ interface Props {
   page: number;
   totalPages: number;
   onPageChange: (page: number) => void;
+  shownCount?: number;
+  totalCount?: number;
+  itemsLabel?: string;
 }
 
 // Genera la ventana de números de página a mostrar (máximo 5) alrededor de la página actual.
@@ -18,14 +21,23 @@ const getPageWindow = (page: number, totalPages: number): number[] => {
   return pages;
 };
 
-const PaginationControls: React.FC<Props> = ({ page, totalPages, onPageChange }) => {
-  if (totalPages <= 1) return null;
+const PaginationControls: React.FC<Props> = ({ page, totalPages, onPageChange, shownCount, totalCount, itemsLabel = 'resultados' }) => {
+  const hasCaption = shownCount !== undefined && totalCount !== undefined;
+
+  if (totalPages <= 1 && !hasCaption) return null;
 
   const pages = getPageWindow(page, totalPages);
 
   return (
-    <nav aria-label="Paginación de pacientes" className="mt-3">
-      <ul className="pagination pagination-sm justify-content-center m-0">
+    <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3 d-print-none">
+      {hasCaption && (
+        <span className="text-secondary">
+          Mostrando <strong>{shownCount}</strong> de <strong>{totalCount}</strong> {itemsLabel}
+        </span>
+      )}
+      {totalPages > 1 && (
+      <nav aria-label="Paginación de pacientes">
+      <ul className="pagination justify-content-center m-0">
         <li className={`page-item ${page <= 1 ? 'disabled' : ''}`}>
           <button
             className="page-link"
@@ -80,7 +92,9 @@ const PaginationControls: React.FC<Props> = ({ page, totalPages, onPageChange })
           </button>
         </li>
       </ul>
-    </nav>
+      </nav>
+      )}
+    </div>
   );
 };
 

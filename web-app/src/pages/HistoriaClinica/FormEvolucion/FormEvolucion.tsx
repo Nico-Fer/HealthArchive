@@ -51,15 +51,16 @@ const EvolutionForm: React.FC<EvolutionFormProps> = ({ onAddEvolution, onClose, 
     }
 
     return (
-        <form onSubmit={handleSubmit}>
-            <div>
-                <label>Fecha: {formatDate(todaysDate)}</label>
+        <form onSubmit={handleSubmit} className="evolution-form">
+            <div className="evolution-form-header">
+                <h3 className="evolution-form-title">Nueva Evolución</h3>
+                <span className="evolution-form-date">Fecha: {formatDate(todaysDate)}</span>
             </div>
-            <div>
-                <RichEditorExample handleTextChange={handleTextChange} notes = {formData.Notes}/>
+            <RichEditorExample handleTextChange={handleTextChange} notes = {formData.Notes}/>
+            <div className="evolution-form-actions">
+                <button type="submit" className="btn btn-primary">Agregar Evolución</button>
+                <button type="button" className="btn btn-ghost" onClick={onClose}>Cerrar</button>
             </div>
-            <button type="submit" className="submit-btn">Agregar Evolución</button>
-            <button type="button" className="close-btn" onClick={onClose}>Cerrar</button>
         </form>
     );
 };

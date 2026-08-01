@@ -1,3 +1,4 @@
+import { FaFileDownload } from "react-icons/fa";
 import { HCEFile } from "../../../Types/HCEFile";
 
 interface Props{
@@ -26,29 +27,28 @@ const FilesCollection : React.FC<Props> = ({files, onClose}) => {
     };
 
     return(
-        <div className="bg-light">
-            <div className="px-3 text-center bg-light border-top">
-                <small className="font-small-caps fw-bold">Archivos Anteriores</small>
+        <div className="hce-files">
+            <div className="hce-files-header">
+                <h3>Archivos</h3>
+                <button className="btn btn-ghost" onClick={onClose}>Cerrar</button>
             </div>
-            <div className="d-flex flex-column">
-                <div className="position-relative border-top">
-                    <div className="d-flex justify-content-between align-items-center gap-2 p-3 bg-white">
-                        <div className="d-flex align-items-center gap-2">
-                            <ul>
-                                {files.map((file) => (
-                                    <li key={file.id}>
-                                        <a href="#" className="text-truncate" onClick={(e) =>{
-                                            e.preventDefault();
-                                            handleDownload(file.content, file.fileName)
-                                        }}>{file.fileName}</a>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <button className="close-btn d-flex flex-column mb-4" onClick={onClose} style={{color: 'red', background: 'none'}}>Cerrar</button>
+            {files.length === 0 ? (
+                <p className="text-secondary mb-0">No hay archivos cargados.</p>
+            ) : (
+                <ul className="hce-files-list">
+                    {files.map((file) => (
+                        <li key={file.id}>
+                            <a href="#" onClick={(e) =>{
+                                e.preventDefault();
+                                handleDownload(file.content, file.fileName)
+                            }}>
+                                <FaFileDownload aria-hidden="true" />
+                                <span className="text-truncate">{file.fileName}</span>
+                            </a>
+                        </li>
+                    ))}
+                </ul>
+            )}
         </div>
     );
 }

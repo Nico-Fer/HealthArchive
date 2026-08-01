@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, NavLink } from 'react-router-dom';
 import './Navbar.scss';
 import { useDispatch } from 'react-redux';
 import { logout } from '../../../Redux/States/professional';
@@ -9,6 +9,7 @@ const NavBar = () => {
 
   const dispatch = useDispatch<any>();
   const isLogged = useSelector((state : store) => state.Professional.tuition !== '');
+  const professional = useSelector((state : store) => state.Professional);
   if(!isLogged){
     return null;
   }
@@ -18,23 +19,17 @@ const NavBar = () => {
   }
 
   return (
-    <nav className='sticky-top navbar navbar-expand-lg navbar-light bg-white border-bottom d-print-none'>
-      <div className='container-fluid'>
-        <div className='collapse navbar-collapse'>
-          <div className='d-flex justify-content-between align-items-center w-100'>
-            <div>
-              <ul className='navbar-nav me-auto gap-lg-3'>
-                <li className='nav-item'>
-                  <Link to="/Pacientes" className='nav-link'>Pacientes</Link>
-                </li>
-                <li className='nav-item'>
-                  <Link to="/Profesionales" className='nav-link'>Profesionales</Link>
-                </li>
-              </ul>
-            </div>
-            <button className='btn btn-outline-primary' onClick={() => handleSignOut()}>Cerrar Sesion</button>
-          </div>
+    <nav className='sticky-top ha-navbar d-print-none'>
+      <div className='ha-navbar-left'>
+        <Link to="/Pacientes" className='ha-navbar-brand'>HealthArchive</Link>
+        <div className='ha-navbar-links'>
+          <NavLink to="/Pacientes" className='ha-navbar-link'>Pacientes</NavLink>
+          <NavLink to="/Profesionales" className='ha-navbar-link'>Profesionales</NavLink>
         </div>
+      </div>
+      <div className='ha-navbar-right'>
+        <span className='ha-navbar-user d-none d-md-inline'>{professional.name} {professional.lastName}</span>
+        <button className='btn btn-danger' onClick={() => handleSignOut()}>Cerrar Sesión</button>
       </div>
     </nav>
   );

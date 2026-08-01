@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import './FormPaciente.scss'; 
 import { Patient } from '../../../Types/Person';
 import { useNavigate } from 'react-router-dom';
 import { FormErrors } from '../../../Types/FormErrors';
@@ -7,6 +6,7 @@ import validateForm from '../../../Functions/validateForm';
 
 import formatDate from '../../../Functions/FormatDate';
 import { apiPatch, apiDelete } from '../../../api/client';
+import ConfirmDialog from '../../../components/ConfirmDialog';
 
 interface FormProps {
     patient: Patient; 
@@ -17,6 +17,7 @@ interface FormProps {
   const MyForm: React.FC<FormProps> = ({ patient, onClose, onPatientUpdated }) => {
     const navigate = useNavigate();
     const [errors, setErrors] = useState<FormErrors>({});
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     let dateChanged = false;
 
     const [patientData, setFormData] = useState<Patient>({
@@ -172,41 +173,43 @@ interface FormProps {
   };
 
   return (
-    <div className="page-container">
-      <div className="form-container">
-        <form onSubmit={handleSubmit} className="form">
-          <div className="form-group">
-            <label htmlFor="Name">Nombre:</label>
-            <input
-              type="text"
-              id="Name"
-              name="Name"
-              value={patientData.Name}
-              onChange={handleChange}
-            />
-            {errors.Name && <div className="alert alert-danger p-1">
-                  {errors.Name}
-                </div>}
+    <div className="ha-modal-backdrop" onClick={handleClose}>
+      <div className="ha-modal" role="dialog" aria-modal="true" aria-labelledby="form-paciente-title" onClick={(e) => e.stopPropagation()}>
+        <h2 id="form-paciente-title" className="ha-modal-title">Editar Paciente</h2>
+        <form onSubmit={handleSubmit} className="ha-form">
+          <div className="ha-form-row">
+            <div className="ha-form-field">
+              <label htmlFor="Name">Nombre</label>
+              <input
+                type="text"
+                className="form-control"
+                id="Name"
+                name="Name"
+                value={patientData.Name}
+                onChange={handleChange}
+              />
+              {errors.Name && <div className="ha-form-error">{errors.Name}</div>}
+            </div>
+
+            <div className="ha-form-field">
+              <label htmlFor="LastName">Apellido</label>
+              <input
+                type="text"
+                className="form-control"
+                id="LastName"
+                name="LastName"
+                value={patientData.LastName}
+                onChange={handleChange}
+              />
+              {errors.LastName && <div className="ha-form-error">{errors.LastName}</div>}
+            </div>
           </div>
 
-          <div className="form-group">
-            <label htmlFor="LastName">Apellido:</label>
-            <input
-              type="text"
-              id="LastName"
-              name="LastName"
-              value={patientData.LastName}
-              onChange={handleChange}
-            />
-            {errors.LastName && <div className="alert alert-danger p-1">
-                  {errors.LastName}
-                </div>}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="BirthDate">Fecha de Nacimiento:</label>
+          <div className="ha-form-field">
+            <label htmlFor="BirthDate">Fecha de Nacimiento</label>
             <input
               type="date"
+              className="form-control"
               id="BirthDate"
               name="BirthDate"
               value={formatDate(patientData.BirthDate)}
@@ -214,47 +217,51 @@ interface FormProps {
             />
           </div>
 
-          <div className="form-group">
-          <label htmlFor="MedicalCoverage.Coverage">Cobertura y Plan:</label>
-          <input
-            type="text"
-            id="MedicalCoverage.Coverage"
-            name="MedicalCoverage.Coverage"
-            value={patientData.MedicalCoverage.Coverage}
-            onChange={handleCoverageChange}
-          />
-        </div>
-        <div className="form-group">
-          <label htmlFor="MedicalCoverage.Number"></label>
-          <input
-            type="text"
-            id="MedicalCoverage.Number"
-            name="MedicalCoverage.Number"
-            value={patientData.MedicalCoverage.Number}
-            onChange={handleCoverageNumberChange}
-          />
-        </div>
+          <div className="ha-form-row">
+            <div className="ha-form-field">
+              <label htmlFor="MedicalCoverage.Coverage">Cobertura y Plan</label>
+              <input
+                type="text"
+                className="form-control"
+                id="MedicalCoverage.Coverage"
+                name="MedicalCoverage.Coverage"
+                value={patientData.MedicalCoverage.Coverage}
+                onChange={handleCoverageChange}
+              />
+            </div>
+            <div className="ha-form-field">
+              <label htmlFor="MedicalCoverage.Number">Nro. de Cobertura</label>
+              <input
+                type="text"
+                className="form-control"
+                id="MedicalCoverage.Number"
+                name="MedicalCoverage.Number"
+                value={patientData.MedicalCoverage.Number}
+                onChange={handleCoverageNumberChange}
+              />
+            </div>
+          </div>
 
-          <div className="form-group">
-            <label htmlFor="Email">Email:</label>
+          <div className="ha-form-field">
+            <label htmlFor="Email">Email</label>
             <input
               type="email"
+              className="form-control"
               id="Email"
               name="Email"
               value={patientData.Email}
               onChange={handleChange}
             />
-            {errors.Email && <div className="alert alert-danger p-1">
-                  {errors.Email}
-                </div>}
+            {errors.Email && <div className="ha-form-error">{errors.Email}</div>}
           </div>
 
-          <div className="form-group">
-            <label htmlFor="telefono">Teléfono:</label>
+          <div className="ha-form-field">
+            <label htmlFor="PhoneNumber.PhoneNumber">Teléfono</label>
             <div className="phone-input">
               <span>{patientData.PhoneNumber.CountryCode}</span>
               <input
                 type="tel"
+                className="form-control"
                 id="PhoneNumber.PhoneNumber"
                 name="PhoneNumber.PhoneNumber"
                 value={patientData.PhoneNumber.PhoneNumber}
@@ -263,19 +270,23 @@ interface FormProps {
             </div>
           </div>
 
-          <div className="form-group">
-            <div className="buttons-container">
-            <button type="submit" className="submit-btn" disabled={!isFormChanged()}>Guardar</button>
-              <button type="button" className="delete-btn" onClick={handleReset}>Borrar</button>
-              
-              <button className="history-btn" onClick={handleHistory}>Historia Clínica</button>
-              <button className="close-btn" onClick={handleClose}>
-                Cerrar
-              </button>
-            </div>
+          <div className="ha-form-actions">
+            <button type="submit" className="btn btn-primary" disabled={!isFormChanged()}>Guardar</button>
+            <button type="button" className="btn btn-outline-primary" onClick={handleHistory}>Historia Clínica</button>
+            <button type="button" className="btn btn-danger ms-auto" onClick={() => setShowDeleteConfirm(true)}>Borrar</button>
+            <button type="button" className="btn btn-ghost" onClick={handleClose}>Cerrar</button>
           </div>
         </form>
       </div>
+
+      {showDeleteConfirm && (
+        <ConfirmDialog
+          title="Borrar paciente"
+          message={`¿Borrar al paciente ${patientData.Name} ${patientData.LastName}? Esta acción no se puede deshacer.`}
+          onConfirm={() => { setShowDeleteConfirm(false); handleReset(); }}
+          onCancel={() => setShowDeleteConfirm(false)}
+        />
+      )}
     </div>
   );
 };

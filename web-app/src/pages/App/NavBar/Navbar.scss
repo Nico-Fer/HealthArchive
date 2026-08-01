@@ -1,0 +1,68 @@
+.ha-navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 64px;
+  padding: 8px 24px;
+  background-color: var(--ha-surface);
+  border-bottom: 1px solid var(--ha-border);
+
+  .ha-navbar-left {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    min-width: 0;
+  }
+
+  .ha-navbar-brand {
+    font-size: 1.375rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--ha-primary);
+    text-decoration: none;
+    white-space: nowrap;
+
+    &:hover {
+      color: var(--ha-primary-dark);
+      text-decoration: none;
+    }
+  }
+
+  .ha-navbar-links {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .ha-navbar-link {
+    padding: 8px 12px;
+    font-weight: 500;
+    color: var(--ha-text-secondary);
+    text-decoration: none;
+    border-bottom: 2px solid transparent;
+
+    &:hover {
+      color: var(--ha-primary);
+      text-decoration: none;
+    }
+
+    &.active {
+      color: var(--ha-primary);
+      font-weight: 600;
+      border-bottom-color: var(--ha-primary);
+    }
+  }
+
+  .ha-navbar-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .ha-navbar-user {
+    color: var(--ha-text-secondary);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+}

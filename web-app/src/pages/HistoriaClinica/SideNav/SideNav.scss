@@ -1,0 +1,56 @@
+.ha-sidenav {
+  flex-direction: column;
+  justify-content: space-between;
+  width: 240px;
+  flex-shrink: 0;
+  background-color: var(--ha-surface);
+  border-right: 1px solid var(--ha-border);
+  padding: 24px 16px;
+
+  .ha-sidenav-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .ha-sidenav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: var(--ha-radius);
+    color: var(--ha-text-secondary);
+    font-weight: 500;
+    text-decoration: none;
+
+    &:hover {
+      background-color: var(--ha-primary-soft);
+      color: var(--ha-primary);
+      text-decoration: none;
+    }
+
+    &.active {
+      background-color: var(--ha-primary);
+      color: #ffffff;
+      font-weight: 600;
+    }
+  }
+
+  .ha-sidenav-logout {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border: 0;
+    border-radius: var(--ha-radius);
+    background: transparent;
+    color: var(--ha-text-secondary);
+    font-weight: 500;
+    text-align: left;
+
+    &:hover {
+      background-color: var(--ha-border);
+      color: var(--ha-text);
+    }
+  }
+}
