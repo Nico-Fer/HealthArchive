@@ -5,6 +5,8 @@ using HealthArchive.Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
+using System.Security.Claims;
 
 namespace HealthArchiveAPI.Controllers
 {
@@ -16,11 +18,16 @@ namespace HealthArchiveAPI.Controllers
     {
         private readonly IDoctorRepository _repository;
         private readonly IPasswordHasher _passwordHasher;
+        private readonly IConfiguration _config;
 
-        public DoctorController(IDoctorRepository repository, IPasswordHasher passwordHasher)
+        public DoctorController(
+            IDoctorRepository repository,
+            IPasswordHasher passwordHasher,
+            IConfiguration config)
         {
             _repository = repository;
             _passwordHasher = passwordHasher;
+            _config = config;
         }
 
         [HttpGet]
@@ -66,6 +73,7 @@ namespace HealthArchiveAPI.Controllers
         }
 
         [AllowAnonymous]
+        [EnableRateLimiting("auth")]
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -81,7 +89,19 @@ namespace HealthArchiveAPI.Controllers
                 return BadRequest(ModelState);
             }
 
-            if (doctorDto.consultoryCode != "1234")
+            // El código sale de configuración (env var en el host), no del código fuente:
+            // es el único perímetro del sistema, porque cualquier doctor registrado ve
+            // todas las historias clínicas.
+            var consultoryCode = _config["Registration:ConsultoryCode"];
+            if (string.IsNullOrWhiteSpace(consultoryCode))
+            {
+                // Sin código configurado no se registra nadie. Si no, un código vacío
+                // más un consultoryCode nulo en el body compararían iguales y el alta
+                // quedaría abierta. En Production esto ni siquiera arranca (ver Program.cs).
+                return StatusCode(StatusCodes.Status503ServiceUnavailable);
+            }
+
+            if (!string.Equals(doctorDto.consultoryCode, consultoryCode, StringComparison.Ordinal))
             {
                 ModelState.AddModelError("error", "incorrect_code");
                 return BadRequest(ModelState);
@@ -109,6 +129,8 @@ namespace HealthArchiveAPI.Controllers
             if (!ModelState.IsValid) return BadRequest(ModelState);
             if (doctorDto == null) return BadRequest();
 
+            if (!CanActOn(doctorId)) return Forbid();
+
             var doctorToUpdate = _repository.GetDoctor(doctorId);
             if (doctorToUpdate == null) return NotFound();
 
@@ -130,6 +152,8 @@ namespace HealthArchiveAPI.Controllers
         [Route("DeleteDoctorById/{doctorId}")]
         public IActionResult DeleteDoctorById(Guid doctorId)
         {
+            if (!CanActOn(doctorId)) return Forbid();
+
             Doctor doctor = _repository.GetDoctor(doctorId);
             if (doctor == null) return NotFound();
 
@@ -140,6 +164,23 @@ namespace HealthArchiveAPI.Controllers
             }
 
             return Ok(doctor);
+        }
+
+        /// <summary>
+        /// Un doctor solo puede editarse o borrarse a sí mismo; para tocar a otro hace
+        /// falta el rol Admin. Sin esto cualquier doctor logueado podía modificar o
+        /// eliminar a cualquier otro pasando su GUID en la ruta.
+        /// </summary>
+        private bool CanActOn(Guid doctorId)
+        {
+            if (User.IsInRole("Admin")) return true;
+
+            // Mismo patrón que AuthServiceController.Me(): JwtSecurityTokenHandler mapea
+            // el claim 'sub' a NameIdentifier, pero no siempre, así que se miran los dos.
+            var idValue = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                          ?? User.FindFirstValue("sub");
+
+            return Guid.TryParse(idValue, out var currentId) && currentId == doctorId;
         }
     }
 }

@@ -36,7 +36,6 @@ interface FormProps {
 
     const handleHistory = () => {
       // Lógica para redirigir a la página de Historia Clínica
-      console.log('Navegando a Historia Clínica');
       navigate('/Pacientes/HistoriaClinica', {state: {patient}})
   };
 
@@ -125,8 +124,7 @@ interface FormProps {
 
     if(Object.keys(newErrors).length === 0){
       try {
-        const result = await updatePatient(patientData);
-        console.log(result);
+        await updatePatient(patientData);
         onPatientUpdated();
         handleClose();
       } catch (error) {
@@ -149,8 +147,7 @@ interface FormProps {
 
   const handleReset = async() => {
     try{
-      const result = await deletePatient(patientData.DNI);
-      console.log(result);
+      await deletePatient(patientData.DNI);
       onPatientUpdated();
       handleClose();
     }catch(error){

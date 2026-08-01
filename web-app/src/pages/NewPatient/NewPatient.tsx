@@ -36,8 +36,6 @@ const NewPatient = () => {
           ...prevData,
           [name]: value,
       }));
-
-      console.log(patientData);
   };
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -108,8 +106,7 @@ const NewPatient = () => {
 
     if(Object.keys(newErrors).length === 0){
       try {
-        const result = await createPatient(patientData);
-        console.log(result); 
+        await createPatient(patientData);
       } catch (error) {
         console.error('Error en la solicitud:', error);
         if (error instanceof Response) {

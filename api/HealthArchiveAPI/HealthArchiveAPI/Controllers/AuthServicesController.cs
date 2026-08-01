@@ -5,6 +5,7 @@ using HealthArchive.Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using System.Security.Claims;
 
 namespace HealthArchiveAPI.Controllers
@@ -35,9 +36,11 @@ namespace HealthArchiveAPI.Controllers
         }
 
         [AllowAnonymous]
+        [EnableRateLimiting("auth")]
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
         [Route("Login")]
         public IActionResult Login([FromBody] DoctorLoginDto doctorDto)
         {
@@ -49,9 +52,11 @@ namespace HealthArchiveAPI.Controllers
         }
 
         [AllowAnonymous]
+        [EnableRateLimiting("auth")]
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
         [Route("Refresh")]
         public IActionResult Refresh()
         {

@@ -43,26 +43,32 @@ const MyForm: React.FC = () => {
   const [errors, setErrors] = useState<FormErrors>({});
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [actionError, setActionError] = useState<string>('');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setActionError('');
     const newErrors = validateForm(formData)
     setErrors(newErrors);
 
     if(Object.keys(newErrors).length === 0){
-      updateProfessional();
-      navigate('/Profesionales')
-    }   
+      // Solo navega si el guardado funcionó; si no, se queda para mostrar el error.
+      if (await updateProfessional()) {
+        navigate('/Profesionales')
+      }
+    }
   };
 
-  const handleReset = () => {
-    deleteProfessional();
-    navigate('/Profesionales');
+  const handleReset = async () => {
+    setActionError('');
+    if (await deleteProfessional()) {
+      navigate('/Profesionales');
+    }
   };
 
   const isFormChanged = (): boolean => {
@@ -73,8 +79,7 @@ const MyForm: React.FC = () => {
       try {
         setIsLoading(true);
         const data = await apiGet<any>(`/api/Doctor/GetDoctorByEmail/${professinonalEmail}`);
-        console.log(data);
-        
+
         const mappedProfessional ={
           Name: data.name,
           LastName: data.lastName,
@@ -96,23 +101,30 @@ const MyForm: React.FC = () => {
       } finally {
         setIsLoading(false);
       }
-
-      console.log('Doctor: ', formData)
   }
 
-  const updateProfessional = async() =>{
+  // Devuelven si la operación salió bien: el backend responde 403 cuando se intenta
+  // editar o borrar a otro profesional sin rol Admin, y sin esto el usuario navegaría
+  // de vuelta al listado creyendo que se guardó.
+  const updateProfessional = async(): Promise<boolean> =>{
     try{
       await apiPatch(`/api/Doctor/UpdateDoctorById/${Id}`, formData);
+      return true;
     }catch(error){
       console.error('Error al actualizar el profesional:', error)
+      setActionError('No se pudo guardar. Solo podés editar tu propio perfil, salvo que seas administrador.');
+      return false;
     }
   }
 
-  const deleteProfessional = async() =>{
+  const deleteProfessional = async(): Promise<boolean> =>{
     try{
       await apiDelete(`/api/Doctor/DeleteDoctorById/${Id}`);
+      return true;
     }catch(error){
       console.error('Error al eliminar el profesional:', error)
+      setActionError('No se pudo eliminar. Solo un administrador puede dar de baja a otro profesional.');
+      return false;
     }
   }
 
@@ -199,6 +211,10 @@ const MyForm: React.FC = () => {
             onChange={handleChange}
           />
         </div>
+
+        {actionError && (
+          <div className="ha-form-error" role="alert">{actionError}</div>
+        )}
 
         <div className="ha-form-actions">
           <button type="submit" className="btn btn-primary" disabled={!isFormChanged()}>
