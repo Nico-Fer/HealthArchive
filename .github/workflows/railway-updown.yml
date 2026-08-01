@@ -1,0 +1,126 @@
+# Levanta o baja el servicio de la API en Railway a demanda.
+#
+# Se corre a mano: pestaña Actions -> "Railway: levantar / bajar la API" -> Run workflow,
+# y elegís la acción en el desplegable.
+#
+# Requiere en el repo (Settings -> Secrets and variables -> Actions):
+#   secret  RAILWAY_TOKEN   -> Project Token de Railway (Settings del proyecto -> Tokens).
+#                              Tiene que ser un PROJECT token, no uno de cuenta: los de
+#                              cuenta van en RAILWAY_API_TOKEN y no sirven para deployar.
+#   var     RAILWAY_SERVICE -> nombre del servicio de la API en Railway.
+#   var     API_HEALTH_URL  -> https://<tu-api>.up.railway.app/health (para verificar el "up").
+#
+# OJO: esto sube y baja SOLO la API. El Postgres de Railway no se puede pausar por API,
+# así que su almacenamiento sigue consumiendo crédito aunque la API esté abajo.
+# Ver docs/deploy.md.
+
+name: "Railway: levantar / bajar la API"
+
+on:
+  workflow_dispatch:
+    inputs:
+      accion:
+        description: "Qué hacer con el servicio de la API"
+        required: true
+        type: choice
+        default: status
+        options:
+          - up
+          - down
+          - status
+
+# Que no se pisen dos corridas: bajar y levantar a la vez deja el servicio en un estado raro.
+concurrency:
+  group: railway-updown
+  cancel-in-progress: false
+
+jobs:
+  updown:
+    name: "${{ inputs.accion }}"
+    runs-on: ubuntu-latest
+    env:
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      RAILWAY_SERVICE: ${{ vars.RAILWAY_SERVICE }}
+      API_HEALTH_URL: ${{ vars.API_HEALTH_URL }}
+
+    steps:
+      - name: Validar configuración
+        run: |
+          faltan=0
+          if [ -z "$RAILWAY_TOKEN" ]; then
+            echo "Falta el secret RAILWAY_TOKEN"
+            faltan=1
+          fi
+          if [ -z "$RAILWAY_SERVICE" ]; then
+            echo "Falta la variable RAILWAY_SERVICE"
+            faltan=1
+          fi
+          if [ "$faltan" -eq 1 ]; then
+            echo "::error::Configuralo en Settings -> Secrets and variables -> Actions. Ver docs/deploy.md."
+            exit 1
+          fi
+          echo "Servicio: $RAILWAY_SERVICE"
+
+      - uses: actions/checkout@v4
+        if: inputs.accion == 'up'
+
+      - name: Instalar Railway CLI
+        run: npm install -g @railway/cli
+
+      # `railway up` sube el contenido del directorio y construye con el Dockerfile
+      # que encuentra ahí, por eso corre desde el directorio de la solución.
+      - name: Levantar la API
+        if: inputs.accion == 'up'
+        working-directory: api/HealthArchiveAPI
+        run: railway up --ci --service "$RAILWAY_SERVICE"
+
+      # Espera a que el healthcheck responda: sin esto el workflow termina en verde
+      # apenas Railway acepta el deploy, aunque la app todavía no esté sirviendo.
+      - name: Esperar a que responda /health
+        if: inputs.accion == 'up'
+        run: |
+          if [ -z "$API_HEALTH_URL" ]; then
+            echo "::warning::Sin API_HEALTH_URL no puedo verificar que haya levantado."
+            exit 0
+          fi
+          for i in $(seq 1 30); do
+            codigo=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "$API_HEALTH_URL" || echo 000)
+            if [ "$codigo" = "200" ]; then
+              echo "API arriba (intento $i)."
+              exit 0
+            fi
+            echo "Intento $i: HTTP $codigo, reintento en 10s..."
+            sleep 10
+          done
+          echo "::error::La API no respondió 200 en /health después de 5 minutos."
+          exit 1
+
+      # `railway down` elimina el último deployment del servicio; el servicio y su
+      # dominio quedan, así que al volver a levantarlo mantenés la misma URL (y no
+      # hay que tocar Cors__AllowedOrigins ni VITE_API_URL).
+      - name: Bajar la API
+        if: inputs.accion == 'down'
+        run: railway down --service "$RAILWAY_SERVICE" --yes
+
+      - name: Estado
+        if: inputs.accion == 'status'
+        run: |
+          railway status || true
+          if [ -n "$API_HEALTH_URL" ]; then
+            codigo=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "$API_HEALTH_URL" || echo 000)
+            echo "GET $API_HEALTH_URL -> HTTP $codigo"
+          fi
+
+      - name: Resumen
+        if: always()
+        run: |
+          {
+            echo "### Railway — acción: \`${{ inputs.accion }}\`"
+            echo ""
+            echo "- Servicio: \`$RAILWAY_SERVICE\`"
+            echo "- Resultado del job: \`${{ job.status }}\`"
+            if [ "${{ inputs.accion }}" = "down" ]; then
+              echo ""
+              echo "> El Postgres sigue arriba: Railway no permite pausarlo por API."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
