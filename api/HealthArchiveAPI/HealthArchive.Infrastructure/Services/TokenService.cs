@@ -28,6 +28,8 @@ namespace HealthArchive.Infrastructure.Services
                 new Claim(JwtRegisteredClaimNames.Sub, doctor.Id.ToString()),
                 new Claim(JwtRegisteredClaimNames.Email, doctor.Email),
                 new Claim(ClaimTypes.Role, doctor.Role),
+                // Unidad de aislamiento: los controllers filtran por este claim.
+                new Claim("consultorio", doctor.ConsultorioId.ToString()),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             };
 

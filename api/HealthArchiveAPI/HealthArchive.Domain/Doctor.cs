@@ -22,5 +22,9 @@ namespace HealthArchive.Domain
         public string Tuition { get; set; }
         public string? Description { get; set; } = "";
         public string Role { get; set; } = "Doctor";
+
+        [ForeignKey("Consultorio")]
+        public Guid ConsultorioId { get; set; }
+        public Consultorio Consultorio { get; set; }
     }
 }

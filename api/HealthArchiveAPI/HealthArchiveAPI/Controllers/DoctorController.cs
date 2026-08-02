@@ -2,11 +2,11 @@ using HealthArchive.Application.DTOs;
 using HealthArchive.Application.Interfaces;
 using HealthArchive.Application.Mapping;
 using HealthArchive.Domain;
+using HealthArchiveAPI.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
-using System.Security.Claims;
 
 namespace HealthArchiveAPI.Controllers
 {
@@ -17,17 +17,17 @@ namespace HealthArchiveAPI.Controllers
     public class DoctorController : ControllerBase
     {
         private readonly IDoctorRepository _repository;
+        private readonly IConsultorioRepository _consultorios;
         private readonly IPasswordHasher _passwordHasher;
-        private readonly IConfiguration _config;
 
         public DoctorController(
             IDoctorRepository repository,
-            IPasswordHasher passwordHasher,
-            IConfiguration config)
+            IConsultorioRepository consultorios,
+            IPasswordHasher passwordHasher)
         {
             _repository = repository;
+            _consultorios = consultorios;
             _passwordHasher = passwordHasher;
-            _config = config;
         }
 
         [HttpGet]
@@ -37,8 +37,9 @@ namespace HealthArchiveAPI.Controllers
         public IActionResult GetDoctors()
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
+            if (User.GetConsultorioId() is not Guid consultorioId) return Forbid();
 
-            var doctorsList = _repository.GetDoctors();
+            var doctorsList = _repository.GetDoctors(consultorioId);
             return Ok(doctorsList);
         }
 
@@ -50,8 +51,9 @@ namespace HealthArchiveAPI.Controllers
         public IActionResult GetDoctorById(Guid doctorId)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
+            if (User.GetConsultorioId() is not Guid consultorioId) return Forbid();
 
-            var doctor = _repository.GetDoctor(doctorId);
+            var doctor = _repository.GetDoctor(doctorId, consultorioId);
             if (doctor == null) return NotFound();
 
             return Ok(doctor);
@@ -65,8 +67,9 @@ namespace HealthArchiveAPI.Controllers
         public IActionResult GetDoctorByEmail(string email)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
+            if (User.GetConsultorioId() is not Guid consultorioId) return Forbid();
 
-            var doctor = _repository.GetDoctor(email);
+            var doctor = _repository.GetDoctor(email, consultorioId);
             if (doctor == null) return NotFound();
 
             return Ok(doctor);
@@ -89,25 +92,33 @@ namespace HealthArchiveAPI.Controllers
                 return BadRequest(ModelState);
             }
 
-            // El código sale de configuración (env var en el host), no del código fuente:
-            // es el único perímetro del sistema, porque cualquier doctor registrado ve
-            // todas las historias clínicas.
-            var consultoryCode = _config["Registration:ConsultoryCode"];
-            if (string.IsNullOrWhiteSpace(consultoryCode))
+            // El código es el perímetro del sistema: un doctor registrado ve todas las
+            // historias clínicas de su consultorio. Vive hasheado en la base, así que
+            // hay que elegir el consultorio y verificar contra ese (el hash lleva salt,
+            // no se puede buscar un consultorio "por su código").
+            var consultorio = _consultorios.GetConsultorio(doctorDto.ConsultorioId);
+            if (consultorio == null)
             {
-                // Sin código configurado no se registra nadie. Si no, un código vacío
-                // más un consultoryCode nulo en el body compararían iguales y el alta
-                // quedaría abierta. En Production esto ni siquiera arranca (ver Program.cs).
+                ModelState.AddModelError("error", "consultorio_not_found");
+                return BadRequest(ModelState);
+            }
+
+            if (string.IsNullOrEmpty(consultorio.CodeHash))
+            {
+                // Consultorio sin código configurado: no se registra nadie. Si no, un
+                // hash vacío haría que la verificación se comportara de forma imprevisible.
                 return StatusCode(StatusCodes.Status503ServiceUnavailable);
             }
 
-            if (!string.Equals(doctorDto.consultoryCode, consultoryCode, StringComparison.Ordinal))
+            if (string.IsNullOrEmpty(doctorDto.consultoryCode) ||
+                !_passwordHasher.Verify(consultorio.CodeHash, doctorDto.consultoryCode))
             {
                 ModelState.AddModelError("error", "incorrect_code");
                 return BadRequest(ModelState);
             }
 
             var doctor = doctorDto.ToEntity();
+            doctor.ConsultorioId = consultorio.Id;
             doctor.Password = _passwordHasher.Hash(doctor.Password);
 
             if (!_repository.CreateDoctor(doctor))
@@ -129,9 +140,12 @@ namespace HealthArchiveAPI.Controllers
             if (!ModelState.IsValid) return BadRequest(ModelState);
             if (doctorDto == null) return BadRequest();
 
+            if (User.GetConsultorioId() is not Guid consultorioId) return Forbid();
             if (!CanActOn(doctorId)) return Forbid();
 
-            var doctorToUpdate = _repository.GetDoctor(doctorId);
+            // Scoped: un Admin administra su consultorio, no los ajenos. Si el doctor es
+            // de otro consultorio esto devuelve null → 404, que además no filtra si existe.
+            var doctorToUpdate = _repository.GetDoctor(doctorId, consultorioId);
             if (doctorToUpdate == null) return NotFound();
 
             doctorDto.ApplyTo(doctorToUpdate);
@@ -152,9 +166,10 @@ namespace HealthArchiveAPI.Controllers
         [Route("DeleteDoctorById/{doctorId}")]
         public IActionResult DeleteDoctorById(Guid doctorId)
         {
+            if (User.GetConsultorioId() is not Guid consultorioId) return Forbid();
             if (!CanActOn(doctorId)) return Forbid();
 
-            Doctor doctor = _repository.GetDoctor(doctorId);
+            Doctor doctor = _repository.GetDoctor(doctorId, consultorioId);
             if (doctor == null) return NotFound();
 
             if (!_repository.DeleteDoctor(doctor))
@@ -175,12 +190,7 @@ namespace HealthArchiveAPI.Controllers
         {
             if (User.IsInRole("Admin")) return true;
 
-            // Mismo patrón que AuthServiceController.Me(): JwtSecurityTokenHandler mapea
-            // el claim 'sub' a NameIdentifier, pero no siempre, así que se miran los dos.
-            var idValue = User.FindFirstValue(ClaimTypes.NameIdentifier)
-                          ?? User.FindFirstValue("sub");
-
-            return Guid.TryParse(idValue, out var currentId) && currentId == doctorId;
+            return User.GetDoctorId() == doctorId;
         }
     }
 }

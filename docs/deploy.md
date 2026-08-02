@@ -138,6 +138,25 @@ UPDATE "Doctors" SET "Role" = 'Admin' WHERE "Email" = 'tu@email.com';
 El rol viaja dentro del JWT, así que **el doctor tiene que cerrar sesión y volver a
 entrar** para que el cambio tenga efecto.
 
+**Agregar más consultorios**
+
+La migración `Consultorios` crea uno inicial ("Consultorio principal") al que quedan
+asignados todos los doctores y pacientes que ya existían, y el seeder de arranque le pone
+como código el valor de `Registration__ConsultoryCode`. Para sumar otros, con un doctor
+`Admin`:
+
+```bash
+curl -X POST https://<tu-api>.up.railway.app/api/Consultorio/CreateConsultorio -H "Content-Type: application/json" -d '{"name":"Consultorio Norte","code":"UN-CODIGO-FUERTE"}'
+```
+
+(La request necesita la cookie de sesión de un Admin.) A partir de ahí el consultorio nuevo
+aparece en el desplegable de `/Register` y quien tenga su código puede darse de alta ahí.
+Los códigos se guardan **hasheados**: si se pierde uno, no se puede recuperar, se rota con
+`PATCH /api/Consultorio/UpdateConsultorio/{id}`.
+
+> Después de este deploy, **los doctores logueados tienen que volver a entrar**: sus tokens
+> no traen el claim `consultorio` y la API les va a responder 403 hasta que renueven sesión.
+
 ---
 
 ## 2. Vercel — Front

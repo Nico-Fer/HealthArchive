@@ -18,6 +18,7 @@ interface FormProps {
     const navigate = useNavigate();
     const [errors, setErrors] = useState<FormErrors>({});
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [actionError, setActionError] = useState<string>('');
     let dateChanged = false;
 
     const [patientData, setFormData] = useState<Patient>({
@@ -110,14 +111,19 @@ interface FormProps {
     }
 
     try{
-      await apiPatch(`/api/Patient/UpdatePatientByDni/${formattedPatientData.DNI}`, formattedPatientData);
+      // La ruta va con el DNI ORIGINAL (el del prop), no con el del formulario: si se
+      // usara el editado, al cambiar el DNI se buscaría un paciente que todavía no
+      // existe y el update fallaba con 404.
+      await apiPatch(`/api/Patient/UpdatePatientByDni/${patient.DNI}`, formattedPatientData);
     }catch(error){
       console.error('Error al actualizar el paciente:', error)
+      throw error;
     }
   }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setActionError('');
     setOriginalFormData({ ...patientData });
     const newErrors = validateForm(patientData)
     setErrors(newErrors);
@@ -129,10 +135,9 @@ interface FormProps {
         handleClose();
       } catch (error) {
         console.error('Error en la solicitud:', error);
-        if (error instanceof Response) {
-          const responseBody = await error.text();
-          console.error('Respuesta del servidor:', responseBody); 
-        }
+        // El caso más habitual es un DNI que ya tiene otro paciente del consultorio.
+        // Sin este mensaje el guardado fallaría en silencio.
+        setActionError('No se pudo guardar. Revisá que el DNI no pertenezca ya a otro paciente.');
       }
     }
   };
@@ -147,7 +152,9 @@ interface FormProps {
 
   const handleReset = async() => {
     try{
-      await deletePatient(patientData.DNI);
+      // El DNI original, por lo mismo que el update: si se editó el campo sin guardar,
+      // patientData.DNI apunta a un paciente que no existe.
+      await deletePatient(patient.DNI);
       onPatientUpdated();
       handleClose();
     }catch(error){
@@ -200,6 +207,19 @@ interface FormProps {
               />
               {errors.LastName && <div className="ha-form-error">{errors.LastName}</div>}
             </div>
+          </div>
+
+          <div className="ha-form-field">
+            <label htmlFor="DNI">DNI</label>
+            <input
+              type="text"
+              className="form-control"
+              id="DNI"
+              name="DNI"
+              value={patientData.DNI}
+              onChange={handleChange}
+            />
+            {errors.DNI && <div className="ha-form-error">{errors.DNI}</div>}
           </div>
 
           <div className="ha-form-field">
@@ -266,6 +286,10 @@ interface FormProps {
               />
             </div>
           </div>
+
+          {actionError && (
+            <div className="ha-form-error" role="alert">{actionError}</div>
+          )}
 
           <div className="ha-form-actions">
             <button type="submit" className="btn btn-primary" disabled={!isFormChanged()}>Guardar</button>

@@ -1,5 +1,6 @@
 using HealthArchive.Application.Interfaces;
 using HealthArchive.Domain;
+using HealthArchiveAPI.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -20,10 +21,16 @@ namespace HealthArchiveAPI.Controllers
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         [Route("GetEvolutions/{hceId}")]
         public IActionResult GetEvolutions(Guid hceId)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
+            if (User.GetConsultorioId() is not Guid consultorioId) return Forbid();
+
+            // 404 y no 403 a propósito: si la historia es de otro consultorio, la respuesta
+            // ni siquiera confirma que exista.
+            if (!_repository.BelongsToConsultorio(hceId, consultorioId)) return NotFound();
 
             var evolutions = _repository.GetEvolutions(hceId);
             return Ok(evolutions);
@@ -32,28 +39,32 @@ namespace HealthArchiveAPI.Controllers
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         [Route("AddFile/{hceId}")]
         public async Task<IActionResult> UploadFile(Guid hceId, IFormFile file)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
+            if (User.GetConsultorioId() is not Guid consultorioId) return Forbid();
 
-            if (_repository.GetHce(hceId) == null)
+            // Antes no se validaba: sin archivo, file.CopyToAsync tiraba
+            // NullReferenceException y el endpoint devolvía 500.
+            if (file == null || file.Length == 0)
             {
-                return NotFound();
+                ModelState.AddModelError("error", "file_required");
+                return BadRequest(ModelState);
             }
 
-            MemoryStream ms = new MemoryStream();
+            if (!_repository.BelongsToConsultorio(hceId, consultorioId)) return NotFound();
+
+            using var ms = new MemoryStream();
             await file.CopyToAsync(ms);
-            var fileBytes = ms.ToArray();
 
             var newFile = new HCEFile
             {
                 FileName = file.FileName,
-                Content = fileBytes,
+                Content = ms.ToArray(),
                 HCEId = hceId
             };
-
-            if (newFile == null) return BadRequest();
 
             if (!_repository.AddFile(newFile))
             {

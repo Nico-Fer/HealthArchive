@@ -25,29 +25,29 @@ namespace HealthArchive.Infrastructure.Repositories
             return Save();
         }
 
-        public bool DoctorExists(Guid id)
-        {
-            return _db.Doctors.Any(d => d.Id == id);
-        }
-
         public bool DoctorExists(string email)
         {
             return _db.Doctors.Any(d => d.Email == email);
         }
 
-        public Doctor GetDoctor(Guid id)
+        public Doctor GetDoctor(Guid id, Guid consultorioId)
+        {
+            return _db.Doctors.FirstOrDefault(d => d.Id == id && d.ConsultorioId == consultorioId);
+        }
+
+        public Doctor GetDoctor(string email, Guid consultorioId)
+        {
+            return _db.Doctors.FirstOrDefault(d => d.Email == email && d.ConsultorioId == consultorioId);
+        }
+
+        public Doctor GetDoctorForAuth(Guid id)
         {
             return _db.Doctors.FirstOrDefault(d => d.Id == id);
         }
 
-        public Doctor GetDoctor(string email)
+        public ICollection<Doctor> GetDoctors(Guid consultorioId)
         {
-            return _db.Doctors.FirstOrDefault(d => d.Email == email);
-        }
-
-        public ICollection<Doctor> GetDoctors()
-        {
-            return _db.Doctors.ToList();
+            return _db.Doctors.Where(d => d.ConsultorioId == consultorioId).ToList();
         }
 
         public bool Save()

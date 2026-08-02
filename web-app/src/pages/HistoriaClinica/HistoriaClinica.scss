@@ -93,6 +93,12 @@
       margin-bottom: 0;
     }
   }
+
+  .hce-evolution-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 8px;
+  }
 }
 
 // Panel de archivos (FilesCollection)

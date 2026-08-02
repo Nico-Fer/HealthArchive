@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import './FormEvolucion.scss'; 
+import './FormEvolucion.scss';
 
 import formatDate from '../../../Functions/FormatDate';
 import { EvolutionInfo } from '../../../Types/EvolutionInfo';
@@ -9,6 +9,9 @@ interface EvolutionFormProps {
     onAddEvolution: (formData: EvolutionFormData) => void;
     onClose: () => void;
     patientDni: string;
+    /** Notas iniciales (JSON de draft-js). Al venir definido, el formulario pasa a
+     *  modo edición: no toca el borrador y cambia los textos. */
+    initialNotes?: string;
 }
 
 interface EvolutionFormData {
@@ -17,15 +20,17 @@ interface EvolutionFormData {
     DateAdded: Date,
 }
 
-const EvolutionForm: React.FC<EvolutionFormProps> = ({ onAddEvolution, onClose, patientDni }) => {
+const EvolutionForm: React.FC<EvolutionFormProps> = ({ onAddEvolution, onClose, patientDni, initialNotes }) => {
 
   const todaysDate = new Date;
+  const isEditing = initialNotes !== undefined;
 
-    // Arrancamos desde el borrador guardado para este paciente (si existe).
+    // Al crear se arranca desde el borrador guardado para este paciente (si existe);
+    // al editar, desde el texto que ya tiene la evolución.
     const [formData, setFormData] = useState<EvolutionFormData>({
         DateAdded: new Date,
         ModifiedBy: {modifiedBy: '', tuition: ''},
-        Notes: readHceDraft(patientDni) ?? '',
+        Notes: isEditing ? initialNotes! : (readHceDraft(patientDni) ?? ''),
     });
 
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -38,27 +43,35 @@ const EvolutionForm: React.FC<EvolutionFormProps> = ({ onAddEvolution, onClose, 
         // y se recupera al reabrir el formulario.
         onAddEvolution(formData);
 
-        setFormData({
-            DateAdded: new Date,
-            ModifiedBy: {modifiedBy: '', tuition: ''},
-            Notes: '',
-        });
+        if (!isEditing) {
+            setFormData({
+                DateAdded: new Date,
+                ModifiedBy: {modifiedBy: '', tuition: ''},
+                Notes: '',
+            });
+        }
     };
 
     const handleTextChange = (notes : string) =>{
         setFormData({...formData, Notes: notes})
-        saveHceDraft(patientDni, notes);
+        // Editando no se guarda borrador: el borrador es del "alta en curso" de ese
+        // paciente y pisarlo haría perder una evolución a medio escribir.
+        if (!isEditing) {
+            saveHceDraft(patientDni, notes);
+        }
     }
 
     return (
         <form onSubmit={handleSubmit} className="evolution-form">
             <div className="evolution-form-header">
-                <h3 className="evolution-form-title">Nueva Evolución</h3>
+                <h3 className="evolution-form-title">{isEditing ? 'Editar Evolución' : 'Nueva Evolución'}</h3>
                 <span className="evolution-form-date">Fecha: {formatDate(todaysDate)}</span>
             </div>
             <RichEditorExample handleTextChange={handleTextChange} notes = {formData.Notes}/>
             <div className="evolution-form-actions">
-                <button type="submit" className="btn btn-primary">Agregar Evolución</button>
+                <button type="submit" className="btn btn-primary">
+                    {isEditing ? 'Guardar cambios' : 'Agregar Evolución'}
+                </button>
                 <button type="button" className="btn btn-ghost" onClick={onClose}>Cerrar</button>
             </div>
         </form>

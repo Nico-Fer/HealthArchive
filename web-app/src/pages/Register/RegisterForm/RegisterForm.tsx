@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { FaEnvelope, FaLock, FaUser, FaIdCard, FaHospital } from "react-icons/fa";
 import InputComponent from "../../../components/Input";
 import { Phone } from "../../../Types/Phone";
@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { ProfessionalForRedux } from "../../../Types/ProfessionalForRedux";
 import { useDispatch } from "react-redux";
 import { createProfessionalRed } from "../../../Redux/States/professional";
-import { apiFetch } from '../../../api/client';
+import { apiFetch, apiGet } from '../../../api/client';
 
 interface FormData {
   Name: string;
@@ -14,7 +14,13 @@ interface FormData {
   Password: string;
   Email: string;
   ConsultoryCode: string;
+  ConsultorioId: string;
   Tuition: string;
+}
+
+interface Consultorio {
+  id: string;
+  name: string;
 }
 
 const RegisterForm = () => {
@@ -30,8 +36,22 @@ const RegisterForm = () => {
     Password: '',
     Email: '',
     ConsultoryCode: '',
+    ConsultorioId: '',
     Tuition: '',
   });
+
+  // El código está hasheado en la base, así que no se puede deducir a qué consultorio
+  // pertenece: hay que elegirlo y el backend verifica el código contra ese.
+  const [consultorios, setConsultorios] = useState<Consultorio[]>([]);
+
+  useEffect(() => {
+    apiGet<Consultorio[]>('/api/Consultorio/GetConsultorios')
+      .then(setConsultorios)
+      .catch(() => {
+        setErrorMessage('No se pudieron cargar los consultorios. Recargá la página.');
+        setError(true);
+      });
+  }, []);
 
   const createUser = async() =>{
     try{
@@ -73,7 +93,7 @@ const RegisterForm = () => {
   }
 
   const validateForm= () => {
-    if(formData.ConsultoryCode === '' || formData.Email=== '' || formData.Name=== '' || formData.LastName=== '' || formData.Password=== '' || formData.Tuition=== ''){
+    if(formData.ConsultoryCode === '' || formData.ConsultorioId === '' || formData.Email=== '' || formData.Name=== '' || formData.LastName=== '' || formData.Password=== '' || formData.Tuition=== ''){
       setErrorMessage('Todos los campos son obligatorios');
       setError(true);
       return false;
@@ -90,7 +110,7 @@ const RegisterForm = () => {
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setError(false);
     const { id, value } = e.target;
       setFormData({ ...formData, [id]: value });
@@ -160,6 +180,21 @@ const RegisterForm = () => {
               label="Código del Consultorio"
               icon={<FaHospital />}
             />
+        </div>
+
+        <div className="ha-form-field">
+          <label htmlFor="ConsultorioId">Consultorio</label>
+          <select
+            className="form-select"
+            id="ConsultorioId"
+            value={formData.ConsultorioId}
+            onChange={handleChange}
+          >
+            <option value="">Elegí un consultorio…</option>
+            {consultorios.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
         </div>
 
             {error && <div className="alert alert-danger" role="alert">

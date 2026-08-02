@@ -66,7 +66,7 @@ namespace HealthArchiveAPI.Controllers
             var stored = _refreshTokenRepo.GetByToken(tokenValue);
             if (stored == null || !stored.IsActive) return Unauthorized();
 
-            var user = _doctorRepo.GetDoctor(stored.DoctorId);
+            var user = _doctorRepo.GetDoctorForAuth(stored.DoctorId);
             if (user == null) return Unauthorized();
 
             // Rotate: revoke the current token and issue a new pair.
@@ -112,7 +112,7 @@ namespace HealthArchiveAPI.Controllers
             if (idValue == null || !Guid.TryParse(idValue, out var doctorId))
                 return Unauthorized();
 
-            var user = _doctorRepo.GetDoctor(doctorId);
+            var user = _doctorRepo.GetDoctorForAuth(doctorId);
             if (user == null) return Unauthorized();
 
             return Ok(user.ToAuthUserDto());

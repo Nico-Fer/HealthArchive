@@ -51,6 +51,7 @@ builder.Services.AddScoped<IDoctorRepository, DoctorRepository>();
 builder.Services.AddScoped<IEvolutionRepository, EvolutionRepository>();
 builder.Services.AddScoped<IHceRepository, HceRepository>();
 builder.Services.AddScoped<IPatientRepository, PatientRepository>();
+builder.Services.AddScoped<IConsultorioRepository, ConsultorioRepository>();
 builder.Services.AddScoped<IAuthServiceRepository, AuthServiceRepository>();
 builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 
@@ -175,6 +176,12 @@ if (app.Configuration.GetValue<bool>("RunMigrationsOnStartup"))
     scope.ServiceProvider.GetRequiredService<DBContextHealth>().Database.Migrate();
 }
 
+// El código del consultorio inicial no se puede sembrar desde la migración porque
+// hay que hashearlo, y eso es código de la app. Lo completa acá.
+// Idempotente: solo actúa si el hash está vacío, así que no pisa un código que se
+// haya rotado después desde la API.
+SeedConsultorioInicial(app);
+
 app.UseForwardedHeaders();
 
 if (app.Environment.IsDevelopment())
@@ -197,6 +204,37 @@ app.MapControllers();
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 
 app.Run();
+
+// Completa el CodeHash del consultorio que creó la migración `Consultorios`, hasheando
+// Registration:ConsultoryCode. El Guid está fijado en esa migración.
+static void SeedConsultorioInicial(WebApplication app)
+{
+    var consultorioInicialId = new Guid("11111111-1111-1111-1111-111111111111");
+
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<DBContextHealth>();
+
+    var consultorio = db.Consultorios.FirstOrDefault(c => c.Id == consultorioInicialId);
+    if (consultorio == null || !string.IsNullOrEmpty(consultorio.CodeHash))
+    {
+        return;
+    }
+
+    var code = app.Configuration["Registration:ConsultoryCode"];
+    if (string.IsNullOrWhiteSpace(code))
+    {
+        // En Production no se llega acá: el fail-fast de arriba ya cortó.
+        app.Logger.LogWarning(
+            "El consultorio inicial quedó sin código: Registration:ConsultoryCode está vacío. Nadie va a poder registrarse.");
+        return;
+    }
+
+    var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
+    consultorio.CodeHash = hasher.Hash(code);
+    db.SaveChanges();
+
+    app.Logger.LogInformation("Se sembró el código del consultorio inicial.");
+}
 
 // Railway expone la conexión de Postgres como DATABASE_URL en formato URI;
 // Npgsql espera key=value. Si hay ConnectionStrings:DbContext, ese gana (local).

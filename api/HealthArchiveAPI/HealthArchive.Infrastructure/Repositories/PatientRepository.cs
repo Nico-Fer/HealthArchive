@@ -35,40 +35,33 @@ namespace HealthArchive.Infrastructure.Repositories
             return Save();
         }
 
-        public HCE GetClinicHistory(Guid id)
+        public HCE GetClinicHistory(Guid patientId, Guid consultorioId)
         {
             var patient = _db.Patients
                 .Include(h => h.ClinicHistory)
                     .ThenInclude(ch => ch.Evolutions)
                 .Include(h => h.ClinicHistory)
                     .ThenInclude(ch => ch.Files)
-                .FirstOrDefault(p => p.Id == id);
-            return patient.ClinicHistory;
+                .FirstOrDefault(p => p.Id == patientId && p.ConsultorioId == consultorioId);
+
+            // Null-safe: si el paciente es de otro consultorio (o no existe) devuelve null
+            // y el controller responde 404, en vez de reventar con NullReference.
+            return patient?.ClinicHistory;
         }
 
-        public Patient GetPatient(Guid id)
+        public Patient GetPatient(Guid id, Guid consultorioId)
         {
-            return _db.Patients.FirstOrDefault(p => p.Id == id);
+            return _db.Patients.FirstOrDefault(p => p.Id == id && p.ConsultorioId == consultorioId);
         }
 
-        public Patient GetPatient(string email)
+        public Patient GetPatientByDNI(string DNI, Guid consultorioId)
         {
-            return _db.Patients.FirstOrDefault(p => p.Email == email);
+            return _db.Patients.FirstOrDefault(p => p.DNI == DNI && p.ConsultorioId == consultorioId);
         }
 
-        public Patient GetPatientByDNI(string DNI)
+        public (ICollection<Patient> Items, int TotalCount) GetPatients(Guid consultorioId, int pageNumber, int pageSize, string? search)
         {
-            return _db.Patients.FirstOrDefault(p => p.DNI == DNI);
-        }
-
-        public ICollection<Patient> GetPatients()
-        {
-            return _db.Patients.ToList();
-        }
-
-        public (ICollection<Patient> Items, int TotalCount) GetPatients(int pageNumber, int pageSize, string? search)
-        {
-            var query = _db.Patients.AsQueryable();
+            var query = _db.Patients.Where(p => p.ConsultorioId == consultorioId);
 
             if (!string.IsNullOrWhiteSpace(search))
             {
@@ -90,14 +83,9 @@ namespace HealthArchive.Infrastructure.Repositories
             return (items, totalCount);
         }
 
-        public bool PatientsExists(Guid id)
+        public bool PatientsExists(string DNI, Guid consultorioId)
         {
-            return _db.Patients.Any(p => p.Id == id);
-        }
-
-        public bool PatientsExists(string DNI)
-        {
-            return _db.Patients.Any(p => p.DNI == DNI);
+            return _db.Patients.Any(p => p.DNI == DNI && p.ConsultorioId == consultorioId);
         }
 
         public bool Save()

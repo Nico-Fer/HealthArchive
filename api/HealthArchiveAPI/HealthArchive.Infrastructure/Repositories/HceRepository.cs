@@ -47,6 +47,13 @@ namespace HealthArchive.Infrastructure.Repositories
             return _db.HCEs.FirstOrDefault(h => h.Id == id);
         }
 
+        public bool BelongsToConsultorio(Guid hceId, Guid consultorioId)
+        {
+            // El consultorio se hereda del paciente: HCE -> Patient -> ConsultorioId.
+            // No se duplica la columna en HCE para no tener dos fuentes de verdad.
+            return _db.HCEs.Any(h => h.Id == hceId && h.Patient.ConsultorioId == consultorioId);
+        }
+
         public bool Save()
         {
             return _db.SaveChanges() >= 0;
