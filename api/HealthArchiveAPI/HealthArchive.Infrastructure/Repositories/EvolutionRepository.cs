@@ -37,6 +37,13 @@ namespace HealthArchive.Infrastructure.Repositories
             return _db.Evolutions.FirstOrDefault(e => e.Id == id);
         }
 
+        public bool BelongsToConsultorio(Guid evolutionId, Guid consultorioId)
+        {
+            return _db.Evolutions.Any(e =>
+                e.Id == evolutionId &&
+                e.ClinicHistory.Patient.ConsultorioId == consultorioId);
+        }
+
         public bool Save()
         {
             return _db.SaveChanges() >= 0;

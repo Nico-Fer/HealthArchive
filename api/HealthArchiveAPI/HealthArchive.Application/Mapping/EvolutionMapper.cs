@@ -9,16 +9,13 @@ namespace HealthArchive.Application.Mapping
     public static class EvolutionMapper
     {
         /// <summary>
-        /// HCEId no se mapea: viene de la ruta, no del body.
+        /// Solo mapea el texto. HCEId viene de la ruta, y EvolutionInfo lo arma el
+        /// controller con el doctor autenticado: si se tomara del DTO, cualquiera podría
+        /// firmar una evolución con el nombre y la matrícula de otro profesional.
         /// </summary>
         public static Evolution ToEntity(this EvolutionDto dto) => new()
         {
             Notes = dto.Notes,
-            EvolutionInfo = new EvolutionInfo
-            {
-                ModifiedBy = dto.ModifiedBy.ModifiedBy,
-                Tuition = dto.ModifiedBy.Tuition,
-            },
         };
     }
 }

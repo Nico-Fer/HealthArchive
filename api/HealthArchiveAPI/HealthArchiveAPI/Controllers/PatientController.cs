@@ -2,6 +2,7 @@ using HealthArchive.Application.DTOs;
 using HealthArchive.Application.Interfaces;
 using HealthArchive.Application.Mapping;
 using HealthArchive.Domain;
+using HealthArchiveAPI.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -26,10 +27,11 @@ namespace HealthArchiveAPI.Controllers
         public IActionResult GetPatients([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 30, [FromQuery] string? search = null)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
+            if (User.GetConsultorioId() is not Guid consultorioId) return Forbid();
             if (pageNumber < 1) pageNumber = 1;
             if (pageSize < 1 || pageSize > 100) pageSize = 30; // cota defensiva
 
-            var (items, totalCount) = _repository.GetPatients(pageNumber, pageSize, search);
+            var (items, totalCount) = _repository.GetPatients(consultorioId, pageNumber, pageSize, search);
 
             var result = new PagedResultDto<Patient>
             {
@@ -49,14 +51,18 @@ namespace HealthArchiveAPI.Controllers
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
             if (patientDto == null) return BadRequest(ModelState);
+            if (User.GetConsultorioId() is not Guid consultorioId) return Forbid();
 
-            if (_repository.PatientsExists(patientDto.DNI))
+            // La unicidad del DNI es dentro del consultorio: otro consultorio puede
+            // atender legítimamente al mismo paciente.
+            if (_repository.PatientsExists(patientDto.DNI, consultorioId))
             {
                 ModelState.AddModelError("error", "patient_exists");
                 return BadRequest(ModelState);
             }
 
             var patient = patientDto.ToEntity();
+            patient.ConsultorioId = consultorioId;
 
             if (!_repository.CreatePatient(patient))
             {
@@ -74,12 +80,13 @@ namespace HealthArchiveAPI.Controllers
         public IActionResult GetClinicHistory(string dni)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
+            if (User.GetConsultorioId() is not Guid consultorioId) return Forbid();
 
-            var patient = _repository.GetPatientByDNI(dni);
-            if (patient == null) return BadRequest(ModelState);
+            var patient = _repository.GetPatientByDNI(dni, consultorioId);
+            if (patient == null) return NotFound();
 
-            var hce = _repository.GetClinicHistory(patient.Id);
-            if (hce == null) return BadRequest(ModelState);
+            var hce = _repository.GetClinicHistory(patient.Id, consultorioId);
+            if (hce == null) return NotFound();
 
             return Ok(hce);
         }
@@ -93,12 +100,12 @@ namespace HealthArchiveAPI.Controllers
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
             if (patientDto == null) return BadRequest();
+            if (User.GetConsultorioId() is not Guid consultorioId) return Forbid();
 
-            var patientToUpdate = _repository.GetPatient(patientId);
+            var patientToUpdate = _repository.GetPatient(patientId, consultorioId);
             if (patientToUpdate == null) return NotFound();
 
-            var auxPatient = _repository.GetPatientByDNI(patientDto.DNI);
-            if (auxPatient.Id != patientToUpdate.Id)
+            if (DniPerteneceAOtroPaciente(patientDto.DNI, patientToUpdate, consultorioId))
             {
                 ModelState.AddModelError("error", "samedni_differentPatients");
                 return BadRequest(ModelState);
@@ -124,12 +131,12 @@ namespace HealthArchiveAPI.Controllers
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
             if (patientDto == null) return BadRequest();
+            if (User.GetConsultorioId() is not Guid consultorioId) return Forbid();
 
-            var patientToUpdate = _repository.GetPatientByDNI(dni);
+            var patientToUpdate = _repository.GetPatientByDNI(dni, consultorioId);
             if (patientToUpdate == null) return NotFound();
 
-            var auxPatient = _repository.GetPatientByDNI(patientDto.DNI);
-            if (auxPatient.Id != patientToUpdate.Id)
+            if (DniPerteneceAOtroPaciente(patientDto.DNI, patientToUpdate, consultorioId))
             {
                 ModelState.AddModelError("error", "samedni_differentPatients");
                 return BadRequest(ModelState);
@@ -153,7 +160,9 @@ namespace HealthArchiveAPI.Controllers
         [Route("DeletePatientById")]
         public IActionResult DeletePatientById(Guid patientId)
         {
-            Patient patient = _repository.GetPatient(patientId);
+            if (User.GetConsultorioId() is not Guid consultorioId) return Forbid();
+
+            Patient patient = _repository.GetPatient(patientId, consultorioId);
             if (patient == null) return NotFound();
 
             if (!_repository.DeletePatient(patient))
@@ -172,7 +181,9 @@ namespace HealthArchiveAPI.Controllers
         [Route("DeletePatientByDni/{dni}")]
         public IActionResult DeletePatientByDni(string dni)
         {
-            Patient patient = _repository.GetPatientByDNI(dni);
+            if (User.GetConsultorioId() is not Guid consultorioId) return Forbid();
+
+            Patient patient = _repository.GetPatientByDNI(dni, consultorioId);
             if (patient == null) return NotFound();
 
             if (!_repository.DeletePatient(patient))
@@ -182,6 +193,18 @@ namespace HealthArchiveAPI.Controllers
             }
 
             return Ok(patient);
+        }
+
+        /// <summary>
+        /// El DNI que se quiere guardar, ¿ya lo tiene OTRO paciente del consultorio?
+        /// Si no lo tiene nadie, la búsqueda devuelve null y el DNI está libre — antes
+        /// se hacía `auxPatient.Id` sin chequear null, así que cambiar el DNI a uno
+        /// libre tiraba NullReferenceException y devolvía 500.
+        /// </summary>
+        private bool DniPerteneceAOtroPaciente(string dni, Patient patient, Guid consultorioId)
+        {
+            var existente = _repository.GetPatientByDNI(dni, consultorioId);
+            return existente != null && existente.Id != patient.Id;
         }
     }
 }

@@ -21,5 +21,9 @@ namespace HealthArchive.Domain
         public string Note { get; set; }
         public MedicalCoverage MedicalCoverage { get; set; }
         public HCE ClinicHistory { get; set; }
+
+        [ForeignKey("Consultorio")]
+        public Guid ConsultorioId { get; set; }
+        public Consultorio Consultorio { get; set; }
     }
 }

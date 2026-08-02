@@ -19,7 +19,7 @@ import AddHceFile from './AddHCEFile/AddHCEFile';
 import { HCEFile } from '../../Types/HCEFile';
 import FilesCollection from './FilesCollection/FilesCollection';
 import convertJsonToHtml from '../../Functions/ConvertJsonToHTML';
-import { apiGet, apiPost } from '../../api/client';
+import { apiGet, apiPost, apiPatch } from '../../api/client';
 import { clearHceDraft, readHceDraft } from '../../Functions/hceDraft';
 import Spinner from '../../components/Spinner';
 import SideNav from './SideNav';
@@ -42,8 +42,11 @@ const HistoriaClinica = () => {
   const [showPrintView, setShowPrintView] = useState(false);
   const [showFiles, setShowFiles] = useState(false);
 
-  const [formularios, setFormularios] = useState<EvolutionFormData[]>([]);
+  // Tipado como Evolution (y no EvolutionFormData) porque necesita el Id y el JSON
+  // crudo para poder editar cada entrada.
+  const [formularios, setFormularios] = useState<Evolution[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [editingEvolution, setEditingEvolution] = useState<Evolution | null>(null);
 
   const stateRedux = useSelector((store: store) => store.Professional);
 
@@ -83,7 +86,9 @@ const HistoriaClinica = () => {
         Id: data.id,
         PatientId: data.patientId,
         Evolutions: data.evolutions.map((evolution : EvolutionFromApi) => ({
+          Id: evolution.id,
           Notes: convertJsonToHtml(evolution.notes),
+          NotesRaw: evolution.notes,
           DateAdded: new Date(evolution.modifiedDate),
           ModifiedBy: {modifiedBy: evolution.evolutionInfo.modifiedBy, tuition: evolution.evolutionInfo.tuition}
         })),
@@ -105,12 +110,23 @@ const HistoriaClinica = () => {
     }
   }
 
+  // Devuelve la evolución creada tal cual la persistió el backend: de ahí sale el Id,
+  // que hace falta para poder editarla sin recargar la página.
   const fetchCreateEvolution = async(evolution : Evolution) => {
     try{
-      await apiPost<any>(`/api/Evolution/CreateEvolution/${hce.Id}`, evolution);
+      return await apiPost<any>(`/api/Evolution/CreateEvolution/${hce.Id}`, evolution);
     }catch(error){
       console.error('Error:', error);
       throw error; // que el llamador sepa que falló y NO limpie el borrador
+    }
+  }
+
+  const fetchUpdateEvolution = async(evolutionId : string, notes : string) => {
+    try{
+      await apiPatch(`/api/Evolution/UpdateEvolution/${evolutionId}`, { Notes: notes });
+    }catch(error){
+      console.error('Error al editar la evolución:', error);
+      throw error;
     }
   }
 
@@ -122,33 +138,56 @@ const HistoriaClinica = () => {
       DateAdded: new Date(),
     };
 
-    const newEvolutionToHtml: Evolution = {
-      Notes: convertJsonToHtml(formData.Notes),
-      ModifiedBy:{modifiedBy: stateRedux.name + ' ' + stateRedux.lastName, tuition: stateRedux.tuition},
-      DateAdded: new Date(),
-    };
-
-    const newFormulario = {
-      ModifiedBy: {modifiedBy: stateRedux.name + ' ' + stateRedux.lastName, tuition: stateRedux.tuition},
-      Notes: convertJsonToHtml(formData.Notes),
-      DateAdded: formData.DateAdded,
-    };
-
     try {
       // Recién tras confirmar el guardado en el backend agregamos la evolución
       // a la vista y limpiamos el borrador. Así lista y borrador quedan
       // consistentes: nada de evoluciones "fantasma" si el POST falla.
-      await fetchCreateEvolution(newEvolution);
+      const creada = await fetchCreateEvolution(newEvolution);
+
+      const nuevaEnLista: Evolution = {
+        Id: creada?.id,
+        Notes: convertJsonToHtml(formData.Notes),
+        NotesRaw: formData.Notes,
+        // La firma la pone el backend con el doctor autenticado; acá se replica solo
+        // para mostrarla sin tener que recargar.
+        ModifiedBy: {modifiedBy: stateRedux.name + ' ' + stateRedux.lastName, tuition: stateRedux.tuition},
+        DateAdded: formData.DateAdded,
+      };
 
       setHce(prevHce => ({
         ...prevHce,
-        Evolutions: [...prevHce.Evolutions, newEvolutionToHtml],
+        Evolutions: [...prevHce.Evolutions, nuevaEnLista],
       }));
-      setFormularios(prev => [...prev, newFormulario]);
+      setFormularios(prev => [...prev, nuevaEnLista]);
 
       clearHceDraft(patient.DNI);
     } catch (error) {
       console.error('Error al agregar la evolución:', error);
+    }
+  };
+
+  const handleUpdateEvolution = async (formData: EvolutionFormData) => {
+    if (!editingEvolution?.Id) return;
+
+    try {
+      await fetchUpdateEvolution(editingEvolution.Id, formData.Notes);
+
+      const actualizada: Evolution = {
+        ...editingEvolution,
+        Notes: convertJsonToHtml(formData.Notes),
+        NotesRaw: formData.Notes,
+        ModifiedBy: {modifiedBy: stateRedux.name + ' ' + stateRedux.lastName, tuition: stateRedux.tuition},
+        DateAdded: new Date(),
+      };
+
+      const reemplazar = (lista: Evolution[]) =>
+        lista.map(e => (e.Id === editingEvolution.Id ? actualizada : e));
+
+      setHce(prevHce => ({ ...prevHce, Evolutions: reemplazar(prevHce.Evolutions) }));
+      setFormularios(reemplazar);
+      setEditingEvolution(null);
+    } catch (error) {
+      console.error('Error al editar la evolución:', error);
     }
   };
 
@@ -174,6 +213,15 @@ const HistoriaClinica = () => {
             <h2 className="hce-evolutions-title">Evoluciones Clínicas</h2>
 
             {showEvolutionForm && <EvolutionForm key={patient.DNI} onAddEvolution={handleAddEvolution} onClose={() => setShowEvolutionForm(false)} patientDni={patient.DNI} />}
+            {editingEvolution && (
+              <EvolutionForm
+                key={`edit-${editingEvolution.Id}`}
+                onAddEvolution={handleUpdateEvolution}
+                onClose={() => setEditingEvolution(null)}
+                patientDni={patient.DNI}
+                initialNotes={editingEvolution.NotesRaw ?? ''}
+              />
+            )}
             {showFiles && <FilesCollection files={hce.Files} onClose={() => setShowFiles(false)} />}
             {showPrintView && <PrintHCE evoluciones={hce.Evolutions} patient={patient} onClose={() => setShowPrintView(false)} />}
 
@@ -183,7 +231,7 @@ const HistoriaClinica = () => {
               <p className="text-secondary mb-0">Todavía no hay evoluciones cargadas.</p>
             ) : (
               formularios.map((formulario, index) => (
-              <div key={index} className="hce-evolution">
+              <div key={formulario.Id ?? index} className="hce-evolution">
                 <div className="hce-evolution-meta">
                   <span className="hce-evolution-date">Fecha: {formatDate(formulario.DateAdded)}</span>
                   <span className="hce-evolution-doctor">
@@ -192,6 +240,17 @@ const HistoriaClinica = () => {
                   </span>
                 </div>
                 <div className="hce-evolution-note" dangerouslySetInnerHTML={{ __html: formulario.Notes }} />
+                {formulario.Id && (
+                  <div className="hce-evolution-actions d-print-none">
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      onClick={() => setEditingEvolution(formulario)}
+                    >
+                      Editar
+                    </button>
+                  </div>
+                )}
               </div>
               ))
             )}

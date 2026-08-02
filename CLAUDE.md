@@ -71,11 +71,23 @@ JWT-based auth is wired (real). The access + refresh tokens travel in **httpOnly
 
 ### Modelo de seguridad
 
-Decisión explícita: **el acceso a pacientes es compartido**. Cualquier doctor autenticado ve todas las historias clínicas — el modelo es un consultorio donde los profesionales se cubren entre sí, y la trazabilidad se resuelve con `Evolution.EvolutionInfo` (`ModifiedBy`/`Tuition`), no restringiendo lectura. No hay FK de `Patient` a `Doctor` y no debe agregarse una sin revisar esta decisión.
+**El `Consultorio` es la unidad de aislamiento.** `Doctor` y `Patient` llevan `ConsultorioId` (FK requerida) y un doctor solo ve los datos de su consultorio. Dentro del consultorio el acceso es **compartido**: cualquier doctor ve todas las historias clínicas de ese consultorio, porque el modelo es un equipo que se cubre entre sí; la trazabilidad se resuelve con `Evolution.EvolutionInfo` (`ModifiedBy`/`Tuition`), no restringiendo lectura. No hay FK de `Patient` a `Doctor` y no debe agregarse sin revisar esta decisión.
 
-Consecuencia directa: **el registro es el único perímetro del sistema**. De ahí los controles que existen:
+Cómo se implementa el aislamiento, en tres capas:
 
-- `Registration:ConsultoryCode` — el código de alta **nunca va en el código fuente** (el repo es público). Vacío en `appsettings.json`, `"1234"` solo en Development, y en Production `Program.cs` no arranca si falta. `DoctorController` además devuelve 503 si está sin configurar, para que un código vacío más un `consultoryCode` nulo en el body no comparen iguales.
+1. `TokenService` emite el claim `consultorio`; se lee con `User.GetConsultorioId()` (`HealthArchiveAPI/Extensions/ClaimsPrincipalExtensions.cs`). Si falta el claim (token viejo), el controller responde 403 en vez de servir sin filtrar.
+2. **Los repositorios reciben el `consultorioId` y filtran ellos**, no los controllers: así un endpoint nuevo no puede olvidarse. Por eso `IPatientRepository` no expone ningún `GetPatients()` sin scope. La excepción documentada es `IDoctorRepository.GetDoctorForAuth(id)`, que usa la autenticación cuando todavía no hay consultorio de contexto.
+3. Para lo que llega por GUID en la ruta (`hceId`, `evolutionId`), filtrar el listado no alcanza: hay que llamar a `IHceRepository.BelongsToConsultorio` / `IEvolutionRepository.BelongsToConsultorio`. **Todo endpoint nuevo que reciba uno de esos ids tiene que hacerlo**, y devolver 404 (no 403) para no confirmar que el recurso existe.
+
+`HCE`, `Evolution` y `HCEFile` **no** llevan `ConsultorioId` propio: lo heredan por `HCE → Patient`. No agregar la columna — sería una segunda fuente de verdad.
+
+El **DNI es único por consultorio** (índice compuesto `(ConsultorioId, DNI)`), no global: dos consultorios pueden atender al mismo paciente. El **email de doctor sí es global**, porque es la credencial de login.
+
+Consecuencia del modelo: **el registro es el perímetro**. De ahí los controles que existen:
+
+- **El código de alta vive hasheado en `Consultorio.CodeHash`**, con el mismo `IPasswordHasher` que las contraseñas. Como el hash lleva salt, no se puede buscar un consultorio por su código: el front elige el consultorio (`GET /api/Consultorio/GetConsultorios`, anónimo, solo Id+Name) y el backend verifica contra ese.
+- `Registration:ConsultoryCode` quedó como **secreto de bootstrap**: solo lo usa el seeder de `Program.cs` para completar el código del consultorio inicial que crea la migración `Consultorios` (Guid fijo `11111111-...`). Es idempotente: no pisa un código rotado después desde la API. El fail-fast de Production sigue vigente.
+- Consultorios nuevos se crean con `POST /api/Consultorio/CreateConsultorio`, solo `Admin`.
 - `Doctor.Password` lleva `[JsonIgnore]`. Varios endpoints devuelven la entidad `Doctor` completa; el atributo protege a todos de una sola vez, presente y futuro. **No quitarlo.**
 - `DoctorController.CanActOn()` — un doctor solo se edita/borra a sí mismo; para tocar a otro hace falta `Admin`. Los pacientes, en cambio, no llevan chequeo de pertenencia a propósito (ver decisión de arriba).
 - Rate limiting global (100/min por IP) y política `"auth"` (10/min) sobre `Login`, `Refresh` y `CreateDoctor`, que son los tres anónimos. Particiona por IP, lo que **depende de `UseForwardedHeaders`**; y `UseRateLimiter()` va después de `UseCors` para que los 429 lleguen al browser como 429 y no como error de CORS.
