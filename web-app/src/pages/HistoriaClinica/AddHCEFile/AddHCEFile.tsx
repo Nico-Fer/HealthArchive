@@ -1,6 +1,7 @@
 import React, { useState, useRef } from "react";
 import { apiPostFile } from '../../../api/client';
 import { HCEFile } from "../../../Types/HCEFile";
+import logger, { describeError } from '../../../lib/logger';
 
 interface AddFileProps {
     HceId: string;
@@ -40,7 +41,7 @@ const AddHceFile: React.FC<AddFileProps> = ({ HceId, onFileAdded }) => {
         const result = await apiPostFile<HCEFile>(`/api/Hce/AddFile/${HceId}`, formData);
         onFileAdded(result);
     }catch(error){
-        console.error("Error al cargar el archivo:", error);
+        logger.error('No se pudo subir el archivo', describeError(error));
     }
     
   }

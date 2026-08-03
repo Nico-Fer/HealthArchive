@@ -30,6 +30,10 @@ const validateForm =  (personData : Person | Patient) : FormErrors =>{
         }
     }
 
+    if ('BirthDate' in personData && !personData.BirthDate) {
+        newErrors.BirthDate = 'La fecha de nacimiento es obligatoria.';
+    }
+
     if(personData.Email.trim() && !personData.Email.includes('@')){
       newErrors.Email = 'Email no válido';
     }

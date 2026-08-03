@@ -3,9 +3,11 @@ import { Patient } from '../../Types/Person';
 import { useNavigate } from 'react-router-dom';
 import { FormErrors } from '../../Types/FormErrors';
 
-import formatDate from '../../Functions/FormatDate';
 import validateForm from '../../Functions/validateForm';
+import { toLocalDate, today } from '../../Functions/DateUtils';
 import { apiPost } from '../../api/client';
+import DateField from '../../components/DateField';
+import logger, { describeError } from '../../lib/logger';
 
 
 import './NewPatient.scss'
@@ -26,7 +28,7 @@ const NewPatient = () => {
       Country: '',
       Ocupation: '',
       HomeAddress: '',
-      BirthDate: new Date(),
+      BirthDate: null,
       Note: '',
     })
 
@@ -38,14 +40,10 @@ const NewPatient = () => {
       }));
   };
 
-  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const dateString = e.target.value;
-    const adjustedDateString = dateString + 'T00:00:00';
-    const dateObject = new Date(adjustedDateString);
-  
+  const handleDateChange = (date: Date | null) => {
     setPatientData(prevData => ({
       ...prevData,
-      BirthDate: dateObject
+      BirthDate: date
     }));
   };
 
@@ -88,17 +86,15 @@ const NewPatient = () => {
   const createPatient = async (patientData : Patient) => {
     const formattedPatientData = {
       ...patientData,
-      BirthDate: patientData.BirthDate.toISOString()
+      // toLocalDate normaliza a medianoche local antes de serializar, así el día que
+      // eligió el usuario es el que se guarda.
+      BirthDate: toLocalDate(patientData.BirthDate)?.toISOString() ?? null
     };
 
-    try {
-      await apiPost('/api/Patient/CreatePatient', formattedPatientData);
-      navigate('/Pacientes');
-    } catch (error) {
-      console.error('Error al crear el paciente:', error);
-    }
+    await apiPost('/api/Patient/CreatePatient', formattedPatientData);
+    navigate('/Pacientes');
   };
-  
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const newErrors = validateForm(patientData)
@@ -108,11 +104,7 @@ const NewPatient = () => {
       try {
         await createPatient(patientData);
       } catch (error) {
-        console.error('Error en la solicitud:', error);
-        if (error instanceof Response) {
-          const responseBody = await error.text();
-          console.error('Respuesta del servidor:', responseBody); 
-        }
+        logger.error('Error al crear el paciente', describeError(error));
       }
     }
   }
@@ -169,14 +161,13 @@ const NewPatient = () => {
                 </div>
 
                 <div className="ha-form-field">
-                  <label htmlFor="BirthDate">Fecha de Nacimiento</label>
-                  <input
-                    type="date"
-                    className="form-control"
+                  <DateField
                     id="BirthDate"
-                    name="BirthDate"
-                    value={formatDate(patientData.BirthDate)}
+                    label="Fecha de Nacimiento"
+                    value={patientData.BirthDate}
                     onChange={handleDateChange}
+                    maxDate={today()}
+                    error={errors.BirthDate}
                   />
                 </div>
               </div>

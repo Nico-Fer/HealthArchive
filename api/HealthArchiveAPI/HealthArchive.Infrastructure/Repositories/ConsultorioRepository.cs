@@ -18,6 +18,15 @@ namespace HealthArchive.Infrastructure.Repositories
             return _db.Consultorios.OrderBy(c => c.Name).ToList();
         }
 
+        public ICollection<Consultorio> GetConsultoriosWithCode()
+        {
+            // Filtrar en SQL: cada consultorio que vuelva cuesta un PBKDF2 en el registro.
+            return _db.Consultorios
+                .Where(c => c.CodeHash != null && c.CodeHash != "")
+                .OrderBy(c => c.Name)
+                .ToList();
+        }
+
         public Consultorio GetConsultorio(Guid id)
         {
             return _db.Consultorios.FirstOrDefault(c => c.Id == id);

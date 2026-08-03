@@ -14,6 +14,8 @@ export interface Patient extends Person {
     Country: string;
     Ocupation: string;
     HomeAddress: string;
-    BirthDate: Date;
+    // null mientras el formulario todavía no tiene una fecha cargada. Antes se
+    // inicializaba con new Date(), lo que prellenaba "hoy" como fecha de nacimiento.
+    BirthDate: Date | null;
     Note: string;
 }

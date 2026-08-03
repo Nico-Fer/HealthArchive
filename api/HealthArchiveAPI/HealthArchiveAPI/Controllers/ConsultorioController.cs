@@ -5,7 +5,6 @@ using HealthArchive.Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.RateLimiting;
 
 namespace HealthArchiveAPI.Controllers
 {
@@ -25,15 +24,14 @@ namespace HealthArchiveAPI.Controllers
         }
 
         /// <summary>
-        /// Anónimo porque alimenta el desplegable del registro: para elegir consultorio
-        /// hay que poder verlos sin estar logueado. Solo devuelve Id y Name — el código
-        /// no sale nunca, y sin el código el nombre no habilita nada.
+        /// Requiere sesión. Fue anónimo mientras el registro tenía un desplegable de
+        /// consultorios; ahora el registro se resuelve solo con el código, así que no
+        /// queda ningún consumidor anónimo y no hay razón para permitir enumerar los
+        /// nombres de los consultorios desde afuera.
         /// </summary>
-        [AllowAnonymous]
-        [EnableRateLimiting("auth")]
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [Route("GetConsultorios")]
         public IActionResult GetConsultorios()
         {
@@ -44,6 +42,18 @@ namespace HealthArchiveAPI.Controllers
             return Ok(consultorios);
         }
 
+        // PENDIENTE (deuda conocida, decidida el 2026-08-02): estos dos endpoints piden
+        // rol Admin pero NO verifican que el consultorio sea el del que hace el request.
+        // Un Admin del consultorio A puede renombrar o rotarle el código al consultorio B.
+        // Es la única parte del sistema que no respeta el aislamiento por consultorio.
+        //
+        // Se dejó así a propósito mientras haya un solo operador. Al momento de que existan
+        // administradores distintos por consultorio, hay que cerrarlo:
+        //   - UpdateConsultorio: comparar contra User.GetConsultorioId() y devolver 404 si
+        //     no coincide, igual que hace DoctorController con GetDoctor(id, consultorioId).
+        //   - CreateConsultorio: definir quién puede crear consultorios nuevos. Un Admin de
+        //     consultorio no debería poder; hace falta un rol de sistema por encima, que hoy
+        //     no existe (Doctor.Role solo tiene "Doctor" y "Admin").
         [Authorize(Roles = "Admin")]
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status200OK)]

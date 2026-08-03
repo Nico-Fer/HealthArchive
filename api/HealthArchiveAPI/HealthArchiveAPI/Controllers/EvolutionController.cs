@@ -16,16 +16,29 @@ namespace HealthArchiveAPI.Controllers
         private readonly IEvolutionRepository _repository;
         private readonly IHceRepository _hceRepository;
         private readonly IDoctorRepository _doctorRepository;
+        private readonly ILogger<EvolutionController> _logger;
 
         public EvolutionController(
             IEvolutionRepository repository,
             IHceRepository hceRepository,
-            IDoctorRepository doctorRepository)
+            IDoctorRepository doctorRepository,
+            ILogger<EvolutionController> logger)
         {
             _repository = repository;
             _hceRepository = hceRepository;
             _doctorRepository = doctorRepository;
+            _logger = logger;
         }
+
+        /// <summary>
+        /// El 404 no distingue "no existe" de "es de otro consultorio", así que desde
+        /// afuera no se puede sondear. Adentro sí importa la diferencia: esta línea es la
+        /// única señal de que alguien está pidiendo recursos que no le corresponden.
+        /// </summary>
+        private void LogAccesoAjeno(string recurso, Guid id, Guid consultorioId) =>
+            _logger.LogWarning(
+                "Acceso denegado a {Recurso} {RecursoId}: no pertenece al consultorio {ConsultorioId} (doctor {DoctorId})",
+                recurso, id, consultorioId, User.GetDoctorId());
 
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -38,7 +51,11 @@ namespace HealthArchiveAPI.Controllers
             if (evolutionDto == null) return BadRequest(ModelState);
             if (User.GetConsultorioId() is not Guid consultorioId) return Forbid();
 
-            if (!_hceRepository.BelongsToConsultorio(hceId, consultorioId)) return NotFound();
+            if (!_hceRepository.BelongsToConsultorio(hceId, consultorioId))
+            {
+                LogAccesoAjeno("la HCE", hceId, consultorioId);
+                return NotFound();
+            }
 
             var autor = DoctorAutenticado(consultorioId);
             if (autor == null) return Forbid();
@@ -72,7 +89,11 @@ namespace HealthArchiveAPI.Controllers
             if (evolutionDto == null) return BadRequest(ModelState);
             if (User.GetConsultorioId() is not Guid consultorioId) return Forbid();
 
-            if (!_repository.BelongsToConsultorio(evolutionId, consultorioId)) return NotFound();
+            if (!_repository.BelongsToConsultorio(evolutionId, consultorioId))
+            {
+                LogAccesoAjeno("la evolución", evolutionId, consultorioId);
+                return NotFound();
+            }
 
             var evolution = _repository.GetEvolution(evolutionId);
             if (evolution == null) return NotFound();

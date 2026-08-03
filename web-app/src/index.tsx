@@ -9,6 +9,11 @@ import './styles/global.scss';
 
 
 import App from './pages/App/App';
+import { setupGlobalErrorHandlers } from './lib/logger';
+
+// Captura errores fuera del árbol de React y promesas rechazadas sin catch, que de otro
+// modo desaparecen sin dejar rastro.
+setupGlobalErrorHandlers();
 
 const rootElement = document.getElementById("root");
 

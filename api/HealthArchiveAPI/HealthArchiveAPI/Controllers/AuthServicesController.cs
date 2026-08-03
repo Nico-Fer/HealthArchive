@@ -2,6 +2,7 @@ using HealthArchive.Application.DTOs;
 using HealthArchive.Application.Interfaces;
 using HealthArchive.Application.Mapping;
 using HealthArchive.Domain;
+using HealthArchiveAPI.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
@@ -20,19 +21,22 @@ namespace HealthArchiveAPI.Controllers
         private readonly ITokenService _tokenService;
         private readonly IRefreshTokenRepository _refreshTokenRepo;
         private readonly IConfiguration _config;
+        private readonly ILogger<AuthServiceController> _logger;
 
         public AuthServiceController(
             IAuthServiceRepository authServiceRepo,
             IDoctorRepository doctorRepo,
             ITokenService tokenService,
             IRefreshTokenRepository refreshTokenRepo,
-            IConfiguration config)
+            IConfiguration config,
+            ILogger<AuthServiceController> logger)
         {
             _authServiceRepo = authServiceRepo;
             _doctorRepo = doctorRepo;
             _tokenService = tokenService;
             _refreshTokenRepo = refreshTokenRepo;
             _config = config;
+            _logger = logger;
         }
 
         [AllowAnonymous]
@@ -45,9 +49,17 @@ namespace HealthArchiveAPI.Controllers
         public IActionResult Login([FromBody] DoctorLoginDto doctorDto)
         {
             Doctor user = _authServiceRepo.Authenticate(doctorDto.Email, doctorDto.Password);
-            if (user == null) return NotFound();
+            if (user == null)
+            {
+                // Se loguea el email y la IP, nunca la contraseña: una ráfaga de estas
+                // líneas desde una misma IP es un intento de fuerza bruta.
+                _logger.LogWarning(
+                    "Login fallido para {Email} desde {ClientIp}", doctorDto.Email, HttpContext.GetClientIp());
+                return NotFound();
+            }
 
             IssueTokens(user);
+            _logger.LogInformation("Login correcto del doctor {DoctorId}", user.Id);
             return Ok(user.ToAuthUserDto());
         }
 
@@ -64,10 +76,24 @@ namespace HealthArchiveAPI.Controllers
                 return Unauthorized();
 
             var stored = _refreshTokenRepo.GetByToken(tokenValue);
-            if (stored == null || !stored.IsActive) return Unauthorized();
+            if (stored == null || !stored.IsActive)
+            {
+                // Un token desconocido o ya rotado puede ser una sesión vieja del propio
+                // usuario, pero también un refresh token robado que se intenta reusar.
+                _logger.LogWarning(
+                    "Refresh rechazado ({Motivo}) desde {ClientIp}",
+                    stored == null ? "token_desconocido" : "token_inactivo",
+                    HttpContext.GetClientIp());
+                return Unauthorized();
+            }
 
             var user = _doctorRepo.GetDoctorForAuth(stored.DoctorId);
-            if (user == null) return Unauthorized();
+            if (user == null)
+            {
+                _logger.LogWarning(
+                    "Refresh con token válido pero el doctor {DoctorId} ya no existe", stored.DoctorId);
+                return Unauthorized();
+            }
 
             // Rotate: revoke the current token and issue a new pair.
             var newRefresh = _tokenService.CreateRefreshToken(user.Id);

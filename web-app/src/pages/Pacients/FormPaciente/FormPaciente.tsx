@@ -4,9 +4,11 @@ import { useNavigate } from 'react-router-dom';
 import { FormErrors } from '../../../Types/FormErrors';
 import validateForm from '../../../Functions/validateForm';
 
-import formatDate from '../../../Functions/FormatDate';
+import { toLocalDate, today } from '../../../Functions/DateUtils';
 import { apiPatch, apiDelete } from '../../../api/client';
 import ConfirmDialog from '../../../components/ConfirmDialog';
+import DateField from '../../../components/DateField';
+import logger, { describeError } from '../../../lib/logger';
 
 interface FormProps {
     patient: Patient; 
@@ -19,12 +21,13 @@ interface FormProps {
     const [errors, setErrors] = useState<FormErrors>({});
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [actionError, setActionError] = useState<string>('');
-    let dateChanged = false;
 
     const [patientData, setFormData] = useState<Patient>({
       Name: patient.Name,
       LastName: patient.LastName,
-      BirthDate: patient.BirthDate,
+      // El paciente llega con la fecha cruda del API (un ISO string tipado como Date):
+      // se normaliza acá para que el resto del formulario trabaje siempre con un Date.
+      BirthDate: toLocalDate(patient.BirthDate),
       Email: patient.Email,
       PhoneNumber:{CountryCode: patient.PhoneNumber.CountryCode, PhoneNumber: patient.PhoneNumber.PhoneNumber}, 
       MedicalCoverage:{Coverage: patient.MedicalCoverage.Coverage, Number: patient.MedicalCoverage.Number},
@@ -48,17 +51,11 @@ interface FormProps {
     setFormData({ ...patientData, [name]: value });
   };
 
-  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const dateString = e.target.value;
-    const adjustedDateString = dateString + 'T00:00:00';
-    const dateObject = new Date(adjustedDateString);
-  
+  const handleDateChange = (date: Date | null) => {
     setFormData(prevData => ({
       ...prevData,
-      BirthDate: dateObject
+      BirthDate: date
     }));
-
-    dateChanged = true;
   };
 
   const handleCoverageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -98,17 +95,14 @@ interface FormProps {
   };
 
   const updatePatient = async(patientData : Patient) =>{
-    let formattedPatientData;
-    if(dateChanged){
-      formattedPatientData = {
-        ...patientData,
-        BirthDate: patientData.BirthDate.toISOString()
-      };
-    }else{
-      formattedPatientData = {
-        ...patientData,
-      };
-    }
+    // Antes esto iba detrás de un flag `dateChanged` declarado con `let` en el cuerpo del
+    // componente: se reiniciaba en cada render y siempre valía false al guardar, así que
+    // la fecha editada nunca se enviaba. Ahora BirthDate ya es siempre un Date normalizado
+    // y se serializa igual que cualquier otro campo.
+    const formattedPatientData = {
+      ...patientData,
+      BirthDate: toLocalDate(patientData.BirthDate)?.toISOString() ?? null,
+    };
 
     try{
       // La ruta va con el DNI ORIGINAL (el del prop), no con el del formulario: si se
@@ -116,7 +110,7 @@ interface FormProps {
       // existe y el update fallaba con 404.
       await apiPatch(`/api/Patient/UpdatePatientByDni/${patient.DNI}`, formattedPatientData);
     }catch(error){
-      console.error('Error al actualizar el paciente:', error)
+      logger.error('Error al actualizar el paciente', describeError(error))
       throw error;
     }
   }
@@ -134,7 +128,7 @@ interface FormProps {
         onPatientUpdated();
         handleClose();
       } catch (error) {
-        console.error('Error en la solicitud:', error);
+        logger.error('Error al guardar el paciente', describeError(error));
         // El caso más habitual es un DNI que ya tiene otro paciente del consultorio.
         // Sin este mensaje el guardado fallaría en silencio.
         setActionError('No se pudo guardar. Revisá que el DNI no pertenezca ya a otro paciente.');
@@ -146,7 +140,8 @@ interface FormProps {
     try{
       await apiDelete(`/api/Patient/DeletePatientByDni/${dni}`);
     }catch(error){
-      console.error('Error al crear el paciente:', error)
+      logger.error('Error al borrar el paciente', describeError(error))
+      throw error;
     }
 }
 
@@ -158,11 +153,8 @@ interface FormProps {
       onPatientUpdated();
       handleClose();
     }catch(error){
-      console.error('Error en la solicitud:', error);
-      if (error instanceof Response) {
-        const responseBody = await error.text();
-        console.error('Respuesta del servidor:', responseBody); 
-      }
+      logger.error('No se pudo borrar el paciente', describeError(error));
+      setActionError('No se pudo borrar el paciente. Intentá de nuevo.');
     }
   };
 
@@ -223,14 +215,13 @@ interface FormProps {
           </div>
 
           <div className="ha-form-field">
-            <label htmlFor="BirthDate">Fecha de Nacimiento</label>
-            <input
-              type="date"
-              className="form-control"
+            <DateField
               id="BirthDate"
-              name="BirthDate"
-              value={formatDate(patientData.BirthDate)}
+              label="Fecha de Nacimiento"
+              value={patientData.BirthDate}
               onChange={handleDateChange}
+              maxDate={today()}
+              error={errors.BirthDate}
             />
           </div>
 

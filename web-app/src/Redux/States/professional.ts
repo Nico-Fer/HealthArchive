@@ -1,6 +1,8 @@
 import { createSlice } from "@reduxjs/toolkit";
 import { ProfessionalForRedux } from "../../Types/ProfessionalForRedux";
 import { apiFetch } from "../../api/client";
+import { sessionAnonymous } from "./session";
+import logger from "../../lib/logger";
 
 export const EmptyProfessionalState : ProfessionalForRedux ={
     name: '',
@@ -14,9 +16,24 @@ export const persistLocalStorage = (info : ProfessionalForRedux) => {
     localStorage.setItem('Professional', JSON.stringify({...info}))
 }
 
+// Con try/catch: un valor corrupto en localStorage rompía el bundle en tiempo de import,
+// y el usuario quedaba con una pantalla en blanco imposible de recuperar sin DevTools.
+const readPersistedProfessional = () : ProfessionalForRedux => {
+    const stored = localStorage.getItem('Professional');
+    if (!stored) return EmptyProfessionalState;
+
+    try {
+        return JSON.parse(stored) as ProfessionalForRedux;
+    } catch {
+        logger.warn('El profesional guardado en localStorage no es JSON válido; se descarta');
+        localStorage.removeItem('Professional');
+        return EmptyProfessionalState;
+    }
+}
+
 export const ProfessionalSlice = createSlice({
     name: 'Professional',
-    initialState: localStorage.getItem('Professional') ?  JSON.parse(localStorage.getItem('Professional') as string ) : EmptyProfessionalState,
+    initialState: readPersistedProfessional(),
     reducers:{
         createProfessionalRed: (state, action) => {
             persistLocalStorage(action.payload);
@@ -47,6 +64,7 @@ export const logout = () => async (dispatch: any) => {
         // Ignore network errors: we still clear the local session below.
     }
     dispatch(resetProfessionalRed());
+    dispatch(sessionAnonymous());
 };
 
 export const ProfessionalReducer = ProfessionalSlice.reducer;

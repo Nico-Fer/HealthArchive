@@ -3,7 +3,7 @@ import Form from "./Components/Form/Form";
 import { Link } from 'react-router-dom';
 import { FaPlus } from 'react-icons/fa';
 
-import { PrivateRoutes } from "../../Types/Routes";
+import { PublicRoutes } from "../../Types/Routes";
 
 const Login = () => {
     return (
@@ -18,7 +18,7 @@ const Login = () => {
                 <p className="ha-auth-card-subtitle">Para empezar</p>
                 <Form/>
                 <p className="ha-auth-footer">
-                    ¿Usuario Nuevo? <Link to={PrivateRoutes.REGISTER}>Registrarse</Link>
+                    ¿Usuario Nuevo? <Link to={PublicRoutes.REGISTER}>Registrarse</Link>
                 </p>
             </div>
         </div>

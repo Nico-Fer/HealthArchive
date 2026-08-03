@@ -23,6 +23,7 @@ import { apiGet, apiPost, apiPatch } from '../../api/client';
 import { clearHceDraft, readHceDraft } from '../../Functions/hceDraft';
 import Spinner from '../../components/Spinner';
 import SideNav from './SideNav';
+import logger, { describeError } from '../../lib/logger';
 
 
 interface EvolutionFormData {
@@ -104,7 +105,7 @@ const HistoriaClinica = () => {
 
       setFormularios(mappedHce.Evolutions);
     }catch (error){
-      console.error('Error:', error);
+      logger.error('No se pudo cargar la historia clínica', describeError(error));
     }finally{
       setIsLoading(false);
     }
@@ -116,7 +117,7 @@ const HistoriaClinica = () => {
     try{
       return await apiPost<any>(`/api/Evolution/CreateEvolution/${hce.Id}`, evolution);
     }catch(error){
-      console.error('Error:', error);
+      logger.error('No se pudo crear la evolución', describeError(error));
       throw error; // que el llamador sepa que falló y NO limpie el borrador
     }
   }
@@ -125,7 +126,7 @@ const HistoriaClinica = () => {
     try{
       await apiPatch(`/api/Evolution/UpdateEvolution/${evolutionId}`, { Notes: notes });
     }catch(error){
-      console.error('Error al editar la evolución:', error);
+      logger.error('No se pudo editar la evolución', describeError(error));
       throw error;
     }
   }
@@ -162,7 +163,7 @@ const HistoriaClinica = () => {
 
       clearHceDraft(patient.DNI);
     } catch (error) {
-      console.error('Error al agregar la evolución:', error);
+      logger.error('No se pudo agregar la evolución', describeError(error));
     }
   };
 
@@ -187,7 +188,7 @@ const HistoriaClinica = () => {
       setFormularios(reemplazar);
       setEditingEvolution(null);
     } catch (error) {
-      console.error('Error al editar la evolución:', error);
+      logger.error('No se pudo guardar la evolución editada', describeError(error));
     }
   };
 

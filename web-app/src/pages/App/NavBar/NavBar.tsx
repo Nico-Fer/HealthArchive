@@ -8,7 +8,10 @@ import { store } from '../../../Redux/Store';
 const NavBar = () => {
 
   const dispatch = useDispatch<any>();
-  const isLogged = useSelector((state : store) => state.Professional.tuition !== '');
+  // Mismo predicado que AuthGuard y PublicGuard. Antes miraba Professional.tuition, que
+  // se hidrata desde localStorage aunque la sesión ya haya vencido: por eso el header
+  // de "Cerrar Sesión" seguía apareciendo sobre la pantalla de Login.
+  const isLogged = useSelector((state : store) => state.Session.status === 'authenticated');
   const professional = useSelector((state : store) => state.Professional);
   if(!isLogged){
     return null;

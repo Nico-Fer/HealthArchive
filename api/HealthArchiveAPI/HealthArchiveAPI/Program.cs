@@ -2,6 +2,8 @@ using HealthArchive.Application.Interfaces;
 using HealthArchive.Infrastructure.Data;
 using HealthArchive.Infrastructure.Repositories;
 using HealthArchive.Infrastructure.Services;
+using HealthArchiveAPI.Extensions;
+using HealthArchiveAPI.Middleware;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
@@ -17,6 +19,32 @@ using System.Text.Json.Serialization;
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Logging. Nada de paquetes extra: los providers de consola vienen en el framework.
+// En producción JSON, que es lo que Railway muestra y lo que permite filtrar por campo
+// (status, ip, ruta) en vez de por substring; en desarrollo, texto legible.
+builder.Logging.ClearProviders();
+if (builder.Environment.IsProduction())
+{
+    builder.Logging.AddJsonConsole(opt =>
+    {
+        opt.IncludeScopes = true;
+        opt.TimestampFormat = "yyyy-MM-ddTHH:mm:ss.fffZ";
+        opt.UseUtcTimestamp = true;
+    });
+}
+else
+{
+    builder.Logging.AddSimpleConsole(opt =>
+    {
+        // Sin scopes: este formatter los imprime con ToString() y el resultado es
+        // ilegible. El correlation id igual va en la propia línea del request log, y en
+        // producción el formatter JSON sí los expande como campos.
+        opt.IncludeScopes = false;
+        opt.SingleLine = true;
+        opt.TimestampFormat = "HH:mm:ss ";
+    });
+}
 
 // Railway (y la mayoría de PaaS) inyectan en PORT el puerto que el container debe
 // escuchar. En local no existe y valen los puertos de launchSettings.json.
@@ -105,7 +133,10 @@ builder.Services.AddCors(opt =>
         policy.WithOrigins(allowedOrigins)
               .AllowAnyHeader()
               .AllowAnyMethod()
-              .AllowCredentials();
+              .AllowCredentials()
+              // Sin exponerlo, el browser no deja leer el header y el front no puede
+              // mostrar el identificador con el que buscar el error en los logs.
+              .WithExposedHeaders(HttpContextExtensions.CorrelationHeader);
     });
 });
 
@@ -115,6 +146,23 @@ builder.Services.AddCors(opt =>
 builder.Services.AddRateLimiter(opt =>
 {
     opt.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    // Los 429 son la señal más directa de tráfico automatizado: un usuario real no llega
+    // a 100 requests por minuto, y un escáner sí.
+    opt.OnRejected = (context, _) =>
+    {
+        var logger = context.HttpContext.RequestServices
+            .GetRequiredService<ILoggerFactory>()
+            .CreateLogger("HealthArchiveAPI.RateLimiting");
+
+        logger.LogWarning(
+            "Rate limit alcanzado: {Method} {Path} desde {ClientIp}",
+            context.HttpContext.Request.Method,
+            context.HttpContext.Request.Path,
+            context.HttpContext.GetClientIp());
+
+        return ValueTask.CompletedTask;
+    };
 
     // Límite general, pensado para navegación normal de la app.
     opt.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(ctx =>
@@ -184,6 +232,12 @@ SeedConsultorioInicial(app);
 
 app.UseForwardedHeaders();
 
+// Los dos van justo después de UseForwardedHeaders y antes que todo lo demás: así la IP
+// que loguean ya es la real, y el request log cubre también lo que rechazan CORS y el
+// rate limiter (que es precisamente lo que hay que ver para responder "¿son bots?").
+app.UseMiddleware<ExceptionHandlingMiddleware>();
+app.UseMiddleware<RequestLoggingMiddleware>();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -200,8 +254,26 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
-// Healthcheck del hosting (Railway) — sin auth a propósito.
+// Healthcheck del hosting (Railway) — sin auth a propósito. Superficial de propósito:
+// Railway lo consulta cada pocos segundos y no conviene pagar una query por ping.
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
+
+// Chequeo profundo, para diagnóstico manual: confirma que la base responde.
+app.MapGet("/health/db", (DBContextHealth db, ILoggerFactory loggerFactory) =>
+{
+    try
+    {
+        if (db.Database.CanConnect()) return Results.Ok(new { status = "ok", db = "ok" });
+    }
+    catch (Exception ex)
+    {
+        loggerFactory.CreateLogger("HealthArchiveAPI.Health")
+            .LogError(ex, "El healthcheck de base de datos falló");
+    }
+
+    return Results.Json(new { status = "degraded", db = "down" },
+        statusCode: StatusCodes.Status503ServiceUnavailable);
+});
 
 app.Run();
 

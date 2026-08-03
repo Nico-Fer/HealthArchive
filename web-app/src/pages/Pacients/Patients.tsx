@@ -8,6 +8,7 @@ import { Person, Patient } from "./../../Types/Person";
 import { PagedResult } from "./../../Types/Paged";
 import { apiGet } from '../../api/client';
 import Spinner from '../../components/Spinner';
+import logger, { describeError } from '../../lib/logger';
 
 const PAGE_SIZE = 30;
 
@@ -59,7 +60,7 @@ const Patients = () => {
       setTotalCount(data.totalCount);
 
     } catch (error) {
-      console.error('Error:', error);
+      logger.error('No se pudo cargar la lista de pacientes', describeError(error));
     } finally {
       setIsLoading(false);
     }

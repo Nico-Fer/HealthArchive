@@ -12,11 +12,23 @@ namespace HealthArchiveAPI.Controllers
     public class HceController : ControllerBase
     {
         private readonly IHceRepository _repository;
+        private readonly ILogger<HceController> _logger;
 
-        public HceController(IHceRepository repository)
+        public HceController(IHceRepository repository, ILogger<HceController> logger)
         {
             _repository = repository;
+            _logger = logger;
         }
+
+        /// <summary>
+        /// El 404 no distingue "no existe" de "es de otro consultorio", así que desde
+        /// afuera no se puede sondear. Adentro sí importa la diferencia: esta línea es la
+        /// única señal de que alguien está pidiendo historias que no le corresponden.
+        /// </summary>
+        private void LogAccesoAjeno(Guid hceId, Guid consultorioId) =>
+            _logger.LogWarning(
+                "Acceso denegado a la HCE {HceId}: no pertenece al consultorio {ConsultorioId} (doctor {DoctorId})",
+                hceId, consultorioId, User.GetDoctorId());
 
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -30,7 +42,11 @@ namespace HealthArchiveAPI.Controllers
 
             // 404 y no 403 a propósito: si la historia es de otro consultorio, la respuesta
             // ni siquiera confirma que exista.
-            if (!_repository.BelongsToConsultorio(hceId, consultorioId)) return NotFound();
+            if (!_repository.BelongsToConsultorio(hceId, consultorioId))
+            {
+                LogAccesoAjeno(hceId, consultorioId);
+                return NotFound();
+            }
 
             var evolutions = _repository.GetEvolutions(hceId);
             return Ok(evolutions);
@@ -54,7 +70,11 @@ namespace HealthArchiveAPI.Controllers
                 return BadRequest(ModelState);
             }
 
-            if (!_repository.BelongsToConsultorio(hceId, consultorioId)) return NotFound();
+            if (!_repository.BelongsToConsultorio(hceId, consultorioId))
+            {
+                LogAccesoAjeno(hceId, consultorioId);
+                return NotFound();
+            }
 
             using var ms = new MemoryStream();
             await file.CopyToAsync(ms);

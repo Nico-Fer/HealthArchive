@@ -5,7 +5,9 @@ import { FaEnvelope, FaLock } from "react-icons/fa";
 import InputComponent from "../../../../components/Input";
 import { useDispatch } from "react-redux";
 import { createProfessionalRed } from "../../../../Redux/States/professional";
+import { sessionAuthenticated } from "../../../../Redux/States/session";
 import { apiFetch } from '../../../../api/client';
+import logger, { describeError } from '../../../../lib/logger';
 
 interface FormData {
   Password: string;
@@ -48,10 +50,11 @@ const Form = () => {
         const userData = await response.json();
 
         dispatch(createProfessionalRed(userData));
+        dispatch(sessionAuthenticated());
 
         return true;
       } catch (error) {
-        console.error("Error al iniciar sesión:", error);
+        logger.error("Error al iniciar sesión", describeError(error));
         return false;
       }
     }
