@@ -1,0 +1,26 @@
+.ha-error-boundary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  padding: 24px;
+}
+
+.ha-error-boundary-card {
+  max-width: 480px;
+  padding: 32px;
+  text-align: center;
+}
+
+.ha-error-boundary-title {
+  font-size: var(--ha-fs-headline-md);
+  font-weight: 600;
+  color: var(--ha-text);
+  margin-bottom: 8px;
+}
+
+.ha-error-boundary-text {
+  font-size: var(--ha-fs-body);
+  color: var(--ha-text-secondary);
+  margin-bottom: 24px;
+}

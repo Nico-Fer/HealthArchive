@@ -1,0 +1,148 @@
+.ha-datefield {
+  width: 100%;
+
+  .ha-datefield-label {
+    display: block;
+    font-size: var(--ha-fs-label);
+    font-weight: 500;
+    color: var(--ha-text);
+    margin-bottom: 0.375rem;
+  }
+
+  .ha-datefield-wrapper {
+    position: relative;
+
+    input {
+      min-height: 44px;
+      // Espacio para el botón de calendario, que va encima del input.
+      padding-right: 2.75rem;
+    }
+  }
+
+  // Mismo patrón que .ha-input-eye: botón sin borde superpuesto al form-control, para
+  // que la caja siga siendo la de Bootstrap (borde, radio y focus ring del tema).
+  .ha-datefield-trigger {
+    position: absolute;
+    right: 0.25rem;
+    top: 50%;
+    transform: translateY(-50%);
+    border: 0;
+    background: transparent;
+    color: var(--ha-text-secondary);
+    padding: 0.5rem 0.75rem;
+    display: inline-flex;
+    align-items: center;
+
+    &:hover:not(:disabled) { color: var(--ha-primary); }
+    &:disabled { opacity: 0.5; }
+  }
+}
+
+// En un portal sobre <body>, así que no puede anidarse dentro de .ha-datefield.
+// z-index 1055: por encima del .ha-modal (1050) y por debajo del ConfirmDialog (1060).
+.ha-datefield-popover {
+  position: fixed;
+  z-index: 1055;
+  background-color: var(--ha-surface);
+  border: 1px solid var(--ha-border);
+  border-radius: var(--ha-radius);
+  box-shadow: var(--ha-shadow-modal);
+  padding: 12px;
+
+  .ha-datefield-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .ha-datefield-selects {
+    display: flex;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+
+    select { min-width: 0; }
+  }
+
+  .ha-datefield-nav {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--ha-border);
+    border-radius: var(--ha-radius-sm);
+    background-color: var(--ha-surface);
+    color: var(--ha-text-secondary);
+
+    &:hover {
+      background-color: var(--ha-primary-soft);
+      color: var(--ha-primary);
+    }
+  }
+
+  .ha-datefield-weekdays,
+  .ha-datefield-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+  }
+
+  .ha-datefield-weekdays {
+    margin-bottom: 4px;
+
+    span {
+      text-align: center;
+      font-size: var(--ha-fs-label);
+      font-weight: 600;
+      color: var(--ha-text-secondary);
+      padding: 4px 0;
+    }
+  }
+
+  .ha-datefield-day {
+    aspect-ratio: 1;
+    min-height: 36px;
+    border: 1px solid transparent;
+    border-radius: var(--ha-radius-sm);
+    background: transparent;
+    color: var(--ha-text);
+    font-size: var(--ha-fs-body);
+    line-height: 1;
+
+    &:hover:not(:disabled) { background-color: var(--ha-primary-soft); }
+
+    &:disabled {
+      color: var(--ha-text-secondary);
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+  }
+
+  .ha-datefield-day-outside { color: var(--ha-text-secondary); }
+
+  .ha-datefield-day-today {
+    border-color: var(--ha-primary);
+    color: var(--ha-primary);
+    font-weight: 600;
+  }
+
+  .ha-datefield-day-selected {
+    background-color: var(--ha-primary);
+    color: #fff;
+    font-weight: 600;
+
+    &:hover:not(:disabled) { background-color: var(--ha-primary-dark); }
+  }
+
+  .ha-datefield-footer {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--ha-border);
+  }
+}

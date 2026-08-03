@@ -9,6 +9,7 @@ import validateForm from '../../../Functions/validateForm';
 import { apiGet, apiPatch, apiDelete } from '../../../api/client';
 import Spinner from '../../../components/Spinner';
 import ConfirmDialog from '../../../components/ConfirmDialog';
+import logger, { describeError } from '../../../lib/logger';
 
 interface FormData {
   Name: string;
@@ -97,7 +98,7 @@ const MyForm: React.FC = () => {
         setFormData(mappedProfessional);
   
       } catch (error) {
-        console.error('Error:', error);
+        logger.error('No se pudo cargar el profesional', describeError(error));
       } finally {
         setIsLoading(false);
       }
@@ -111,7 +112,7 @@ const MyForm: React.FC = () => {
       await apiPatch(`/api/Doctor/UpdateDoctorById/${Id}`, formData);
       return true;
     }catch(error){
-      console.error('Error al actualizar el profesional:', error)
+      logger.error('No se pudo actualizar el profesional', describeError(error))
       setActionError('No se pudo guardar. Solo podés editar tu propio perfil, salvo que seas administrador.');
       return false;
     }
@@ -122,7 +123,7 @@ const MyForm: React.FC = () => {
       await apiDelete(`/api/Doctor/DeleteDoctorById/${Id}`);
       return true;
     }catch(error){
-      console.error('Error al eliminar el profesional:', error)
+      logger.error('No se pudo eliminar el profesional', describeError(error))
       setActionError('No se pudo eliminar. Solo un administrador puede dar de baja a otro profesional.');
       return false;
     }

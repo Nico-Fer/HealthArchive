@@ -1,12 +1,13 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { FaEnvelope, FaLock, FaUser, FaIdCard, FaHospital } from "react-icons/fa";
 import InputComponent from "../../../components/Input";
-import { Phone } from "../../../Types/Phone";
 import { useNavigate } from 'react-router-dom';
 import { ProfessionalForRedux } from "../../../Types/ProfessionalForRedux";
 import { useDispatch } from "react-redux";
 import { createProfessionalRed } from "../../../Redux/States/professional";
-import { apiFetch, apiGet } from '../../../api/client';
+import { sessionAuthenticated } from "../../../Redux/States/session";
+import { ApiError, apiFetch } from '../../../api/client';
+import logger, { describeError } from '../../../lib/logger';
 
 interface FormData {
   Name: string;
@@ -14,14 +15,16 @@ interface FormData {
   Password: string;
   Email: string;
   ConsultoryCode: string;
-  ConsultorioId: string;
   Tuition: string;
 }
 
-interface Consultorio {
-  id: string;
-  name: string;
-}
+// Mensajes por slug del ModelState del backend. El genérico "email o código" de antes
+// obligaba al usuario a adivinar cuál de los dos estaba mal.
+const ERROR_BY_SLUG: Record<string, string> = {
+  doctor_exists: 'Ese email ya está registrado.',
+  incorrect_code: 'El código del consultorio es incorrecto.',
+  ambiguous_code: 'Ese código corresponde a más de un consultorio. Contactá al administrador.',
+};
 
 const RegisterForm = () => {
   const navigate = useNavigate();
@@ -36,25 +39,13 @@ const RegisterForm = () => {
     Password: '',
     Email: '',
     ConsultoryCode: '',
-    ConsultorioId: '',
     Tuition: '',
   });
 
-  // El código está hasheado en la base, así que no se puede deducir a qué consultorio
-  // pertenece: hay que elegirlo y el backend verifica el código contra ese.
-  const [consultorios, setConsultorios] = useState<Consultorio[]>([]);
-
-  useEffect(() => {
-    apiGet<Consultorio[]>('/api/Consultorio/GetConsultorios')
-      .then(setConsultorios)
-      .catch(() => {
-        setErrorMessage('No se pudieron cargar los consultorios. Recargá la página.');
-        setError(true);
-      });
-  }, []);
-
   const createUser = async() =>{
     try{
+      // El backend identifica el consultorio verificando el código contra todos los
+      // consultorios: el código solo alcanza, no hace falta elegir uno.
       const response = await apiFetch('/api/Doctor/CreateDoctor', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -62,10 +53,13 @@ const RegisterForm = () => {
       })
 
       if (!response.ok) {
-        const errorMsg = 'El email ya se encuentra registrado'
-          setErrorMessage('Error al crear usuario: El email ya se encuentra registrado o el código del consultorio es incorrecto');
-          setError(true);
-          throw new Error(errorMsg);
+        const body = await response.json().catch(() => undefined);
+        const slug = new ApiError(response.status, body).slug;
+        setErrorMessage(
+          (slug && ERROR_BY_SLUG[slug]) || 'No se pudo crear el usuario. Intentá de nuevo.'
+        );
+        setError(true);
+        throw new Error(slug ?? `HTTP ${response.status}`);
       }
 
       // El registro no setea cookies: iniciamos sesión con las credenciales nuevas
@@ -84,16 +78,17 @@ const RegisterForm = () => {
 
       const userData : ProfessionalForRedux = await loginRes.json();
       dispatch(createProfessionalRed(userData));
+      dispatch(sessionAuthenticated());
 
       return true;
     }catch(error){
-      console.error('Error al crear el profesional:', error)
+      logger.error('Error al crear el profesional', describeError(error))
       return false;
     }
   }
 
   const validateForm= () => {
-    if(formData.ConsultoryCode === '' || formData.ConsultorioId === '' || formData.Email=== '' || formData.Name=== '' || formData.LastName=== '' || formData.Password=== '' || formData.Tuition=== ''){
+    if(formData.ConsultoryCode === '' || formData.Email=== '' || formData.Name=== '' || formData.LastName=== '' || formData.Password=== '' || formData.Tuition=== ''){
       setErrorMessage('Todos los campos son obligatorios');
       setError(true);
       return false;
@@ -180,21 +175,6 @@ const RegisterForm = () => {
               label="Código del Consultorio"
               icon={<FaHospital />}
             />
-        </div>
-
-        <div className="ha-form-field">
-          <label htmlFor="ConsultorioId">Consultorio</label>
-          <select
-            className="form-select"
-            id="ConsultorioId"
-            value={formData.ConsultorioId}
-            onChange={handleChange}
-          >
-            <option value="">Elegí un consultorio…</option>
-            {consultorios.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
         </div>
 
             {error && <div className="alert alert-danger" role="alert">

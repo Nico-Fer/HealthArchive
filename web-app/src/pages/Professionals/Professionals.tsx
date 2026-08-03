@@ -4,6 +4,7 @@ import PageHeader from '../../components/PageHeader';
 import { Phone } from '../../Types/Phone';
 import { apiGet } from '../../api/client';
 import Spinner from '../../components/Spinner';
+import logger, { describeError } from '../../lib/logger';
 
 interface FormData {
   Name: string;
@@ -46,7 +47,7 @@ const Proffesionals  = () => {
       setProffesionals(mappedProfessionals);
 
     } catch (error) {
-      console.error('Error:', error);
+      logger.error('No se pudo cargar la lista de profesionales', describeError(error));
     } finally {
       setIsLoading(false);
     }

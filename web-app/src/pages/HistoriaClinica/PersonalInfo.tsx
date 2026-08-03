@@ -46,7 +46,7 @@ const PersonalInfo: React.FC<PersonalInfoProps> = ({patient}) => {
         </div>
         <div className="personal-info-row">
           <dt>Edad</dt>
-          <dd>{CalculateAge(patient.BirthDate)} años</dd>
+          <dd>{CalculateAge(patient.BirthDate) ?? '—'} años</dd>
         </div>
       </dl>
     </div>

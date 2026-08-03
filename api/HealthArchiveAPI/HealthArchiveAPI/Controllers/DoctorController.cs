@@ -19,15 +19,18 @@ namespace HealthArchiveAPI.Controllers
         private readonly IDoctorRepository _repository;
         private readonly IConsultorioRepository _consultorios;
         private readonly IPasswordHasher _passwordHasher;
+        private readonly ILogger<DoctorController> _logger;
 
         public DoctorController(
             IDoctorRepository repository,
             IConsultorioRepository consultorios,
-            IPasswordHasher passwordHasher)
+            IPasswordHasher passwordHasher,
+            ILogger<DoctorController> logger)
         {
             _repository = repository;
             _consultorios = consultorios;
             _passwordHasher = passwordHasher;
+            _logger = logger;
         }
 
         [HttpGet]
@@ -88,34 +91,53 @@ namespace HealthArchiveAPI.Controllers
 
             if (_repository.DoctorExists(doctorDto.Email))
             {
+                _logger.LogWarning("Registro rechazado: el email {Email} ya existe", doctorDto.Email);
                 ModelState.AddModelError("error", "doctor_exists");
                 return BadRequest(ModelState);
             }
 
             // El código es el perímetro del sistema: un doctor registrado ve todas las
-            // historias clínicas de su consultorio. Vive hasheado en la base, así que
-            // hay que elegir el consultorio y verificar contra ese (el hash lleva salt,
-            // no se puede buscar un consultorio "por su código").
-            var consultorio = _consultorios.GetConsultorio(doctorDto.ConsultorioId);
-            if (consultorio == null)
-            {
-                ModelState.AddModelError("error", "consultorio_not_found");
-                return BadRequest(ModelState);
-            }
-
-            if (string.IsNullOrEmpty(consultorio.CodeHash))
-            {
-                // Consultorio sin código configurado: no se registra nadie. Si no, un
-                // hash vacío haría que la verificación se comportara de forma imprevisible.
-                return StatusCode(StatusCodes.Status503ServiceUnavailable);
-            }
-
-            if (string.IsNullOrEmpty(doctorDto.consultoryCode) ||
-                !_passwordHasher.Verify(consultorio.CodeHash, doctorDto.consultoryCode))
+            // historias clínicas de su consultorio.
+            if (string.IsNullOrWhiteSpace(doctorDto.consultoryCode))
             {
                 ModelState.AddModelError("error", "incorrect_code");
                 return BadRequest(ModelState);
             }
+
+            // El hash lleva salt, así que no se puede resolver el consultorio con una
+            // query: hay que verificar el código contra cada uno. Costo: un PBKDF2
+            // (~100k iteraciones) por consultorio con código, en cada intento. Es aceptable
+            // porque registrarse es raro y el endpoint está bajo la política "auth" del
+            // rate limiter (10/min por IP). Si algún día hay decenas de consultorios, la
+            // salida es agregar una columna de lookup determinística (HMAC con clave del
+            // server) junto al hash con salt, no escanear más rápido.
+            var matches = _consultorios.GetConsultoriosWithCode()
+                .Where(c => _passwordHasher.Verify(c.CodeHash, doctorDto.consultoryCode))
+                .ToList();
+
+            if (matches.Count == 0)
+            {
+                _logger.LogWarning(
+                    "Registro rechazado: código de consultorio incorrecto para {Email}", doctorDto.Email);
+                ModelState.AddModelError("error", "incorrect_code");
+                return BadRequest(ModelState);
+            }
+
+            if (matches.Count > 1)
+            {
+                // Nada impide hoy que dos consultorios tengan el mismo código (con salt no
+                // se puede validar unicidad al escribirlo). Elegir uno en silencio metería
+                // al doctor en el consultorio equivocado, que es exactamente la fuga
+                // cross-consultorio que todo el modelo de aislamiento evita. Se rechaza.
+                _logger.LogError(
+                    "Código de consultorio ambiguo: coincide con {Count} consultorios ({Ids}). Hay que rotar uno.",
+                    matches.Count,
+                    string.Join(", ", matches.Select(c => c.Id)));
+                ModelState.AddModelError("error", "ambiguous_code");
+                return BadRequest(ModelState);
+            }
+
+            var consultorio = matches[0];
 
             var doctor = doctorDto.ToEntity();
             doctor.ConsultorioId = consultorio.Id;
@@ -123,9 +145,13 @@ namespace HealthArchiveAPI.Controllers
 
             if (!_repository.CreateDoctor(doctor))
             {
+                _logger.LogError("No se pudo persistir el doctor {Email}", doctorDto.Email);
                 ModelState.AddModelError("", "Something went wrong");
-                return StatusCode(404, ModelState);
+                return StatusCode(StatusCodes.Status500InternalServerError, ModelState);
             }
+
+            _logger.LogInformation(
+                "Doctor {DoctorId} registrado en el consultorio {ConsultorioId}", doctor.Id, consultorio.Id);
 
             return Ok(doctor);
         }

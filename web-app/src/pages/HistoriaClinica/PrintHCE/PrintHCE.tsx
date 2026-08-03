@@ -10,6 +10,7 @@ import { store } from "../../../Redux/Store";
 import formatDate from "../../../Functions/FormatDate";
 
 import convertJsonToHtml from "../../../Functions/ConvertJsonToHTML";
+import logger, { describeError } from '../../../lib/logger';
 
 interface Props {
     evoluciones: Evolution[];
@@ -33,7 +34,7 @@ const PrintHCE : React.FC<Props> = ( {evoluciones, patient, onClose} ) =>{
                 pdf.save(`${patient.Name}${patient.LastName}HistoriaClinica`);
               });
           } else {
-            console.error('Elemento con ID "download" no encontrado.');
+            logger.error('No se encontró el elemento con id "download" para exportar el PDF');
           }
         };
 
@@ -51,7 +52,7 @@ const PrintHCE : React.FC<Props> = ( {evoluciones, patient, onClose} ) =>{
                         <div className="d-flex flex-column"> 
                             <span className="fw-bold">{patient.Name} {patient.LastName}</span>
                             <small className="fst-italic">DNI {patient.DNI}</small>
-                            <small>{CalculateAge(patient.BirthDate)} años</small>
+                            <small>{CalculateAge(patient.BirthDate) ?? '—'} años</small>
                         </div>
                         <div className="d-flex flex-column">
                             <span className="fw-bold">{stateRedux.name}, {stateRedux.lastName}</span>
