@@ -16,6 +16,11 @@
 # ---- Node (el front tiene su propio .gitignore tambien) ----
 node_modules/
 
+# ---- Python (herramienta de migracion en tools/) ----
+.venv/
+__pycache__/
+*.pyc
+
 # ---- OS ----
 .DS_Store
 Thumbs.db
