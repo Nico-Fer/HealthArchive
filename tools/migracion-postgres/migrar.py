@@ -98,6 +98,21 @@ def _conectar():
     return psycopg.connect(url)
 
 
+def _abrir_backup(args) -> BackupSqlServer:
+    """
+    Abre el .bak diciendo en voz alta que backup set se esta usando.
+
+    Un mismo archivo puede tener varios sets encadenados (`BACKUP DATABASE` agrega si no
+    le pasan `WITH INIT`). Por defecto se usa el ultimo, que es el mas reciente; elegir
+    mal significa migrar datos viejos, asi que conviene que se vea.
+    """
+    bak = BackupSqlServer(str(Path(args.bak).expanduser()), backup_set=getattr(args, "backup_set", None))
+    if len(bak.streams) > 1:
+        print(f"El archivo tiene {len(bak.streams)} backup sets; usando el {bak.backup_set} "
+              f"({'el mas reciente' if bak.backup_set == len(bak.streams) else 'elegido a mano'}).")
+    return bak
+
+
 def _tamanio_base(cur) -> int:
     cur.execute("SELECT pg_database_size(current_database())")
     return cur.fetchone()[0]
@@ -226,7 +241,8 @@ def cmd_extraer(args) -> None:
 
     resumen: dict = {"backup": str(Path(args.bak).expanduser()), "tablas": {}}
 
-    with BackupSqlServer(str(Path(args.bak).expanduser())) as bak:
+    with _abrir_backup(args) as bak:
+        resumen["backup_set"] = bak.backup_set
         print("Leyendo el backup...")
 
         # Primero las tablas que no necesitan transformacion, que ademas dan los
@@ -236,18 +252,27 @@ def cmd_extraer(args) -> None:
         archivos = list(bak.filas(esquema.HCEFILES))
         pacientes = list(bak.filas(esquema.PATIENTS))
 
+        # Un backup mas nuevo trae mas filas y eso esta bien. Menos filas no: o se leyo
+        # mal, o se apunto a un backup set viejo, que es justo el error que hay que
+        # evitar cuando el .bak tiene varios encadenados.
+        nuevas = []
         for tabla, filas in (
             (esquema.HCES, hces),
             (esquema.EVOLUTIONS, evoluciones),
             (esquema.HCEFILES, archivos),
             (esquema.PATIENTS, pacientes),
         ):
-            if len(filas) != tabla.filas_esperadas:
+            if len(filas) < tabla.filas_esperadas:
                 sys.exit(
-                    f"{tabla.nombre}: se leyeron {len(filas)} filas y se esperaban "
-                    f"{tabla.filas_esperadas}. El backup no es el que espera esta "
-                    "herramienta; revisar esquema.py antes de seguir."
+                    f"{tabla.nombre}: se leyeron {len(filas)} filas y el backup de "
+                    f"referencia tenia {tabla.filas_esperadas}. Faltan filas: revisar que "
+                    f"el backup set sea el correcto (--backup-set) antes de seguir.\n"
+                    f"El archivo tiene {len(bak.streams)} sets y se uso el {bak.backup_set}."
                 )
+            if len(filas) > tabla.filas_esperadas:
+                nuevas.append(f"{tabla.nombre} +{len(filas) - tabla.filas_esperadas}")
+        if nuevas:
+            print(f"Filas nuevas respecto del backup de referencia: {', '.join(nuevas)}")
 
         paciente_de_hce = {h["Id"]: h["PatientId"] for h in hces}
         ids_pacientes = {p["Id"] for p in pacientes}
@@ -467,7 +492,7 @@ def cmd_archivos(args) -> None:
         subidos = 0
         bytes_subidos = 0
 
-        with BackupSqlServer(str(Path(args.bak).expanduser())) as bak:
+        with _abrir_backup(args) as bak:
             lote: list[tuple] = []
             for fila in bak.filas(esquema.HCEFILES):
                 if fila["Id"] not in pendientes_set:
@@ -614,7 +639,7 @@ def cmd_verificar_hashes(args) -> None:
     hashes = {f["Id"]: f for f in _leer_ndjson(entrada / "Doctors.ndjson")}
 
     lineas = []
-    with BackupSqlServer(str(Path(args.bak).expanduser())) as bak:
+    with _abrir_backup(args) as bak:
         for fila in bak.filas(esquema.DOCTORS):
             destino = hashes.get(str(fila["Id"]))
             if destino is None:
@@ -652,6 +677,7 @@ def main() -> None:
     e = sub.add_parser("extraer", help="lee el .bak y deja los datos en archivos locales")
     e.add_argument("--bak", required=True)
     e.add_argument("--out", required=True)
+    e.add_argument("--backup-set", type=int, help="cual usar si el .bak tiene varios (por defecto, el ultimo)")
     e.set_defaults(func=cmd_extraer)
 
     f = sub.add_parser("preflight", help="chequea el destino sin modificar nada")
@@ -664,6 +690,7 @@ def main() -> None:
     a = sub.add_parser("archivos", help="sube los adjuntos, de a lotes reanudables")
     a.add_argument("--bak", required=True)
     a.add_argument("--in", dest="entrada", required=True)
+    a.add_argument("--backup-set", type=int)
     a.add_argument("--limite-gb", type=float, default=8.0)
     a.add_argument("--lote", type=int, default=50)
     a.set_defaults(func=cmd_archivos)
@@ -675,6 +702,7 @@ def main() -> None:
     h = sub.add_parser("verificar-hashes", help="valida los hashes contra el PasswordHasher de .NET")
     h.add_argument("--bak", required=True)
     h.add_argument("--in", dest="entrada", required=True)
+    h.add_argument("--backup-set", type=int)
     h.set_defaults(func=cmd_verificar_hashes)
 
     args = p.parse_args()

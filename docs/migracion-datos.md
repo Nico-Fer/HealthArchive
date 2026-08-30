@@ -27,11 +27,27 @@ Chequeos que hicieron seguro ese camino:
   reales, así que si hubiera habido alguno el lector estaría perdiendo filas en silencio;
   hoy corta con error si aparece uno.
 - **0 filas huérfanas** en las tres foreign keys, y `PatientId` único en `HCEs`.
-- Los **4.943 adjuntos** se reensamblan del árbol de LOB y los 3,62 GB validan dos veces:
+- Los **4.950 adjuntos** se reensamblan del árbol de LOB y los 3,63 GB validan dos veces:
   el largo coincide con el que declara el puntero en fila, y los magic bytes coinciden con
   la extensión del archivo (`%PDF`, `\xFF\xD8\xFF`, `\x89PNG`, `PK\x03\x04`).
 - Los **15 hashes** generados validan contra el `PasswordHasher<T>` real de ASP.NET Core
   Identity, que es el que usa `PasswordHasherService`.
+
+## Varios backup sets en un mismo archivo
+
+El `.bak` del 30/08/2026 pesa el doble que el anterior y, sin embargo, trae casi los
+mismos datos: son **dos backup sets encadenados** en el mismo archivo. `BACKUP DATABASE`
+agrega al final si no le pasan `WITH INIT`, así que el archivo quedó con el backup viejo
+en el offset `0x2200` y el nuevo en `0xf6b78600`.
+
+Importa porque la primera versión del lector se quedaba con el primer stream que
+encontraba, que es **el viejo**: habría migrado datos de una semana atrás sin que nada
+avisara. Ahora los enumera todos, usa el último e informa cuál eligió; y `extraer` corta
+si alguna tabla trae menos filas que la referencia de `esquema.py`, que es exactamente lo
+que pasa al apuntar a un set viejo.
+
+Para el consultorio, la recomendación es hacer los backups con `WITH INIT` (o a un archivo
+nuevo cada vez) para que un `.bak` sea siempre un backup solo.
 
 ## El orden físico de las columnas
 

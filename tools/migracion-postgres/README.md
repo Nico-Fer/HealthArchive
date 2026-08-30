@@ -12,12 +12,25 @@ correr desde cualquier máquina y repetir las veces que haga falta.
 | Tabla | Filas | Notas |
 |---|---:|---|
 | `Doctors` | 15 + 1 | las contraseñas pasan de texto plano a hash de ASP.NET Core Identity |
-| `Patients` | 6.108 | 26 DNI repetidos se desambiguan; van todos al consultorio inicial |
-| `HCEs` | 6.108 | |
-| `Evolutions` | 17.579 | |
-| `HCEFiles` | 4.943 | 3,62 GB de adjuntos, en una etapa aparte |
+| `Patients` | 6.138 | 26 DNI repetidos se desambiguan; van todos al consultorio inicial |
+| `HCEs` | 6.138 | |
+| `Evolutions` | 17.719 | |
+| `HCEFiles` | 4.950 | 3,63 GB de adjuntos, en una etapa aparte |
+
+(Conteos del backup del 30/08/2026, que es la referencia en `esquema.py`.)
 
 `RefreshTokens` no se migra: son tokens de sesión y la tabla no existía en el origen.
+
+## Ojo con los backup sets
+
+`BACKUP DATABASE ... TO DISK` **agrega** un backup set al archivo si no le pasan
+`WITH INIT`. Un `.bak` que crece de golpe al doble seguramente tiene dos backups
+encadenados, no el doble de datos.
+
+El lector los enumera y usa **el último**, que es el más reciente, y avisa por consola
+cuál eligió. Si hiciera falta otro, `--backup-set N` (1-based). Además, si alguna tabla
+trae **menos** filas que el backup de referencia de `esquema.py`, `extraer` corta: es la
+señal de que se apuntó a un set viejo.
 
 ## Antes de empezar
 

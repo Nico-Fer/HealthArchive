@@ -10,6 +10,10 @@ validado contra los datos reales del backup.
 `pos` es la posicion fisica (la que indexa el null bitmap). `offset` es el byte inicial
 dentro de la porcion de longitud fija. `var` es el indice dentro del array de columnas
 variables, que solo cuenta columnas variables.
+
+`filas_esperadas` es la referencia del ultimo backup analizado (30/08/2026). Un backup
+mas nuevo va a traer mas filas y eso esta bien; menos filas significa que algo se leyo
+mal o que se apunto a un backup set viejo, y ahi la extraccion corta.
 """
 
 from sqlserver_bak import Columna, Tabla
@@ -48,7 +52,7 @@ DOCTORS = Tabla(
 PATIENTS = Tabla(
     nombre="Patients",
     objid=226,
-    filas_esperadas=6108,
+    filas_esperadas=6138,
     ncols=14,
     largo_fijas=28,
     columnas=[
@@ -72,7 +76,7 @@ PATIENTS = Tabla(
 HCES = Tabla(
     nombre="HCEs",
     objid=229,
-    filas_esperadas=6108,
+    filas_esperadas=6138,
     ncols=2,
     largo_fijas=36,
     columnas=[
@@ -84,7 +88,7 @@ HCES = Tabla(
 EVOLUTIONS = Tabla(
     nombre="Evolutions",
     objid=237,
-    filas_esperadas=17579,
+    filas_esperadas=17719,
     ncols=6,
     largo_fijas=44,
     columnas=[
@@ -100,7 +104,7 @@ EVOLUTIONS = Tabla(
 HCEFILES = Tabla(
     nombre="HCEFiles",
     objid=241,
-    filas_esperadas=4943,
+    filas_esperadas=4950,
     ncols=4,
     largo_fijas=36,
     columnas=[

@@ -6,6 +6,11 @@ comprimido, lleva adentro las paginas del MDF tal cual, de 8192 bytes. Este modu
 ubica donde arranca ese stream y de ahi para abajo trabaja con el formato de pagina
 y de registro de SQL Server, que es estable desde 2005.
 
+Un mismo .bak puede contener VARIOS backup sets, uno atras del otro: `BACKUP DATABASE`
+agrega al archivo si no le pasan `WITH INIT`. Por eso el lector los enumera todos y usa
+el ultimo (el mas reciente) en vez del primero que encuentra; agarrar el primero
+significaria migrar datos viejos sin que nada avise.
+
 Alcance deliberadamente chico: solo lo que hace falta para migrar HealthArchive.
 - Paginas de datos (tipo 1) y de LOB (tipos 3 y 4).
 - Registros PRIMARY. En este backup no hay forwarded ni ghost (verificado), asi que
@@ -122,10 +127,31 @@ def _datetime2(raw: bytes) -> datetime.datetime:
 # --------------------------------------------------------------------------- #
 
 class BackupSqlServer:
-    def __init__(self, ruta: str):
+    def __init__(self, ruta: str, backup_set: int | None = None):
+        """
+        `backup_set` es 1-based; por defecto se usa el ultimo, que es el mas reciente.
+        """
         self.ruta = ruta
         self._f = open(ruta, "rb")
-        self._base = self._buscar_base()
+
+        self.streams = self._buscar_streams()
+        if not self.streams:
+            raise FormatoInesperado(
+                f"{ruta}: no se encontro ningun stream de MDF. El backup podria estar "
+                "comprimido o encriptado, y en ese caso hay que restaurarlo con SQL Server."
+            )
+
+        if backup_set is None:
+            self.backup_set = len(self.streams)
+        elif 1 <= backup_set <= len(self.streams):
+            self.backup_set = backup_set
+        else:
+            raise FormatoInesperado(
+                f"{ruta}: se pidio el backup set {backup_set} y el archivo tiene "
+                f"{len(self.streams)}."
+            )
+
+        self._base = self.streams[self.backup_set - 1]
         self._indice: dict[int, list[int]] | None = None
 
     def close(self) -> None:
@@ -137,54 +163,67 @@ class BackupSqlServer:
     def __exit__(self, *_exc) -> None:
         self.close()
 
-    # -- ubicacion del stream del MDF ---------------------------------------- #
+    # -- ubicacion de los streams del MDF ------------------------------------ #
 
-    def _buscar_base(self) -> int:
+    @staticmethod
+    def _confirmar(f, base: int) -> bool:
         """
-        Encuentra el offset donde arranca la pagina 0 del MDF.
+        Confirma que en `base` arranca de verdad un stream de MDF.
 
-        Los bloques de cabecera del MTF corren el stream una cantidad que depende del
-        backup, asi que el offset no se puede asumir. Lo que si es fijo es como se ve
-        la pagina 0: cabecera version 1, tipo 15 (file header), y m_pageId/m_fileId
-        diciendo que es la pagina 0 del archivo 1. Buscamos ese patron y despues
-        confirmamos que las paginas siguientes caen donde tienen que caer.
+        Las paginas siguientes tienen que autoidentificarse con su propio numero. El
+        backup incluye paginas reservadas y todavia sin usar, que vienen en cero: esas
+        se saltean, pero una cabecera que no cierra descarta el candidato. Hace falta
+        porque el patron de la pagina 0 aparece por casualidad dentro de los adjuntos.
         """
-        self._f.seek(0)
-        buf = self._f.read(8 * 1024 * 1024)
-
-        base = -1
-        while True:
-            base = buf.find(b"\x01\x0f", base + 1)
-            if base < 0:
-                break
-            if base + HEADER_SIZE > len(buf):
-                break
-            if struct.unpack_from("<IH", buf, base + 32) != (0, 1):
+        validas = 0
+        for k in range(1, 64):
+            f.seek(base + k * PAGE_SIZE)
+            cab = f.read(HEADER_SIZE)
+            if len(cab) < HEADER_SIZE:
+                return False
+            if cab[0] == 0:  # pagina sin usar
                 continue
+            if cab[0] != 1 or struct.unpack_from("<IH", cab, 32) != (k, 1):
+                return False
+            validas += 1
+        return validas >= 16
 
-            # Confirmacion: las paginas siguientes tienen que autoidentificarse con su
-            # propio numero. El backup incluye paginas reservadas y todavia sin usar,
-            # que vienen en cero: esas se saltean, pero una cabecera que no cierra
-            # descarta la alineacion.
-            validas = 0
-            for k in range(1, 64):
-                o = base + k * PAGE_SIZE
-                if o + HEADER_SIZE > len(buf):
+    def _buscar_streams(self) -> list[int]:
+        """
+        Enumera los offsets donde arranca cada stream de MDF del archivo, en orden.
+
+        Uno por backup set. Se reconocen por la pagina 0 del archivo de datos: cabecera
+        version 1, tipo 15 (file header) y m_pageId/m_fileId diciendo que es la pagina 0
+        del archivo 1.
+        """
+        ANCLA = b"\x01\x0f\x00\x00"
+        encontrados: list[int] = []
+
+        self._f.seek(0)
+        arrastre = b""
+        offset_arrastre = 0
+        while True:
+            bloque = self._f.read(BLOQUE_LECTURA)
+            if not bloque:
+                break
+            datos = arrastre + bloque
+            i = -1
+            while True:
+                i = datos.find(ANCLA, i + 1)
+                if i < 0 or i + HEADER_SIZE > len(datos):
                     break
-                if buf[o] == 0:  # pagina sin usar
+                if struct.unpack_from("<IH", datos, i + 32) != (0, 1):
                     continue
-                if buf[o] != 1 or struct.unpack_from("<IH", buf, o + 32) != (k, 1):
-                    validas = -1
-                    break
-                validas += 1
-            if validas >= 16:
-                return base
+                base = offset_arrastre + i
+                if self._confirmar(self._f, base):
+                    encontrados.append(base)
+            # Solaparse para no perder una cabecera partida entre dos lecturas.
+            conservar = min(HEADER_SIZE, len(datos))
+            offset_arrastre += len(datos) - conservar
+            arrastre = datos[len(datos) - conservar :]
+            self._f.seek(offset_arrastre + conservar)
 
-        raise FormatoInesperado(
-            f"{self.ruta}: no se encontro el stream del MDF. "
-            "El backup podria estar comprimido o encriptado, y en ese caso hay que "
-            "restaurarlo con SQL Server."
-        )
+        return encontrados
 
     # -- acceso a paginas ---------------------------------------------------- #
 
