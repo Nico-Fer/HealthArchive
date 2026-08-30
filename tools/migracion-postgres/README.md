@@ -84,9 +84,19 @@ propósito. No subirlo a ningún lado y borrarlo cuando la migración esté conf
 
 ### Sobre los adjuntos
 
-Son 3,62 GB de PDFs, JPEGs y algún ZIP que van a `HCEFiles.Content` (`bytea`). El volumen
-por defecto de Postgres en Railway es de 5 GB y el WAL durante la carga suma más, así que
-conviene agrandarlo antes.
+Son 3,63 GB de PDFs, JPEGs y algún ZIP que van a `HCEFiles.Content` (`bytea`). Medido
+contra un Postgres 16 real, la migración completa ocupa:
+
+| | |
+|---|---:|
+| base de datos (`HCEFiles` es el 99%) | **2,98 GB** |
+| `pg_wal` después de la carga masiva | ~1,0 GB |
+| **total del volumen (`PGDATA`)** | **~4,0 GB** |
+
+TOAST comprime parte de los PDFs, así que la base pesa menos que los archivos crudos.
+Entra en los 5 GB del plan Hobby de Railway, pero deja poco margen: `--limite-gb` es tope
+de **tamaño de base** (el volumen suma el WAL aparte) y por eso viene en 3,5 por defecto.
+El uso real del volumen se mira en el dashboard de Railway, no desde SQL.
 
 `archivos` va de a lotes con commit por lote, chequea el tamaño de la base después de cada
 uno y corta si pasa `--limite-gb`. **Es reanudable**: al volver a correr saltea lo que ya

@@ -691,7 +691,11 @@ def main() -> None:
     a.add_argument("--bak", required=True)
     a.add_argument("--in", dest="entrada", required=True)
     a.add_argument("--backup-set", type=int)
-    a.add_argument("--limite-gb", type=float, default=8.0)
+    # 3.5 GB de base, no de volumen: el plan Hobby de Railway da 5 GB de volumen y el
+    # pg_wal se come cerca de 1 GB durante una carga masiva. Con este tope la migracion
+    # completa (2,98 GB medidos) entra sin acercarse al borde.
+    a.add_argument("--limite-gb", type=float, default=3.5,
+                   help="tope de tamano de la BASE (el volumen suma ~1 GB mas de WAL)")
     a.add_argument("--lote", type=int, default=50)
     a.set_defaults(func=cmd_archivos)
 
