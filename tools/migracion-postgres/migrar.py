@@ -44,6 +44,11 @@ ROL_ADMIN = "Admin"
 # reporte. No se corrige nada: son datos de carga del consultorio, no corrupcion.
 ANIO_MINIMO_PLAUSIBLE = 1900
 
+# Espacio que hay que dejarle al WAL dentro del volumen. Medido: una carga masiva de
+# 3 GB deja pg_wal en ~1 GB. `pg_database_size` no lo ve, y el tamano del volumen no se
+# puede consultar por SQL, asi que el operador lo declara con --volumen-gb.
+RESERVA_WAL_GB = 1.2
+
 TABLAS_DESTINO = ["Consultorios", "Doctors", "RefreshTokens", "Patients", "HCEs", "Evolutions", "HCEFiles"]
 
 # Conteos acotados al consultorio destino. Importa porque la base puede tener otros
@@ -501,7 +506,12 @@ def cmd_cargar(args) -> None:
 def cmd_archivos(args) -> None:
     entrada = Path(args.entrada).expanduser()
     metadatos = {uuid.UUID(m["Id"]): m for m in _leer_ndjson(entrada / "HCEFiles.ndjson")}
-    limite = int(args.limite_gb * 2**30)
+
+    # El tope real es el del VOLUMEN, no el de la base: ahi viven tambien el WAL y el
+    # resto de PGDATA. Postgres no lo puede informar, asi que lo declara el operador
+    # mirando el dashboard. Sin esto la subida avanza a ciegas y lo unico que avisa que
+    # no entraba es que el servidor se cae con el disco lleno.
+    limite = int((args.limite_gb if args.limite_gb else args.volumen_gb - RESERVA_WAL_GB) * 2**30)
 
     with _conectar() as conn:
         with conn.cursor() as cur:
@@ -520,6 +530,25 @@ def cmd_archivos(args) -> None:
                 f"La base ya esta por encima del limite. Agrandar el volumen en Railway "
                 f"o subir --limite-gb si {_gb(tamanio)} es esperable."
             )
+
+        # Proyeccion antes de escribir un solo byte. Se usan los bytes crudos, que
+        # sobreestiman (TOAST comprime algo), porque para un guard conviene errar por
+        # exceso.
+        pendiente = sum(metadatos[i]["Bytes"] for i in pendientes)
+        volumen = int(args.volumen_gb * 2**30)
+        proyectado = tamanio + pendiente + int(RESERVA_WAL_GB * 2**30)
+        print(f"Proyeccion: {_gb(tamanio)} de base + {_gb(pendiente)} de adjuntos + "
+              f"{RESERVA_WAL_GB} GB de WAL = {_gb(proyectado)} sobre un volumen de {_gb(volumen)}")
+        if proyectado > volumen:
+            sys.exit(
+                f"\nNo entra: harian falta {_gb(proyectado)} y el volumen declarado es "
+                f"{_gb(volumen)}.\n\n"
+                "En Railway: servicio Postgres -> Volume -> Settings -> Grow. Ojo que el\n"
+                "volumen creado en Trial queda en 0,5 GB y NO se agranda solo al pasar a un\n"
+                "plan pago: subir de plan sube el techo, no el volumen.\n\n"
+                "Si el volumen ya es mas grande, corregir --volumen-gb."
+            )
+        print()
 
         pendientes_set = set(pendientes)
         subidos = 0
@@ -746,8 +775,12 @@ def main() -> None:
     # 3.5 GB de base, no de volumen: el plan Hobby de Railway da 5 GB de volumen y el
     # pg_wal se come cerca de 1 GB durante una carga masiva. Con este tope la migracion
     # completa (2,98 GB medidos) entra sin acercarse al borde.
-    a.add_argument("--limite-gb", type=float, default=3.5,
-                   help="tope de tamano de la BASE (el volumen suma ~1 GB mas de WAL)")
+    a.add_argument("--volumen-gb", type=float, required=True,
+                   help="tamano del volumen de Postgres, tal cual lo muestra el dashboard "
+                        "de Railway. Postgres no lo puede informar y es el limite que importa")
+    a.add_argument("--limite-gb", type=float,
+                   help=f"tope de tamano de la BASE; por defecto --volumen-gb menos "
+                        f"{RESERVA_WAL_GB} GB reservados para el WAL")
     a.add_argument("--lote", type=int, default=50)
     a.set_defaults(func=cmd_archivos)
 

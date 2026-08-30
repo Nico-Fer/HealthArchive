@@ -74,9 +74,9 @@ export ADMIN_PASSWORD='...'            # opcional
 # 5. Verificar.
 .venv/bin/python tools/migracion-postgres/migrar.py verificar --in ~/migracion-healtharchive
 
-# 6. Los adjuntos, cuando el volumen de Railway esté dimensionado.
+# 6. Los adjuntos. --volumen-gb es el tamaño del volumen segun el dashboard de Railway.
 .venv/bin/python tools/migracion-postgres/migrar.py archivos \
-    --bak ~/Downloads/HealthArchive.bak --in ~/migracion-healtharchive --limite-gb 8
+    --bak ~/Downloads/HealthArchive.bak --in ~/migracion-healtharchive --volumen-gb 5
 ```
 
 **`~/migracion-healtharchive` tiene historias clínicas reales.** Queda fuera del repo a
@@ -94,9 +94,17 @@ contra un Postgres 16 real, la migración completa ocupa:
 | **total del volumen (`PGDATA`)** | **~4,0 GB** |
 
 TOAST comprime parte de los PDFs, así que la base pesa menos que los archivos crudos.
-Entra en los 5 GB del plan Hobby de Railway, pero deja poco margen: `--limite-gb` es tope
-de **tamaño de base** (el volumen suma el WAL aparte) y por eso viene en 3,5 por defecto.
-El uso real del volumen se mira en el dashboard de Railway, no desde SQL.
+Entra en los 5 GB del plan Hobby de Railway, pero deja poco margen.
+
+**Postgres no puede ver el tamaño de su propio volumen**, y `pg_database_size` no cuenta el
+WAL. Por eso `archivos` pide `--volumen-gb`: mirás el número en el dashboard de Railway y
+lo declarás. Con eso el comando proyecta el total antes de escribir un solo byte y se
+niega a arrancar si no entra, en vez de descubrirlo a mitad de camino cuando el servidor
+se cae con el disco lleno.
+
+> **Subir de plan no agranda el volumen.** Sube el techo. El volumen creado en Trial se
+> queda en 0,5 GB hasta que lo agrandes a mano: servicio Postgres → Volume → Settings →
+> Grow. Si el volumen está al 100%, el resize es offline y reinicia el servicio.
 
 `archivos` va de a lotes con commit por lote, chequea el tamaño de la base después de cada
 uno y corta si pasa `--limite-gb`. **Es reanudable**: al volver a correr saltea lo que ya
