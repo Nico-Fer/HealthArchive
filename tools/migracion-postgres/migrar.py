@@ -46,6 +46,23 @@ ANIO_MINIMO_PLAUSIBLE = 1900
 
 TABLAS_DESTINO = ["Consultorios", "Doctors", "RefreshTokens", "Patients", "HCEs", "Evolutions", "HCEFiles"]
 
+# Conteos acotados al consultorio destino. Importa porque la base puede tener otros
+# consultorios legitimos: el modelo de aislamiento es justamente ese, y una migracion
+# no tiene por que ser la unica cosa viva en la base. HCE, Evolution y HCEFile no
+# llevan ConsultorioId propio (lo heredan por HCE -> Patient), asi que se llega por join.
+CONTEO_EN_CONSULTORIO = {
+    "Doctors": 'SELECT count(*) FROM "Doctors" WHERE "ConsultorioId" = %s',
+    "Patients": 'SELECT count(*) FROM "Patients" WHERE "ConsultorioId" = %s',
+    "RefreshTokens": 'SELECT count(*) FROM "RefreshTokens" t '
+                     'JOIN "Doctors" d ON d."Id" = t."DoctorId" WHERE d."ConsultorioId" = %s',
+    "HCEs": 'SELECT count(*) FROM "HCEs" h '
+            'JOIN "Patients" p ON p."Id" = h."PatientId" WHERE p."ConsultorioId" = %s',
+    "Evolutions": 'SELECT count(*) FROM "Evolutions" e JOIN "HCEs" h ON h."Id" = e."HCEId" '
+                  'JOIN "Patients" p ON p."Id" = h."PatientId" WHERE p."ConsultorioId" = %s',
+    "HCEFiles": 'SELECT count(*) FROM "HCEFiles" f JOIN "HCEs" h ON h."Id" = f."HCEId" '
+                'JOIN "Patients" p ON p."Id" = h."PatientId" WHERE p."ConsultorioId" = %s',
+}
+
 
 # --------------------------------------------------------------------------- #
 # Utilidades
@@ -379,15 +396,15 @@ def cmd_preflight(args) -> None:
             )
 
         print("Tablas presentes: todas.\n")
-        print("  tabla            filas")
+        print(f"  {'tabla':<16} {'destino':>8} {'otros':>8}")
         con_datos = []
-        for t in TABLAS_DESTINO:
+        for t, sql in CONTEO_EN_CONSULTORIO.items():
+            cur.execute(sql, (esquema.CONSULTORIO_INICIAL,))
+            propias = cur.fetchone()[0]
             cur.execute(f'SELECT count(*) FROM "{t}"')
-            n = cur.fetchone()[0]
-            print(f"  {t:<16} {n:>6}")
-            # Consultorios trae la fila que siembra la migracion; el resto tiene que
-            # estar vacio o `cargar` va a chocar contra las claves primarias.
-            if n and t != "Consultorios":
+            otras = cur.fetchone()[0] - propias
+            print(f"  {t:<16} {propias:>8} {otras:>8}")
+            if propias:
                 con_datos.append(t)
 
         cur.execute('SELECT "Name", "CodeHash" <> \'\' FROM "Consultorios" WHERE "Id" = %s',
@@ -406,7 +423,11 @@ def cmd_preflight(args) -> None:
         print(f"Tamano actual de la base: {_gb(_tamanio_base(cur))}")
 
         if con_datos:
-            sys.exit(f"\nEstas tablas ya tienen filas: {con_datos}. `cargar` espera el destino vacio.")
+            sys.exit(
+                f"\nEl consultorio destino ya tiene filas en {con_datos}. `cargar` lo espera "
+                "vacio: si no, se duplican los datos. Las filas de OTROS consultorios no "
+                "molestan y por eso solo se informan."
+            )
         print("\nDestino listo.")
 
 
@@ -442,6 +463,18 @@ def cmd_cargar(args) -> None:
     with _conectar() as conn:
         with conn.cursor() as cur:
             antes = _tamanio_base(cur)
+
+            # El nombre del consultorio va en la misma transaccion que los datos: o
+            # queda todo consistente o no queda nada.
+            if args.nombre_consultorio:
+                cur.execute(
+                    'UPDATE "Consultorios" SET "Name" = %s WHERE "Id" = %s',
+                    (args.nombre_consultorio, esquema.CONSULTORIO_INICIAL),
+                )
+                if cur.rowcount != 1:
+                    sys.exit(f"No se encontro el consultorio {esquema.CONSULTORIO_INICIAL} para renombrar.")
+                print(f'  consultorio    renombrado a {args.nombre_consultorio!r}')
+
             # Una sola transaccion para las cuatro tablas: si algo falla a mitad de
             # camino la base queda como estaba, no a medio migrar.
             for tabla in ("Doctors", "Patients", "HCEs", "Evolutions"):
@@ -503,7 +536,7 @@ def cmd_archivos(args) -> None:
                 bytes_subidos += len(datos)
 
                 if len(lote) >= args.lote:
-                    subidos += _subir_lote(conn, lote)
+                    subidos += _subir_lote(conn, lote, subidos)
                     lote = []
                     with conn.cursor() as cur:
                         tamanio = _tamanio_base(cur)
@@ -516,18 +549,39 @@ def cmd_archivos(args) -> None:
                         return
 
             if lote:
-                subidos += _subir_lote(conn, lote)
+                subidos += _subir_lote(conn, lote, subidos)
 
         with conn.cursor() as cur:
             print(f"\n{subidos} archivos subidos ({_gb(bytes_subidos)}). Base: {_gb(_tamanio_base(cur))}")
 
 
-def _subir_lote(conn, lote) -> int:
-    with conn.cursor() as cur:
-        with cur.copy('COPY "HCEFiles" ("Id", "FileName", "Content", "HCEId") FROM STDIN') as copy:
-            for fila in lote:
-                copy.write_row(fila)
-    conn.commit()
+def _subir_lote(conn, lote, subidos_antes: int) -> int:
+    """
+    Sube un lote y lo commitea. Si el disco se lleno, lo dice en criollo.
+
+    `--limite-gb` no alcanza para prevenirlo: mide el tamano de la BASE, y el volumen
+    tiene ademas el WAL y no se puede consultar desde SQL. En Railway el tamano del
+    volumen se mira en el dashboard, y el default de Trial (0,5 GB) NO se agranda solo
+    al pasar a un plan pago.
+    """
+    import psycopg
+
+    try:
+        with conn.cursor() as cur:
+            with cur.copy('COPY "HCEFiles" ("Id", "FileName", "Content", "HCEId") FROM STDIN') as copy:
+                for fila in lote:
+                    copy.write_row(fila)
+        conn.commit()
+    except psycopg.errors.DiskFull:
+        conn.rollback()
+        sys.exit(
+            f"\nSE LLENO EL DISCO del servidor. El lote se descarto entero (rollback), "
+            f"asi que quedaron {subidos_antes} archivos completos y consistentes.\n\n"
+            "El tope no es el tamano de la base sino el del VOLUMEN, que incluye el WAL.\n"
+            "En Railway: servicio Postgres -> Volume -> Settings -> Grow. Ojo que el volumen\n"
+            "creado en Trial queda en 0,5 GB y NO se agranda solo al pasar a un plan pago.\n\n"
+            "Despues volve a correr el mismo comando: retoma donde quedo."
+        )
     return len(lote)
 
 
@@ -541,52 +595,49 @@ def cmd_verificar(args) -> None:
     problemas: list[str] = []
 
     with _conectar() as conn, conn.cursor() as cur:
-        print("Conteos")
+        print("Conteos (dentro del consultorio destino)")
         for tabla, esperado in resumen["tablas"].items():
-            cur.execute(f'SELECT count(*) FROM "{tabla}"')
+            cur.execute(CONTEO_EN_CONSULTORIO[tabla], (esquema.CONSULTORIO_INICIAL,))
             real = cur.fetchone()[0]
             if tabla == "HCEFiles":
-                marca = "OK" if real == esperado else f"de {esperado} (etapa aparte)"
-            else:
-                marca = "OK" if real == esperado else f"!= {esperado}"
-                if real != esperado:
-                    problemas.append(f"{tabla}: {real} filas, se esperaban {esperado}")
-            print(f"  {tabla:<12} {real:>6}  {marca}")
-        # Los adjuntos son una etapa aparte y opcional, asi que quedarse corto no es un
-        # error: se informa cuanto falta y listo.
-        cur.execute('SELECT count(*) FROM "HCEFiles"')
-        cargados = cur.fetchone()[0]
-        faltan = resumen["tablas"]["HCEFiles"] - cargados
-        if faltan > 0:
-            print(f"  (faltan {faltan} adjuntos: correr `migrar.py archivos`)")
-        elif faltan < 0:
-            problemas.append(f"HCEFiles tiene {cargados} filas, mas de las {resumen['tablas']['HCEFiles']} del backup")
+                # Los adjuntos son una etapa aparte y opcional: quedarse corto no es error.
+                print(f"  {tabla:<12} {real:>6}  " + ("OK" if real == esperado else f"de {esperado} (etapa aparte)"))
+                if real > esperado:
+                    problemas.append(f"HCEFiles tiene {real} filas, mas de las {esperado} del backup")
+                elif real < esperado:
+                    print(f"  (faltan {esperado - real} adjuntos: correr `migrar.py archivos`)")
+                continue
+            print(f"  {tabla:<12} {real:>6}  " + ("OK" if real == esperado else f"!= {esperado}"))
+            if real != esperado:
+                problemas.append(f"{tabla}: {real} filas en el consultorio destino, se esperaban {esperado}")
 
         print("\nIntegridad")
+        cons = esquema.CONSULTORIO_INICIAL
         chequeos = [
-            ('doctores fuera del consultorio inicial',
-             f'SELECT count(*) FROM "Doctors" WHERE "ConsultorioId" <> \'{esquema.CONSULTORIO_INICIAL}\''),
-            ('pacientes fuera del consultorio inicial',
-             f'SELECT count(*) FROM "Patients" WHERE "ConsultorioId" <> \'{esquema.CONSULTORIO_INICIAL}\''),
-            ('DNI repetidos', 'SELECT count(*) FROM (SELECT "DNI" FROM "Patients" '
-                              'GROUP BY "ConsultorioId", "DNI" HAVING count(*) > 1) t'),
+            # El DNI unico es por consultorio, asi que este va sobre toda la tabla.
+            ('DNI repetidos', 'SELECT count(*) FROM (SELECT 1 FROM "Patients" '
+                              'GROUP BY "ConsultorioId", "DNI" HAVING count(*) > 1) t', None),
             ('HCEs sin paciente', 'SELECT count(*) FROM "HCEs" h LEFT JOIN "Patients" p '
-                                  'ON p."Id" = h."PatientId" WHERE p."Id" IS NULL'),
+                                  'ON p."Id" = h."PatientId" WHERE p."Id" IS NULL', None),
             ('evoluciones sin HCE', 'SELECT count(*) FROM "Evolutions" e LEFT JOIN "HCEs" h '
-                                    'ON h."Id" = e."HCEId" WHERE h."Id" IS NULL'),
-            ('contrasenas sin hashear', 'SELECT count(*) FROM "Doctors" WHERE "Password" NOT LIKE \'AQAAAA%\''),
-            ('doctores sin rol valido', 'SELECT count(*) FROM "Doctors" WHERE "Role" NOT IN (\'Doctor\', \'Admin\')'),
+                                    'ON h."Id" = e."HCEId" WHERE h."Id" IS NULL', None),
+            ('contrasenas sin hashear', 'SELECT count(*) FROM "Doctors" WHERE "ConsultorioId" = %s '
+                                        'AND "Password" NOT LIKE \'AQAAAA%%\'', (cons,)),
+            ('doctores sin rol valido', 'SELECT count(*) FROM "Doctors" WHERE "ConsultorioId" = %s '
+                                        'AND "Role" NOT IN (\'Doctor\', \'Admin\')', (cons,)),
+            ('emails de doctor duplicados', 'SELECT count(*) FROM (SELECT 1 FROM "Doctors" '
+                                            'GROUP BY lower("Email") HAVING count(*) > 1) t', None),
         ]
-        for etiqueta, sql in chequeos:
-            cur.execute(sql)
+        for etiqueta, sql, params in chequeos:
+            cur.execute(sql, params)
             n = cur.fetchone()[0]
             print(f"  {etiqueta:<40} {n}")
             if n:
                 problemas.append(f"{etiqueta}: {n}")
 
-        cur.execute('SELECT count(*) FROM "Doctors" WHERE "Role" = \'Admin\'')
+        cur.execute('SELECT count(*) FROM "Doctors" WHERE "ConsultorioId" = %s AND "Role" = \'Admin\'', (cons,))
         admins = cur.fetchone()[0]
-        print(f"  {'administradores':<40} {admins}")
+        print(f"  {'administradores en el consultorio':<40} {admins}")
         if admins != 2:
             problemas.append(f"se esperaban 2 administradores y hay {admins}")
 
@@ -685,6 +736,7 @@ def main() -> None:
 
     c = sub.add_parser("cargar", help="inserta lo relacional, en una transaccion")
     c.add_argument("--in", dest="entrada", required=True)
+    c.add_argument("--nombre-consultorio", help="renombra el consultorio destino en la misma transaccion")
     c.set_defaults(func=cmd_cargar)
 
     a = sub.add_parser("archivos", help="sube los adjuntos, de a lotes reanudables")
