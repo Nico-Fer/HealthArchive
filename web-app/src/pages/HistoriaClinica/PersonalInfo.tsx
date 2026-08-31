@@ -15,6 +15,10 @@ const PersonalInfo: React.FC<PersonalInfoProps> = ({patient}) => {
     return <Spinner />;
   }
 
+  // Puede venir undefined si el paciente llegó por router state desde una pantalla que
+  // todavía no lo mapeó; con [] la card se dibuja igual en vez de romper.
+  const coberturas = patient.MedicalCoverages ?? [];
+
   return (
     <div className="personal-info ha-card">
       <div className="personal-info-header">
@@ -24,14 +28,24 @@ const PersonalInfo: React.FC<PersonalInfoProps> = ({patient}) => {
         </h2>
       </div>
       <dl className="personal-info-details">
-        <div className="personal-info-row">
-          <dt>Obra Social</dt>
-          <dd>{patient?.MedicalCoverage.Coverage}</dd>
-        </div>
-        <div className="personal-info-row">
-          <dt>Nro. Cobertura</dt>
-          <dd>{patient?.MedicalCoverage.Number}</dd>
-        </div>
+        {coberturas.length === 0 ? (
+          <div className="personal-info-row">
+            <dt>Obra Social</dt>
+            <dd>—</dd>
+          </div>
+        ) : (
+          coberturas.map((cobertura, index) => (
+            <div className="personal-info-row" key={index}>
+              {/* La primera es la principal: se rotula distinto solo cuando hay más de
+                  una, para no ensuciar el caso habitual de una sola cobertura. */}
+              <dt>{coberturas.length > 1 && index === 0 ? 'Obra Social (principal)' : 'Obra Social'}</dt>
+              <dd>
+                {cobertura.Coverage || '—'}
+                {cobertura.Number && <span className="personal-info-coverage-number">N.º {cobertura.Number}</span>}
+              </dd>
+            </div>
+          ))
+        )}
         <div className="personal-info-row">
           <dt>DNI</dt>
           <dd>{patient.DNI}</dd>

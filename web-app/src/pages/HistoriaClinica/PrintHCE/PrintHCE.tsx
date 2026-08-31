@@ -71,8 +71,17 @@ const PrintHCE : React.FC<Props> = ( {evoluciones, patient, onClose} ) =>{
                             <div key={index} className=" border-bottom px-4 py-3">
                                 <span>{formatDate(evolucion.DateAdded)}</span>
                                 <small className="text-muted fw-normal"> Por {evolucion.ModifiedBy.modifiedBy}</small>
+                                {/* Si la evolución se editó tiene que constar también en la
+                                    historia impresa: en un documento clínico importa si la
+                                    nota se modificó después de la consulta. */}
+                                {evolucion.EditedDate && (
+                                    <small className="text-muted fst-italic"> (editada el {formatDate(evolucion.EditedDate)})</small>
+                                )}
                                 <div>
-                                    <div className="mt-3"><div dangerouslySetInnerHTML={{ __html: evolucion.Notes }} /></div>
+                                    {/* translate="no": html2canvas fotografía el DOM vivo,
+                                        así que una página traducida hornea la traducción
+                                        dentro del PDF exportado. */}
+                                    <div className="mt-3"><div className="notranslate" translate="no" dangerouslySetInnerHTML={{ __html: evolucion.Notes }} /></div>
                                 </div>
                             </div>
                         ))}

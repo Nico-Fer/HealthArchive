@@ -3,6 +3,7 @@ using System;
 using HealthArchive.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace HealthArchive.Infrastructure.Migrations
 {
     [DbContext(typeof(DBContextHealth))]
-    partial class DBContextHealthModelSnapshot : ModelSnapshot
+    [Migration("20260830215504_EvolutionAuthorAndDates")]
+    partial class EvolutionAuthorAndDates
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -353,16 +356,10 @@ namespace HealthArchive.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.OwnsMany("HealthArchive.Domain.MedicalCoverage", "MedicalCoverages", b1 =>
+                    b.OwnsOne("HealthArchive.Domain.MedicalCoverage", "MedicalCoverage", b1 =>
                         {
                             b1.Property<Guid>("PatientId")
                                 .HasColumnType("uuid");
-
-                            b1.Property<int>("Id")
-                                .ValueGeneratedOnAdd()
-                                .HasColumnType("integer");
-
-                            NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b1.Property<int>("Id"));
 
                             b1.Property<string>("Coverage")
                                 .HasColumnType("text");
@@ -370,12 +367,9 @@ namespace HealthArchive.Infrastructure.Migrations
                             b1.Property<string>("Number")
                                 .HasColumnType("text");
 
-                            b1.Property<int>("Order")
-                                .HasColumnType("integer");
+                            b1.HasKey("PatientId");
 
-                            b1.HasKey("PatientId", "Id");
-
-                            b1.ToTable("PatientMedicalCoverages", (string)null);
+                            b1.ToTable("Patients");
 
                             b1.WithOwner()
                                 .HasForeignKey("PatientId");
@@ -404,7 +398,8 @@ namespace HealthArchive.Infrastructure.Migrations
 
                     b.Navigation("Consultorio");
 
-                    b.Navigation("MedicalCoverages");
+                    b.Navigation("MedicalCoverage")
+                        .IsRequired();
 
                     b.Navigation("PhoneNumber")
                         .IsRequired();

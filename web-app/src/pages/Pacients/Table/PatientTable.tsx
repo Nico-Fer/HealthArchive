@@ -44,9 +44,14 @@ const getClinicHistory = (patient : Patient) =>{
                 </td>
 
                 <td className="px-3 px-xl-4 d-lg-table-cell d-none">
-                  <div className="ha-row-strong">{item.MedicalCoverage.Number}</div>
-                  {item.MedicalCoverage.Coverage !== '' && (
-                    <Chip label={item.MedicalCoverage.Coverage} tone="blue" />
+                  {/* Solo la principal: en una celda de tabla no entran todas. El "+N"
+                      avisa que el paciente tiene más, y se ven completas en la HCE. */}
+                  <div className="ha-row-strong">{item.MedicalCoverages[0]?.Number}</div>
+                  {item.MedicalCoverages[0]?.Coverage && (
+                    <Chip label={item.MedicalCoverages[0].Coverage} tone="blue" />
+                  )}
+                  {item.MedicalCoverages.length > 1 && (
+                    <span className="ha-row-sub">+{item.MedicalCoverages.length - 1}</span>
                   )}
                 </td>
 

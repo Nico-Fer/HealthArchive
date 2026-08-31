@@ -12,6 +12,20 @@ export const MONTH_NAMES = [
 export const WEEKDAY_INITIALS = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 
 /**
+ * Parsea una marca de tiempo del API (un instante, no un día del calendario).
+ *
+ * El backend guarda UTC en columnas `timestamp without time zone` (ver
+ * Npgsql.EnableLegacyTimestampBehavior en Program.cs), así que serializa sin la `Z` final.
+ * `new Date('2026-08-31T01:30:00')` lo interpreta como hora LOCAL, y en UTC-3 eso muestra
+ * una evolución creada a las 22:30 del 30 como si fuera del 31. Acá se le agrega la `Z`
+ * cuando no trae zona, para que el instante se lea como lo que es.
+ */
+export const parseApiTimestamp = (value: string): Date => {
+  const tieneZona = /(?:Z|[+-]\d{2}:?\d{2})$/.test(value);
+  return new Date(tieneZona ? value : `${value}Z`);
+};
+
+/**
  * Normaliza a un Date en medianoche local, o null.
  *
  * Acepta string porque varias pantallas traen la fecha cruda del API tipada como `Date`

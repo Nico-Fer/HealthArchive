@@ -32,6 +32,22 @@ namespace HealthArchive.Infrastructure.Repositories
             return Save();
         }
 
+        public bool FileBelongsToConsultorio(Guid fileId, Guid consultorioId)
+        {
+            return _db.HCEFiles.Any(f =>
+                f.Id == fileId &&
+                f.HCE.Patient.ConsultorioId == consultorioId);
+        }
+
+        public bool DeleteFile(Guid fileId)
+        {
+            // ExecuteDelete y no Remove+Save (que es el patrón del resto del repo): Remove
+            // exige materializar la entidad, y HCEFile.Content es un byte[] que puede pesar
+            // decenas de MB. Traerlo entero a memoria nada más que para borrarlo no tiene
+            // sentido. La pertenencia al consultorio ya la validó FileBelongsToConsultorio.
+            return _db.HCEFiles.Where(f => f.Id == fileId).ExecuteDelete() > 0;
+        }
+
         public ICollection<Evolution> GetEvolutions(Guid id)
         {
             var hce = _db.HCEs

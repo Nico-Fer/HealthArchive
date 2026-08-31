@@ -1,0 +1,37 @@
+.coverage-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  .coverage-list-row {
+    display: grid;
+    // Las dos columnas del ha-form-row de siempre, más el botón de quitar.
+    grid-template-columns: 1fr 1fr auto;
+    gap: 16px;
+    align-items: end;
+
+    @media (max-width: 575.98px) {
+      grid-template-columns: 1fr;
+      align-items: stretch;
+    }
+  }
+
+  .coverage-list-remove {
+    color: var(--ha-danger);
+    // Alineado con el borde inferior de los inputs, no con su label.
+    margin-bottom: 4px;
+
+    &:hover {
+      background-color: var(--ha-primary-soft);
+      color: var(--ha-danger);
+    }
+  }
+
+  .coverage-list-add {
+    align-self: flex-start;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--ha-primary);
+  }
+}

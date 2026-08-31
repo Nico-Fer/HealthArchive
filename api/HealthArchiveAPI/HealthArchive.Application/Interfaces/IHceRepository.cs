@@ -18,6 +18,18 @@ namespace HealthArchive.Application.Interfaces
         bool UpdateHce(HCE hce);
         bool DeleteHce(HCE hce);
         bool AddFile(HCEFile file);
+
+        /// <summary>
+        /// ¿Este adjunto cuelga de una historia clínica del consultorio dado?
+        /// Mismo criterio que <see cref="BelongsToConsultorio"/> un nivel más abajo:
+        /// HCEFile -> HCE -> Patient -> ConsultorioId.
+        /// </summary>
+        bool FileBelongsToConsultorio(Guid fileId, Guid consultorioId);
+
+        /// <summary>
+        /// Borra un adjunto por id. Devuelve false si no existe.
+        /// </summary>
+        bool DeleteFile(Guid fileId);
         bool Save();
     }
 }

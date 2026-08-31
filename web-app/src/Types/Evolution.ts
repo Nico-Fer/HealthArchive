@@ -10,5 +10,11 @@ export interface Evolution{
      *  el editor al editar: el HTML renderizado no se puede volver a editar. */
     NotesRaw? : string;
     ModifiedBy: EvolutionInfo;
+    /** Id del doctor que la creó: el único que la puede editar. null/undefined en las
+     *  evoluciones viejas, que quedan bloqueadas para todos. */
+    CreatedByDoctorId?: string | null;
+    /** Fecha de creación. Es la fecha "de la consulta" y no cambia nunca. */
     DateAdded: Date;
+    /** Fecha de la última edición, o null si nunca se editó. */
+    EditedDate?: Date | null;
 }

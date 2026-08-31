@@ -32,3 +32,15 @@
     margin-top: 16px;
   }
 }
+
+// Aviso de traducción del navegador: bloquea el guardado, así que tiene que leerse
+// como un problema a resolver y no como una nota al pie.
+.evolution-form-warning {
+  background-color: var(--ha-primary-soft);
+  border-left: 4px solid var(--ha-danger);
+  border-radius: var(--ha-radius-sm);
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  font-size: var(--ha-fs-label);
+  color: var(--ha-text);
+}

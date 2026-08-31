@@ -23,12 +23,12 @@ namespace HealthArchiveAPI.Controllers
         /// <summary>
         /// El 404 no distingue "no existe" de "es de otro consultorio", así que desde
         /// afuera no se puede sondear. Adentro sí importa la diferencia: esta línea es la
-        /// única señal de que alguien está pidiendo historias que no le corresponden.
+        /// única señal de que alguien está pidiendo recursos que no le corresponden.
         /// </summary>
-        private void LogAccesoAjeno(Guid hceId, Guid consultorioId) =>
+        private void LogAccesoAjeno(string recurso, Guid id, Guid consultorioId) =>
             _logger.LogWarning(
-                "Acceso denegado a la HCE {HceId}: no pertenece al consultorio {ConsultorioId} (doctor {DoctorId})",
-                hceId, consultorioId, User.GetDoctorId());
+                "Acceso denegado a {Recurso} {RecursoId}: no pertenece al consultorio {ConsultorioId} (doctor {DoctorId})",
+                recurso, id, consultorioId, User.GetDoctorId());
 
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -44,7 +44,7 @@ namespace HealthArchiveAPI.Controllers
             // ni siquiera confirma que exista.
             if (!_repository.BelongsToConsultorio(hceId, consultorioId))
             {
-                LogAccesoAjeno(hceId, consultorioId);
+                LogAccesoAjeno("la HCE", hceId, consultorioId);
                 return NotFound();
             }
 
@@ -72,7 +72,7 @@ namespace HealthArchiveAPI.Controllers
 
             if (!_repository.BelongsToConsultorio(hceId, consultorioId))
             {
-                LogAccesoAjeno(hceId, consultorioId);
+                LogAccesoAjeno("la HCE", hceId, consultorioId);
                 return NotFound();
             }
 
@@ -93,6 +93,32 @@ namespace HealthArchiveAPI.Controllers
             }
 
             return Ok(newFile);
+        }
+
+        /// <summary>
+        /// Borra un adjunto. Lo puede borrar cualquier doctor del consultorio, no solo el
+        /// que lo subió: HCEFile no guarda quién lo cargó, y el modelo del consultorio es
+        /// de acceso compartido. Es la diferencia con las evoluciones, donde sí hay autor
+        /// registrado y solo él edita.
+        /// </summary>
+        [HttpDelete]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [Route("DeleteFile/{fileId}")]
+        public IActionResult DeleteFile(Guid fileId)
+        {
+            if (User.GetConsultorioId() is not Guid consultorioId) return Forbid();
+
+            if (!_repository.FileBelongsToConsultorio(fileId, consultorioId))
+            {
+                LogAccesoAjeno("el archivo", fileId, consultorioId);
+                return NotFound();
+            }
+
+            if (!_repository.DeleteFile(fileId)) return NotFound();
+
+            return NoContent();
         }
     }
 }

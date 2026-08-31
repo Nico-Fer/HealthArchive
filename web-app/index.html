@@ -6,6 +6,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#000000" />
     <meta name="description" content="HealthArchive — Sistema de Historias Clínicas" />
+    <!--
+      El traductor automático del navegador reescribe el texto de las evoluciones: un
+      médico escribió "BIRD" (bloqueo incompleto de rama derecha) y se guardó "pájaro".
+      No es solo visual: el editor es un contentEditable y draft-js toma el texto
+      traducido como si lo hubiera tipeado el usuario, así que termina en la base.
+      Este meta desactiva la traducción en toda la app.
+    -->
+    <meta name="google" content="notranslate" />
     <link rel="apple-touch-icon" href="/logo192.png" />
     <link rel="manifest" href="/manifest.json" />
     <title>HealthArchive</title>

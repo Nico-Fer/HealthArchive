@@ -23,6 +23,7 @@ namespace HealthArchive.Application.Mapping
 
         public static AuthUserDto ToAuthUserDto(this Doctor doctor) => new()
         {
+            Id = doctor.Id,
             Name = doctor.Name,
             LastName = doctor.LastName,
             Email = doctor.Email,
