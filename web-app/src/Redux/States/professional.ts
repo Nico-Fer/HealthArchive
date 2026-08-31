@@ -5,6 +5,7 @@ import { sessionAnonymous } from "./session";
 import logger from "../../lib/logger";
 
 export const EmptyProfessionalState : ProfessionalForRedux ={
+    id: '',
     name: '',
     lastName: '',
     email: '',

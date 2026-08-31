@@ -17,14 +17,30 @@ namespace HealthArchive.Infrastructure.Data
             modelBuilder.Entity<Patient>()
                 .OwnsOne(p => p.PhoneNumber);
 
+            // OwnsMany y no una entidad propia: las coberturas no tienen vida fuera del
+            // paciente, se borran con él y no hace falta exponerles un Id al cliente. El
+            // update reemplaza la colección entera, que es como ya trabaja PatientDto.ApplyTo.
             modelBuilder.Entity<Patient>()
-                .OwnsOne(p => p.MedicalCoverage, coverage =>
+                .OwnsMany(p => p.MedicalCoverages, coverage =>
                 {
+                    coverage.ToTable("PatientMedicalCoverages");
+                    coverage.WithOwner().HasForeignKey("PatientId");
+                    coverage.Property<int>("Id");
+                    coverage.HasKey("PatientId", "Id");
                     coverage.Property(c => c.Number).IsRequired(false);
                     coverage.Property(c => c.Coverage).IsRequired(false);
                 });
 
             modelBuilder.Entity<Evolution>().OwnsOne(e => e.EvolutionInfo);
+
+            // SetNull y no Restrict: borrar un doctor no debe bloquearse por sus evoluciones
+            // ni arrastrarlas. La evolución sobrevive y queda sin autor (o sea, ya no la edita
+            // nadie); la trazabilidad se conserva igual en EvolutionInfo, que no se toca.
+            modelBuilder.Entity<Evolution>()
+                .HasOne<Doctor>()
+                .WithMany()
+                .HasForeignKey(e => e.CreatedByDoctorId)
+                .OnDelete(DeleteBehavior.SetNull);
 
             modelBuilder.Entity<Consultorio>()
                 .HasIndex(c => c.Name)

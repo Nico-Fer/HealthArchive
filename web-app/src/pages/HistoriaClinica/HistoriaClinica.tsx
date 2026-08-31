@@ -19,8 +19,9 @@ import AddHceFile from './AddHCEFile/AddHCEFile';
 import { HCEFile } from '../../Types/HCEFile';
 import FilesCollection from './FilesCollection/FilesCollection';
 import convertJsonToHtml from '../../Functions/ConvertJsonToHTML';
-import { apiGet, apiPost, apiPatch } from '../../api/client';
+import { apiGet, apiPost, apiPatch, apiDelete, ApiError } from '../../api/client';
 import { clearHceDraft, readHceDraft } from '../../Functions/hceDraft';
+import { parseApiTimestamp } from '../../Functions/DateUtils';
 import Spinner from '../../components/Spinner';
 import SideNav from './SideNav';
 import logger, { describeError } from '../../lib/logger';
@@ -48,10 +49,19 @@ const HistoriaClinica = () => {
   const [formularios, setFormularios] = useState<Evolution[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [editingEvolution, setEditingEvolution] = useState<Evolution | null>(null);
+  const [evolutionError, setEvolutionError] = useState<string>('');
 
   const stateRedux = useSelector((store: store) => store.Professional);
 
   const handleShowEvolutionForm = () => setShowEvolutionForm(true);
+
+  /**
+   * Solo el autor puede editar su evolución. Es únicamente para no ofrecer un botón que
+   * va a dar 403: la regla la impone el backend, que es donde no se puede esquivar.
+   * Sin id del doctor (sesión vieja en localStorage) no se ofrece editar nada.
+   */
+  const puedeEditar = (evolucion: Evolution) =>
+    Boolean(evolucion.Id && stateRedux.id && evolucion.CreatedByDoctorId === stateRedux.id);
 
   const location = useLocation();
   const patient = location.state.patient;
@@ -86,13 +96,23 @@ const HistoriaClinica = () => {
       const mappedHce ={
         Id: data.id,
         PatientId: data.patientId,
-        Evolutions: data.evolutions.map((evolution : EvolutionFromApi) => ({
-          Id: evolution.id,
-          Notes: convertJsonToHtml(evolution.notes),
-          NotesRaw: evolution.notes,
-          DateAdded: new Date(evolution.modifiedDate),
-          ModifiedBy: {modifiedBy: evolution.evolutionInfo.modifiedBy, tuition: evolution.evolutionInfo.tuition}
-        })),
+        Evolutions: (data.evolutions as EvolutionFromApi[])
+          .map((evolution : EvolutionFromApi) : Evolution => ({
+            Id: evolution.id,
+            Notes: convertJsonToHtml(evolution.notes),
+            NotesRaw: evolution.notes,
+            CreatedByDoctorId: evolution.createdByDoctorId,
+            DateAdded: parseApiTimestamp(evolution.createdDate),
+            // El backend crea las dos fechas con el mismo valor, así que mientras sean
+            // iguales la evolución nunca se editó y no hay nada que mostrar.
+            EditedDate: evolution.modifiedDate !== evolution.createdDate
+              ? parseApiTimestamp(evolution.modifiedDate)
+              : null,
+            ModifiedBy: {modifiedBy: evolution.evolutionInfo.modifiedBy, tuition: evolution.evolutionInfo.tuition}
+          }))
+          // Orden explícito: ahora que la fecha de alta y la de edición son distintas, el
+          // orden en que EF devuelve las filas deja de alcanzar para leerlas cronológicamente.
+          .sort((a: Evolution, b: Evolution) => a.DateAdded.getTime() - b.DateAdded.getTime()),
         Files: data.files.map((file : HCEFile) => ({
           id: file.id,
           content: file.content,
@@ -152,7 +172,11 @@ const HistoriaClinica = () => {
         // La firma la pone el backend con el doctor autenticado; acá se replica solo
         // para mostrarla sin tener que recargar.
         ModifiedBy: {modifiedBy: stateRedux.name + ' ' + stateRedux.lastName, tuition: stateRedux.tuition},
-        DateAdded: formData.DateAdded,
+        // El autor tiene que venir del backend: sin esto, el médico que la acaba de
+        // escribir no vería el botón de editar hasta recargar la página.
+        CreatedByDoctorId: creada?.createdByDoctorId ?? stateRedux.id,
+        DateAdded: creada?.createdDate ? parseApiTimestamp(creada.createdDate) : formData.DateAdded,
+        EditedDate: null,
       };
 
       setHce(prevHce => ({
@@ -177,8 +201,9 @@ const HistoriaClinica = () => {
         ...editingEvolution,
         Notes: convertJsonToHtml(formData.Notes),
         NotesRaw: formData.Notes,
-        ModifiedBy: {modifiedBy: stateRedux.name + ' ' + stateRedux.lastName, tuition: stateRedux.tuition},
-        DateAdded: new Date(),
+        // La firma y la fecha de alta NO se tocan: son del autor original y editar no las
+        // cambia. Lo único que avanza es la fecha de edición.
+        EditedDate: new Date(),
       };
 
       const reemplazar = (lista: Evolution[]) =>
@@ -187,8 +212,28 @@ const HistoriaClinica = () => {
       setHce(prevHce => ({ ...prevHce, Evolutions: reemplazar(prevHce.Evolutions) }));
       setFormularios(reemplazar);
       setEditingEvolution(null);
+      setEvolutionError('');
     } catch (error) {
+      // El backend responde 403 con slug cuando el que edita no es el autor. Sin esto el
+      // médico veía que "no pasaba nada" y el motivo quedaba solo en la consola.
+      const esDeOtroAutor = error instanceof ApiError && error.slug === 'not_evolution_author';
+      setEvolutionError(esDeOtroAutor
+        ? 'Solo el profesional que creó la evolución puede modificarla.'
+        : 'No se pudo guardar la evolución. Intente nuevamente.');
       logger.error('No se pudo guardar la evolución editada', describeError(error));
+    }
+  };
+
+  const handleDeleteFile = async (fileId: string) => {
+    try {
+      await apiDelete(`/api/Hce/DeleteFile/${fileId}`);
+      setHce(prevHce => ({
+        ...prevHce,
+        Files: prevHce.Files.filter(f => f.id !== fileId),
+      }));
+    } catch (error) {
+      logger.error('No se pudo borrar el archivo', describeError(error));
+      throw error; // que FilesCollection sepa que falló y avise
     }
   };
 
@@ -208,11 +253,62 @@ const HistoriaClinica = () => {
         </div>
 
         <div className="hce-grid">
-          <PersonalInfo patient={patient} />
+          {/* Columna angosta: la card del paciente y, justo debajo, sus evoluciones. */}
+          <div className="hce-aside">
+            <PersonalInfo patient={patient} />
 
-          <div className="hce-evolutions ha-card">
-            <h2 className="hce-evolutions-title">Evoluciones Clínicas</h2>
+            <div className="hce-evolutions ha-card">
+              <h2 className="hce-evolutions-title">Evoluciones Clínicas</h2>
 
+              {evolutionError && (
+                <div className="hce-evolution-error" role="alert">{evolutionError}</div>
+              )}
+
+              {isLoading ? (
+                <Spinner label="Cargando historia clínica..." />
+              ) : formularios.length === 0 ? (
+                <p className="text-secondary mb-0">Todavía no hay evoluciones cargadas.</p>
+              ) : (
+                formularios.map((formulario, index) => (
+                <div key={formulario.Id ?? index} className="hce-evolution">
+                  <div className="hce-evolution-meta">
+                    <span className="hce-evolution-dates">
+                      <span className="hce-evolution-date">Creada: {formatDate(formulario.DateAdded)}</span>
+                      {formulario.EditedDate && (
+                        <span className="hce-evolution-edited">Editada: {formatDate(formulario.EditedDate)}</span>
+                      )}
+                    </span>
+                    <span className="hce-evolution-doctor">
+                      <span>Médico: {formulario.ModifiedBy.modifiedBy}</span>
+                      <span>Matrícula: {formulario.ModifiedBy.tuition}</span>
+                    </span>
+                  </div>
+                  {/* translate="no": el auto-traductor del browser reescribe siglas médicas
+                      (BIRD -> "pájaro"). Ver también el meta notranslate de index.html. */}
+                  <div
+                    className="hce-evolution-note notranslate"
+                    translate="no"
+                    dangerouslySetInnerHTML={{ __html: formulario.Notes }}
+                  />
+                  {puedeEditar(formulario) && (
+                    <div className="hce-evolution-actions d-print-none">
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-sm"
+                        onClick={() => { setEvolutionError(''); setEditingEvolution(formulario); }}
+                      >
+                        Editar
+                      </button>
+                    </div>
+                  )}
+                </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Columna ancha: el editor y los paneles, que no entran en la columna angosta. */}
+          <div className="hce-main">
             {showEvolutionForm && <EvolutionForm key={patient.DNI} onAddEvolution={handleAddEvolution} onClose={() => setShowEvolutionForm(false)} patientDni={patient.DNI} />}
             {editingEvolution && (
               <EvolutionForm
@@ -223,37 +319,13 @@ const HistoriaClinica = () => {
                 initialNotes={editingEvolution.NotesRaw ?? ''}
               />
             )}
-            {showFiles && <FilesCollection files={hce.Files} onClose={() => setShowFiles(false)} />}
+            {showFiles && <FilesCollection files={hce.Files} onClose={() => setShowFiles(false)} onDeleteFile={handleDeleteFile} />}
             {showPrintView && <PrintHCE evoluciones={hce.Evolutions} patient={patient} onClose={() => setShowPrintView(false)} />}
 
-            {isLoading ? (
-              <Spinner label="Cargando historia clínica..." />
-            ) : formularios.length === 0 ? (
-              <p className="text-secondary mb-0">Todavía no hay evoluciones cargadas.</p>
-            ) : (
-              formularios.map((formulario, index) => (
-              <div key={formulario.Id ?? index} className="hce-evolution">
-                <div className="hce-evolution-meta">
-                  <span className="hce-evolution-date">Fecha: {formatDate(formulario.DateAdded)}</span>
-                  <span className="hce-evolution-doctor">
-                    <span>Médico: {formulario.ModifiedBy.modifiedBy}</span>
-                    <span>Matrícula: {formulario.ModifiedBy.tuition}</span>
-                  </span>
-                </div>
-                <div className="hce-evolution-note" dangerouslySetInnerHTML={{ __html: formulario.Notes }} />
-                {formulario.Id && (
-                  <div className="hce-evolution-actions d-print-none">
-                    <button
-                      type="button"
-                      className="btn btn-ghost btn-sm"
-                      onClick={() => setEditingEvolution(formulario)}
-                    >
-                      Editar
-                    </button>
-                  </div>
-                )}
-              </div>
-              ))
+            {!showEvolutionForm && !editingEvolution && !showFiles && !showPrintView && (
+              <p className="hce-main-empty text-secondary">
+                Usá los botones de arriba para agregar una evolución, subir un archivo o imprimir la historia.
+              </p>
             )}
           </div>
         </div>

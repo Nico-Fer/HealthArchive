@@ -71,7 +71,7 @@ JWT-based auth is wired (real). The access + refresh tokens travel in **httpOnly
 
 ### Modelo de seguridad
 
-**El `Consultorio` es la unidad de aislamiento.** `Doctor` y `Patient` llevan `ConsultorioId` (FK requerida) y un doctor solo ve los datos de su consultorio. Dentro del consultorio el acceso es **compartido**: cualquier doctor ve todas las historias clínicas de ese consultorio, porque el modelo es un equipo que se cubre entre sí; la trazabilidad se resuelve con `Evolution.EvolutionInfo` (`ModifiedBy`/`Tuition`), no restringiendo lectura. No hay FK de `Patient` a `Doctor` y no debe agregarse sin revisar esta decisión.
+**El `Consultorio` es la unidad de aislamiento.** `Doctor` y `Patient` llevan `ConsultorioId` (FK requerida) y un doctor solo ve los datos de su consultorio. Dentro del consultorio el acceso es **compartido**: cualquier doctor ve todas las historias clínicas de ese consultorio, porque el modelo es un equipo que se cubre entre sí; la **lectura** es compartida y la trazabilidad se resuelve con `Evolution.EvolutionInfo` (`ModifiedBy`/`Tuition`). La **escritura de una evolución, en cambio, es del autor**: ver *Autoría de las evoluciones* más abajo. No hay FK de `Patient` a `Doctor` y no debe agregarse sin revisar esta decisión.
 
 Cómo se implementa el aislamiento, en tres capas:
 
@@ -92,6 +92,32 @@ Consecuencia del modelo: **el registro es el perímetro**. De ahí los controles
 - `Registration:ConsultoryCode` quedó como **secreto de bootstrap**: solo lo usa el seeder de `Program.cs` para completar el código del consultorio inicial que crea la migración `Consultorios` (Guid fijo `11111111-...`). Es idempotente: no pisa un código rotado después desde la API. El fail-fast de Production sigue vigente.
 - Consultorios nuevos se crean con `POST /api/Consultorio/CreateConsultorio`, solo `Admin`.
 
+#### Autoría de las evoluciones
+
+**Una evolución solo la puede editar el doctor que la creó** — tampoco un `Admin`. Es la única regla del sistema que restringe por persona y no por consultorio: el resto del modelo es de equipo, pero una evolución es la palabra de un profesional sobre un paciente y nadie más la firma.
+
+- `Evolution.CreatedByDoctorId` (`Guid?`) es el ancla. FK a `Doctors` con `OnDelete(SetNull)`: dar de baja a un doctor no puede bloquearse por sus evoluciones ni arrastrarlas; la evolución sobrevive sin autor y la firma de `EvolutionInfo` queda intacta.
+- **`null` significa "no la edita nadie"**, y es el estado de todas las evoluciones anteriores a la migración `EvolutionAuthorAndDates` (incluidas las traídas de SQL Server). Se decidió **no** backfillear el autor por matrícula: adivinar quién escribió una evolución clínica es peor que dejarla de solo lectura.
+- `UpdateEvolution` devuelve **403 con slug `not_evolution_author`**, no 404: a esa altura ya se confirmó que la evolución existe y es del consultorio, así que negarlo no oculta nada. Va envuelto en `SerializableError` — `StatusCode(403, ModelState)` a secas serializa los internals del `ModelStateDictionary` y el `extractSlug` del cliente no encuentra el slug.
+- **`UpdateEvolution` ya no reasigna `EvolutionInfo`.** Antes la pisaba con la firma del que editaba y borraba al autor original; como ahora el que edita es siempre el autor, no hay nada que reescribir.
+- El botón "Editar" del front compara `CreatedByDoctorId` contra `store.Professional.id` (de ahí el `Id` en `AuthUserDto`). Es solo para no ofrecer una acción que va a dar 403 — **la regla la impone el backend**.
+
+#### Fechas de la evolución
+
+`CreatedDate` es la fecha de alta y no cambia nunca; `ModifiedDate` es la de la última edición. `EvolutionRepository.CreateEvolution` asigna **las dos con la misma variable**, así "nunca editada" es la comparación exacta `CreatedDate == ModifiedDate` y la UI no tiene que tolerar milisegundos de diferencia. La migración backfilleó `CreatedDate = ModifiedDate` en las filas viejas.
+
+Ojo con las zonas horarias: se guardan en UTC sobre `timestamp without time zone` (por `EnableLegacyTimestampBehavior`), así que el JSON sale **sin la `Z`** y `new Date(...)` en el browser lo leería como hora local — en UTC-3 eso corre el día. Por eso el front las parsea con `parseApiTimestamp` (`Functions/DateUtils.ts`), no con `new Date` pelado.
+
+#### Coberturas médicas
+
+`Patient.MedicalCoverages` es una colección `OwnsMany` en la tabla `PatientMedicalCoverages`. **La cobertura de `Order == 0` es la principal**: es la que muestra el listado de pacientes (las demás se resumen como `+N`); la HCE las muestra todas. El `Order` que mande el cliente se ignora — `PatientMapper.ApplyTo` lo reasigna por posición en el array, así la invariante no depende del front, y descarta las filas totalmente vacías.
+
+> **Ojo con `tools/migracion-postgres/`:** escribe directo en las columnas viejas `Patients.MedicalCoverage_*`, que la migración `MultipleMedicalCoverages` elimina. Si hay que volver a correr esa herramienta, tiene que ser **antes** de aplicar la migración: el `INSERT … SELECT` del `Up()` arrastra las coberturas a la tabla nueva.
+
+#### Borrado de adjuntos
+
+`DELETE /api/Hce/DeleteFile/{fileId}` lo puede usar **cualquier doctor del consultorio**, no solo quien lo subió: `HCEFile` no registra al que carga el archivo y el modelo del consultorio es de acceso compartido. Es la diferencia deliberada con las evoluciones. `HceRepository.DeleteFile` usa `ExecuteDelete()` en vez del `Remove`+`Save` del resto del repo, para no materializar en memoria un `byte[]` de decenas de MB solo para borrarlo.
+
 > **Deuda conocida — `ConsultorioController` no respeta el aislamiento.** `CreateConsultorio` y `UpdateConsultorio` piden rol `Admin` pero no comparan contra `User.GetConsultorioId()`, así que un Admin del consultorio A puede renombrar o rotarle el código al consultorio B. Es la única parte del sistema que queda fuera del modelo de aislamiento. Se dejó así deliberadamente (2026-08-02) mientras haya un solo operador. **Antes de que existan administradores distintos por consultorio hay que cerrarlo**, y no alcanza con agregar el chequeo en `UpdateConsultorio`: falta decidir quién puede *crear* consultorios, porque un Admin de consultorio no debería, y hoy no existe un rol de sistema por encima (`Doctor.Role` solo tiene `"Doctor"` y `"Admin"`). El detalle está comentado en el propio controller.
 - `Doctor.Password` lleva `[JsonIgnore]`. Varios endpoints devuelven la entidad `Doctor` completa; el atributo protege a todos de una sola vez, presente y futuro. **No quitarlo.**
 - `DoctorController.CanActOn()` — un doctor solo se edita/borra a sí mismo; para tocar a otro hace falta `Admin`. Los pacientes, en cambio, no llevan chequeo de pertenencia a propósito (ver decisión de arriba).
@@ -106,7 +132,7 @@ Todo con el `ILogger` que trae .NET: **no hay ni debe haber paquetes de logging*
 - **`Middleware/ExceptionHandlingMiddleware`** — el más externo. Fija el correlation id (respeta el header `X-Correlation-Id` entrante o genera uno), lo devuelve en la respuesta, y convierte las excepciones no manejadas en un `ProblemDetails` 500 con ese id. El detalle de la excepción solo se incluye en Development: en prod puede filtrar nombres de tablas o datos de pacientes.
 - **`Middleware/RequestLoggingMiddleware`** — una línea estructurada por request con `Method`, `Path`, `StatusCode`, `ElapsedMs`, `ClientIp`, `DoctorId`, `ConsultorioId`, `UserAgent` y `CorrelationId`. Nivel `Warning` para 4xx/5xx y para >1000 ms, `Information` para el resto, `Debug` para `/health*` (el healthcheck de Railway pega cada pocos segundos y si no ahoga todo lo demás). Además abre un `BeginScope` con el correlation id, así **todas** las líneas del request lo llevan.
 - **Orden en el pipeline:** `UseForwardedHeaders` → `ExceptionHandling` → `RequestLogging` → `UseCors` → `UseRateLimiter` → … Los dos van antes que CORS y el rate limiter a propósito, para que los 429 y los rechazos de CORS también queden logueados; la IP ya es la real gracias a `UseForwardedHeaders`.
-- **Eventos de seguridad:** login fallido, refresh con token desconocido/inactivo, código de consultorio incorrecto o ambiguo, `OnRejected` del rate limiter, y los `BelongsToConsultorio` que devuelven 404 (`HceController`/`EvolutionController`). **Nunca se loguean contraseñas ni códigos de consultorio** — sí el email y la IP, que son lo que permite reconocer una fuerza bruta.
+- **Eventos de seguridad:** login fallido, refresh con token desconocido/inactivo, código de consultorio incorrecto o ambiguo, `OnRejected` del rate limiter, los `BelongsToConsultorio` que devuelven 404 (`HceController`/`EvolutionController`), y los intentos de editar una evolución ajena (`not_evolution_author`). **Nunca se loguean contraseñas ni códigos de consultorio** — sí el email y la IP, que son lo que permite reconocer una fuerza bruta.
 - **Formato:** `AddJsonConsole` en Production (Railway lo muestra tal cual y deja filtrar por campo) y `AddSimpleConsole` en Development. El simple console imprime los scopes con `ToString()` y queda ilegible, por eso ahí van apagados; el correlation id igual viaja dentro de la propia línea del request log.
 - **Niveles:** `appsettings.Production.json` deja `Default: Warning` pero sube `"HealthArchiveAPI": "Information"`. Sin esa línea el log de requests no se vería en producción. **Un logger nuevo tiene que colgar del namespace `HealthArchiveAPI`** o queda silenciado.
 - **`/health`** es superficial a propósito (Railway lo consulta seguido, no conviene una query por ping). Para diagnóstico manual está **`/health/db`**, que hace `CanConnect()` y devuelve 503 si la base no responde.
@@ -131,5 +157,7 @@ Lo que `Program.cs` hace específicamente para ese entorno: bindea Kestrel a `$P
 - Rich text uses `draft-js`; PDF export uses `jspdf` + `html2canvas`.
 
 Gotchas:
+- **No sacar los `notranslate` / `translate="no"`.** El traductor automático del navegador reescribe el texto de las evoluciones, y como el editor es un `contentEditable`, draft-js toma lo traducido como si lo hubiera tipeado el médico y lo **persiste**: así una sigla `BIRD` (bloqueo incompleto de rama derecha) terminó guardada como "pájaro". La defensa está en cuatro lugares: el `<meta name="google" content="notranslate">` de `index.html`, el wrapper del `<Editor>` en `TextEditor.tsx` (el crítico, es por donde entra a la base), `.hce-evolution-note` y el `<div>` de `PrintHCE` (html2canvas fotografía el DOM vivo, así que hornearía la traducción en el PDF). Además `FormEvolucion` corta el guardado si detecta la página traducida (`Functions/isPageTranslated.ts`), como red de seguridad. Por la misma razón **`web-app/public/index.html` se borró**: era un resto de CRA con `<html lang="en">` que Vite copiaba a `dist/`.
+- `convertJsonToHtml` **no tira** ante notas que no sean JSON de draft-js (las hay migradas y en seeds viejos): las muestra como texto escapado. Antes reventaba y, como el `.map()` de `fetchClinicHistory` no lo atrapaba, una sola evolución mal formada dejaba la historia clínica entera en blanco.
 - `vite.config.ts` injects `define: { global: 'globalThis' }` because `draft-js` references the webpack-era `global`. Removing it crashes the app.
 - CRA has been replaced by Vite; use `import.meta.env`, not `process.env`. Do not propose migrating to Next.js — that was evaluated and rejected (see project memory `frontend-react-vite-decision`).

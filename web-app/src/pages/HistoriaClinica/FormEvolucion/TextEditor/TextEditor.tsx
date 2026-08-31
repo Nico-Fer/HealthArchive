@@ -274,7 +274,11 @@ class RichEditorExample extends Component<Props, State> {
       }
   
       return (
-      <div className="RichEditor-root">
+      // translate="no" + notranslate: es el punto crítico del fix de traducción. El
+      // <Editor> de draft-js es un contentEditable y no reenvía atributos DOM arbitrarios,
+      // así que el atributo va en el wrapper, de donde lo heredan los descendientes. Si el
+      // navegador traduce acá, draft-js serializa el texto traducido y se guarda así.
+      <div className="RichEditor-root notranslate" translate="no">
           <BlockStyleControls
           editorState={editorState}
           onToggle={this.toggleBlockType}

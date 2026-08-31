@@ -14,6 +14,10 @@ namespace HealthArchive.Application.DTOs
         public string? Ocupation { get; set; } = "";
         public string? HomeAddress { get; set; }
         public string? Note { get; set; } = "";
-        public MedicalCoverage? MedicalCoverage { get; set; }
+        /// <summary>
+        /// Coberturas del paciente, en orden: la primera es la principal. El Order que
+        /// traiga el cliente se ignora — lo reasigna el mapper por posición.
+        /// </summary>
+        public List<MedicalCoverage>? MedicalCoverages { get; set; }
     }
 }

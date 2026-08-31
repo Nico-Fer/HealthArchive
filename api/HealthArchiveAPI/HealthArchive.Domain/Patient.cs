@@ -19,7 +19,11 @@ namespace HealthArchive.Domain
         public string Ocupation { get; set; }
         public string HomeAddress { get; set; }
         public string Note { get; set; }
-        public MedicalCoverage MedicalCoverage { get; set; }
+        /// <summary>
+        /// Un paciente puede tener varias coberturas. Es una colección owned: no viven
+        /// fuera del paciente y se borran con él. La de <c>Order == 0</c> es la principal.
+        /// </summary>
+        public List<MedicalCoverage> MedicalCoverages { get; set; } = new();
         public HCE ClinicHistory { get; set; }
 
         [ForeignKey("Consultorio")]

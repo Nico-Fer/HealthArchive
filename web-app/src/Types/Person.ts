@@ -9,7 +9,8 @@ export interface Person {
 }
 
 export interface Patient extends Person {
-    MedicalCoverage: MedicalCoverage;
+    /** Coberturas en orden: la primera es la principal. Puede venir vacío. */
+    MedicalCoverages: MedicalCoverage[];
     DNI: string;
     Country: string;
     Ocupation: string;

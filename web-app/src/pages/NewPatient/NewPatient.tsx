@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Patient } from '../../Types/Person';
+import { MedicalCoverage } from '../../Types/MedicalCoverage';
 import { useNavigate } from 'react-router-dom';
 import { FormErrors } from '../../Types/FormErrors';
 
@@ -7,6 +8,7 @@ import validateForm from '../../Functions/validateForm';
 import { toLocalDate, today } from '../../Functions/DateUtils';
 import { apiPost } from '../../api/client';
 import DateField from '../../components/DateField';
+import CoverageList, { emptyCoverage } from '../../components/CoverageList';
 import logger, { describeError } from '../../lib/logger';
 
 
@@ -23,7 +25,7 @@ const NewPatient = () => {
       LastName: '',
       PhoneNumber: { CountryCode: '+54', PhoneNumber: '' }, 
       Email: '',
-      MedicalCoverage: {Number: '', Coverage: ''},
+      MedicalCoverages: [emptyCoverage(0)],
       DNI: '',
       Country: '',
       Ocupation: '',
@@ -47,28 +49,8 @@ const NewPatient = () => {
     }));
   };
 
-  const handleCoverageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const coverage = e.target.value;
-  
-    setPatientData(prevData => ({
-      ...prevData,
-      MedicalCoverage: {
-        ...prevData.MedicalCoverage, 
-        Coverage: coverage, 
-      }
-    }));
-  };
-  
-  const handleCoverageNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const number = e.target.value;
-  
-    setPatientData(prevData => ({
-      ...prevData,
-      MedicalCoverage: {
-        ...prevData.MedicalCoverage,
-        Number: number,
-      }
-    }));
+  const handleCoveragesChange = (MedicalCoverages: MedicalCoverage[]) => {
+    setPatientData(prevData => ({ ...prevData, MedicalCoverages }));
   };
 
   const handleChangePhoneNumber = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -185,32 +167,7 @@ const NewPatient = () => {
                 />
               </div>
 
-              <div className="ha-form-row">
-                <div className="ha-form-field">
-                  <label htmlFor="MedicalCoverage.Coverage">Cobertura y Plan</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    id="MedicalCoverage.Coverage"
-                    name="MedicalCoverage.Coverage"
-                    placeholder='Escribir cobertura y plan'
-                    value={patientData.MedicalCoverage.Coverage}
-                    onChange={handleCoverageChange}
-                  />
-                </div>
-                <div className="ha-form-field">
-                  <label htmlFor="MedicalCoverage.Number">Nro. de Cobertura</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    id="MedicalCoverage.Number"
-                    name="MedicalCoverage.Number"
-                    placeholder='Escribir el número'
-                    value={patientData.MedicalCoverage.Number}
-                    onChange={handleCoverageNumberChange}
-                  />
-                </div>
-              </div>
+              <CoverageList value={patientData.MedicalCoverages} onChange={handleCoveragesChange} />
 
               <div className="ha-form-field">
                 <label htmlFor="Email">Email</label>

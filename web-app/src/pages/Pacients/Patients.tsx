@@ -43,10 +43,15 @@ const Patients = () => {
           PhoneNumber: patient.phoneNumber.phoneNumber,
         },
         Email: patient.email,
-        MedicalCoverage: {
-          Number: patient.medicalCoverage.number,
-          Coverage: patient.medicalCoverage.coverage,
-        },
+        // Se ordena por `order` y no se confía en el orden del JSON: la primera es la
+        // cobertura principal y es la que muestra la tabla.
+        MedicalCoverages: [...(patient.medicalCoverages ?? [])]
+          .sort((a: any, b: any) => a.order - b.order)
+          .map((coverage: any) => ({
+            Number: coverage.number,
+            Coverage: coverage.coverage,
+            Order: coverage.order,
+          })),
         DNI: patient.dni,
         Country: patient.country,
         Ocupation: patient.ocupation,

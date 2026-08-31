@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Patient } from '../../../Types/Person';
+import { MedicalCoverage } from '../../../Types/MedicalCoverage';
 import { useNavigate } from 'react-router-dom';
 import { FormErrors } from '../../../Types/FormErrors';
 import validateForm from '../../../Functions/validateForm';
@@ -8,6 +9,7 @@ import { toLocalDate, today } from '../../../Functions/DateUtils';
 import { apiPatch, apiDelete } from '../../../api/client';
 import ConfirmDialog from '../../../components/ConfirmDialog';
 import DateField from '../../../components/DateField';
+import CoverageList from '../../../components/CoverageList';
 import logger, { describeError } from '../../../lib/logger';
 
 interface FormProps {
@@ -30,7 +32,9 @@ interface FormProps {
       BirthDate: toLocalDate(patient.BirthDate),
       Email: patient.Email,
       PhoneNumber:{CountryCode: patient.PhoneNumber.CountryCode, PhoneNumber: patient.PhoneNumber.PhoneNumber}, 
-      MedicalCoverage:{Coverage: patient.MedicalCoverage.Coverage, Number: patient.MedicalCoverage.Number},
+      // Copia (no la misma referencia) para que editar el formulario no mute el paciente
+      // del listado antes de guardar.
+      MedicalCoverages: (patient.MedicalCoverages ?? []).map(c => ({ ...c })),
       DNI:patient.DNI,
       Country:patient.Country,
       Ocupation:patient.Ocupation,
@@ -58,28 +62,8 @@ interface FormProps {
     }));
   };
 
-  const handleCoverageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const coverage = e.target.value;
-  
-    setFormData(prevData => ({
-      ...prevData,
-      MedicalCoverage: {
-        ...prevData.MedicalCoverage, 
-        Coverage: coverage, 
-      }
-    }));
-  };
-  
-  const handleCoverageNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const number = e.target.value;
-  
-    setFormData(prevData => ({
-      ...prevData,
-      MedicalCoverage: {
-        ...prevData.MedicalCoverage,
-        Number: number,
-      }
-    }));
+  const handleCoveragesChange = (MedicalCoverages: MedicalCoverage[]) => {
+    setFormData(prevData => ({ ...prevData, MedicalCoverages }));
   };
 
   const handleChangePhoneNumber = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -225,30 +209,7 @@ interface FormProps {
             />
           </div>
 
-          <div className="ha-form-row">
-            <div className="ha-form-field">
-              <label htmlFor="MedicalCoverage.Coverage">Cobertura y Plan</label>
-              <input
-                type="text"
-                className="form-control"
-                id="MedicalCoverage.Coverage"
-                name="MedicalCoverage.Coverage"
-                value={patientData.MedicalCoverage.Coverage}
-                onChange={handleCoverageChange}
-              />
-            </div>
-            <div className="ha-form-field">
-              <label htmlFor="MedicalCoverage.Number">Nro. de Cobertura</label>
-              <input
-                type="text"
-                className="form-control"
-                id="MedicalCoverage.Number"
-                name="MedicalCoverage.Number"
-                value={patientData.MedicalCoverage.Number}
-                onChange={handleCoverageNumberChange}
-              />
-            </div>
-          </div>
+          <CoverageList value={patientData.MedicalCoverages} onChange={handleCoveragesChange} />
 
           <div className="ha-form-field">
             <label htmlFor="Email">Email</label>

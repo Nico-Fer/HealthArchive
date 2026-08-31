@@ -20,7 +20,13 @@ namespace HealthArchive.Infrastructure.Repositories
 
             evolution.HCEId = hceId;
             evolution.ClinicHistory = hce;
-            evolution.ModifiedDate = DateTime.UtcNow;
+
+            // Las dos fechas con el MISMO valor, no dos DateTime.UtcNow seguidos: así
+            // "nunca se editó" es la comparación exacta CreatedDate == ModifiedDate y no
+            // hay que tolerar unos milisegundos de diferencia en la UI.
+            var ahora = DateTime.UtcNow;
+            evolution.CreatedDate = ahora;
+            evolution.ModifiedDate = ahora;
 
             _db.Evolutions.Add(evolution);
             return Save();

@@ -28,13 +28,44 @@
 }
 
 .hce-grid {
+  // 420px y no los 320px de antes: esta columna ya no es solo la ficha del paciente,
+  // ahora también lleva las evoluciones y el texto clínico necesita ancho para leerse.
   display: grid;
-  grid-template-columns: 320px 1fr;
+  grid-template-columns: 420px 1fr;
   gap: 24px;
   align-items: start;
 
   @media (max-width: 1199.98px) {
     grid-template-columns: 1fr;
+  }
+}
+
+// Columna angosta: ficha del paciente arriba, evoluciones apiladas justo debajo.
+.hce-aside {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+
+// Columna ancha: el editor de evoluciones y los paneles de archivos/impresión, que no
+// entran cómodos en 420px.
+.hce-main {
+  min-width: 0;
+
+  .hce-main-empty {
+    margin: 0;
+    padding: 24px;
+    border: 1px dashed var(--ha-border);
+    border-radius: var(--ha-radius);
+  }
+
+  // En una sola columna el cartel de ayuda no aporta nada: los paneles quedan
+  // igual de visibles justo debajo de las evoluciones.
+  @media (max-width: 1199.98px) {
+    .hce-main-empty {
+      display: none;
+    }
   }
 }
 
@@ -45,6 +76,16 @@
     font-size: var(--ha-fs-headline-sm);
     font-weight: 600;
     margin-bottom: 16px;
+  }
+
+  .hce-evolution-error {
+    background-color: var(--ha-primary-soft);
+    border-left: 4px solid var(--ha-danger);
+    border-radius: var(--ha-radius-sm);
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    font-size: var(--ha-fs-label);
+    color: var(--ha-text);
   }
 }
 
@@ -66,10 +107,22 @@
     font-size: var(--ha-fs-label);
     color: var(--ha-text-secondary);
 
+    .hce-evolution-dates {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
     .hce-evolution-date {
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.04em;
+    }
+
+    // La fecha de edición es información secundaria: solo aparece si la evolución
+    // se editó alguna vez, y no compite visualmente con la de creación.
+    .hce-evolution-edited {
+      font-style: italic;
     }
 
     .hce-evolution-doctor {
@@ -122,12 +175,24 @@
     }
   }
 
+  .hce-files-error {
+    background-color: var(--ha-primary-soft);
+    border-left: 4px solid var(--ha-danger);
+    border-radius: var(--ha-radius-sm);
+    padding: 12px 16px;
+    margin-bottom: 12px;
+    font-size: var(--ha-fs-label);
+  }
+
   .hce-files-list {
     list-style: none;
     margin: 0;
     padding: 0;
 
     li {
+      display: flex;
+      align-items: center;
+      gap: 8px;
       border-bottom: 1px solid var(--ha-border);
 
       &:last-child {
@@ -140,7 +205,21 @@
         gap: 8px;
         padding: 12px 4px;
         font-weight: 500;
+        // El nombre se queda con el espacio sobrante para que el botón de borrar
+        // no se mueva de lugar según lo largo que sea el archivo.
+        flex: 1;
+        min-width: 0;
       }
+    }
+  }
+
+  .hce-files-delete {
+    flex-shrink: 0;
+    color: var(--ha-danger);
+
+    &:hover {
+      background-color: var(--ha-primary-soft);
+      color: var(--ha-danger);
     }
   }
 }

@@ -50,5 +50,14 @@
       overflow-wrap: anywhere;
       min-width: 0;
     }
+
+    // El número va debajo del nombre de la cobertura: en una columna angosta no
+    // entran los dos en la misma línea sin partir el nombre.
+    .personal-info-coverage-number {
+      display: block;
+      font-weight: 400;
+      font-size: var(--ha-fs-label);
+      color: var(--ha-text-secondary);
+    }
   }
 }
