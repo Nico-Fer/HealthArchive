@@ -1,12 +1,8 @@
-.hce-layout {
-  display: flex;
-  align-items: stretch;
+// Sin sidebar propio: Pacientes, Profesionales y Cerrar Sesión ya están en la navbar
+// global, y duplicarlos acá le comía 240px al ancho de lectura de las evoluciones.
+.hce-content {
   // 64px = alto de la navbar global sticky
   min-height: calc(100vh - 64px);
-}
-
-.hce-content {
-  flex: 1;
   min-width: 0;
   padding: 24px;
 }
@@ -28,10 +24,13 @@
 }
 
 .hce-grid {
-  // 420px y no los 320px de antes: esta columna ya no es solo la ficha del paciente,
-  // ahora también lleva las evoluciones y el texto clínico necesita ancho para leerse.
+  // La columna de lectura se queda con el espacio que liberó el sidebar (240px sobre los
+  // 420px que tenía), porque es donde va el texto clínico. El tope de 660px es para que
+  // en pantallas anchas no se estire de más y la línea siga siendo cómoda de leer; el
+  // minmax deja que se achique sola antes de llegar al breakpoint, así la columna del
+  // editor nunca queda impracticable.
   display: grid;
-  grid-template-columns: 420px 1fr;
+  grid-template-columns: minmax(420px, 660px) 1fr;
   gap: 24px;
   align-items: start;
 

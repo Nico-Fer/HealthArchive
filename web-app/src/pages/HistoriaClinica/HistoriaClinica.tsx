@@ -23,7 +23,6 @@ import { apiGet, apiPost, apiPatch, apiDelete, ApiError } from '../../api/client
 import { clearHceDraft, readHceDraft } from '../../Functions/hceDraft';
 import { parseApiTimestamp } from '../../Functions/DateUtils';
 import Spinner from '../../components/Spinner';
-import SideNav from './SideNav';
 import logger, { describeError } from '../../lib/logger';
 
 
@@ -239,95 +238,92 @@ const HistoriaClinica = () => {
 
 
   return (
-    <div className="hce-layout">
-      <SideNav />
-      <div className="hce-content">
-        <div className="hce-header">
-          <h1 className="ha-page-title">Historia Clínica</h1>
-          <div className="hce-actions d-print-none">
-            <button className="btn btn-primary" onClick={handleShowEvolutionForm}>Agregar Evolución</button>
-            <AddHceFile HceId={hce.Id} onFileAdded={addNewFileToHce}/>
-            <button className="btn btn-soft-primary" onClick={() => setShowPrintView(true)}>Imprimir HCE</button>
-            <button className="btn btn-soft-primary" onClick={() => setShowFiles(true)}>Ver Archivos</button>
+    <div className="hce-content">
+      <div className="hce-header">
+        <h1 className="ha-page-title">Historia Clínica</h1>
+        <div className="hce-actions d-print-none">
+          <button className="btn btn-primary" onClick={handleShowEvolutionForm}>Agregar Evolución</button>
+          <AddHceFile HceId={hce.Id} onFileAdded={addNewFileToHce}/>
+          <button className="btn btn-soft-primary" onClick={() => setShowPrintView(true)}>Imprimir HCE</button>
+          <button className="btn btn-soft-primary" onClick={() => setShowFiles(true)}>Ver Archivos</button>
+        </div>
+      </div>
+
+      <div className="hce-grid">
+        {/* Columna principal de lectura: la ficha del paciente y, debajo, sus evoluciones. */}
+        <div className="hce-aside">
+          <PersonalInfo patient={patient} />
+
+          <div className="hce-evolutions ha-card">
+            <h2 className="hce-evolutions-title">Evoluciones Clínicas</h2>
+
+            {evolutionError && (
+              <div className="hce-evolution-error" role="alert">{evolutionError}</div>
+            )}
+
+            {isLoading ? (
+              <Spinner label="Cargando historia clínica..." />
+            ) : formularios.length === 0 ? (
+              <p className="text-secondary mb-0">Todavía no hay evoluciones cargadas.</p>
+            ) : (
+              formularios.map((formulario, index) => (
+              <div key={formulario.Id ?? index} className="hce-evolution">
+                <div className="hce-evolution-meta">
+                  <span className="hce-evolution-dates">
+                    <span className="hce-evolution-date">Creada: {formatDate(formulario.DateAdded)}</span>
+                    {formulario.EditedDate && (
+                      <span className="hce-evolution-edited">Editada: {formatDate(formulario.EditedDate)}</span>
+                    )}
+                  </span>
+                  <span className="hce-evolution-doctor">
+                    <span>Médico: {formulario.ModifiedBy.modifiedBy}</span>
+                    <span>Matrícula: {formulario.ModifiedBy.tuition}</span>
+                  </span>
+                </div>
+                {/* translate="no": el auto-traductor del browser reescribe siglas médicas
+                    (BIRD -> "pájaro"). Ver también el meta notranslate de index.html. */}
+                <div
+                  className="hce-evolution-note notranslate"
+                  translate="no"
+                  dangerouslySetInnerHTML={{ __html: formulario.Notes }}
+                />
+                {puedeEditar(formulario) && (
+                  <div className="hce-evolution-actions d-print-none">
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      onClick={() => { setEvolutionError(''); setEditingEvolution(formulario); }}
+                    >
+                      Editar
+                    </button>
+                  </div>
+                )}
+              </div>
+              ))
+            )}
           </div>
         </div>
 
-        <div className="hce-grid">
-          {/* Columna angosta: la card del paciente y, justo debajo, sus evoluciones. */}
-          <div className="hce-aside">
-            <PersonalInfo patient={patient} />
+        {/* Columna de trabajo: el editor y los paneles de archivos/impresión. */}
+        <div className="hce-main">
+          {showEvolutionForm && <EvolutionForm key={patient.DNI} onAddEvolution={handleAddEvolution} onClose={() => setShowEvolutionForm(false)} patientDni={patient.DNI} />}
+          {editingEvolution && (
+            <EvolutionForm
+              key={`edit-${editingEvolution.Id}`}
+              onAddEvolution={handleUpdateEvolution}
+              onClose={() => setEditingEvolution(null)}
+              patientDni={patient.DNI}
+              initialNotes={editingEvolution.NotesRaw ?? ''}
+            />
+          )}
+          {showFiles && <FilesCollection files={hce.Files} onClose={() => setShowFiles(false)} onDeleteFile={handleDeleteFile} />}
+          {showPrintView && <PrintHCE evoluciones={hce.Evolutions} patient={patient} onClose={() => setShowPrintView(false)} />}
 
-            <div className="hce-evolutions ha-card">
-              <h2 className="hce-evolutions-title">Evoluciones Clínicas</h2>
-
-              {evolutionError && (
-                <div className="hce-evolution-error" role="alert">{evolutionError}</div>
-              )}
-
-              {isLoading ? (
-                <Spinner label="Cargando historia clínica..." />
-              ) : formularios.length === 0 ? (
-                <p className="text-secondary mb-0">Todavía no hay evoluciones cargadas.</p>
-              ) : (
-                formularios.map((formulario, index) => (
-                <div key={formulario.Id ?? index} className="hce-evolution">
-                  <div className="hce-evolution-meta">
-                    <span className="hce-evolution-dates">
-                      <span className="hce-evolution-date">Creada: {formatDate(formulario.DateAdded)}</span>
-                      {formulario.EditedDate && (
-                        <span className="hce-evolution-edited">Editada: {formatDate(formulario.EditedDate)}</span>
-                      )}
-                    </span>
-                    <span className="hce-evolution-doctor">
-                      <span>Médico: {formulario.ModifiedBy.modifiedBy}</span>
-                      <span>Matrícula: {formulario.ModifiedBy.tuition}</span>
-                    </span>
-                  </div>
-                  {/* translate="no": el auto-traductor del browser reescribe siglas médicas
-                      (BIRD -> "pájaro"). Ver también el meta notranslate de index.html. */}
-                  <div
-                    className="hce-evolution-note notranslate"
-                    translate="no"
-                    dangerouslySetInnerHTML={{ __html: formulario.Notes }}
-                  />
-                  {puedeEditar(formulario) && (
-                    <div className="hce-evolution-actions d-print-none">
-                      <button
-                        type="button"
-                        className="btn btn-ghost btn-sm"
-                        onClick={() => { setEvolutionError(''); setEditingEvolution(formulario); }}
-                      >
-                        Editar
-                      </button>
-                    </div>
-                  )}
-                </div>
-                ))
-              )}
-            </div>
-          </div>
-
-          {/* Columna ancha: el editor y los paneles, que no entran en la columna angosta. */}
-          <div className="hce-main">
-            {showEvolutionForm && <EvolutionForm key={patient.DNI} onAddEvolution={handleAddEvolution} onClose={() => setShowEvolutionForm(false)} patientDni={patient.DNI} />}
-            {editingEvolution && (
-              <EvolutionForm
-                key={`edit-${editingEvolution.Id}`}
-                onAddEvolution={handleUpdateEvolution}
-                onClose={() => setEditingEvolution(null)}
-                patientDni={patient.DNI}
-                initialNotes={editingEvolution.NotesRaw ?? ''}
-              />
-            )}
-            {showFiles && <FilesCollection files={hce.Files} onClose={() => setShowFiles(false)} onDeleteFile={handleDeleteFile} />}
-            {showPrintView && <PrintHCE evoluciones={hce.Evolutions} patient={patient} onClose={() => setShowPrintView(false)} />}
-
-            {!showEvolutionForm && !editingEvolution && !showFiles && !showPrintView && (
-              <p className="hce-main-empty text-secondary">
-                Usá los botones de arriba para agregar una evolución, subir un archivo o imprimir la historia.
-              </p>
-            )}
-          </div>
+          {!showEvolutionForm && !editingEvolution && !showFiles && !showPrintView && (
+            <p className="hce-main-empty text-secondary">
+              Usá los botones de arriba para agregar una evolución, subir un archivo o imprimir la historia.
+            </p>
+          )}
         </div>
       </div>
     </div>
