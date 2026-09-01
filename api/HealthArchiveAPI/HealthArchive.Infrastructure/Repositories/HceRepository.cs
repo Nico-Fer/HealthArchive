@@ -1,3 +1,4 @@
+using HealthArchive.Application.DTOs;
 using HealthArchive.Application.Interfaces;
 using HealthArchive.Domain;
 using HealthArchive.Infrastructure.Data;
@@ -37,6 +38,31 @@ namespace HealthArchive.Infrastructure.Repositories
             return _db.HCEFiles.Any(f =>
                 f.Id == fileId &&
                 f.HCE.Patient.ConsultorioId == consultorioId);
+        }
+
+        public HCEFileMetaDto? GetFileMeta(Guid fileId)
+        {
+            // Proyección a propósito: sin ella EF trae también Content, que en las filas
+            // pre-backfill puede pesar MBs.
+            return _db.HCEFiles
+                .Where(f => f.Id == fileId)
+                .Select(f => new HCEFileMetaDto
+                {
+                    Id = f.Id,
+                    FileName = f.FileName,
+                    StorageKey = f.StorageKey,
+                    ContentType = f.ContentType,
+                    SizeBytes = f.SizeBytes,
+                })
+                .FirstOrDefault();
+        }
+
+        public byte[]? GetFileContent(Guid fileId)
+        {
+            return _db.HCEFiles
+                .Where(f => f.Id == fileId)
+                .Select(f => f.Content)
+                .FirstOrDefault();
         }
 
         public bool DeleteFile(Guid fileId)

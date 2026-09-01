@@ -7,6 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!--
+      AWSSDK.S3: único cliente del bucket de adjuntos (Cloudflare R2, API S3-compatible).
+      Se prefirió a firmar SigV4 a mano sobre HttpClient: menos código propio que auditar.
+      Justificación completa en docs/adjuntos-object-storage.md.
+    -->
+    <PackageReference Include="AWSSDK.S3" Version="4.0.102.4" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.0" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />

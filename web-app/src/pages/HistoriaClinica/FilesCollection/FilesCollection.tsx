@@ -2,6 +2,8 @@ import { useState } from "react";
 import { FaFileDownload, FaTrash } from "react-icons/fa";
 import { HCEFile } from "../../../Types/HCEFile";
 import ConfirmDialog from "../../../components/ConfirmDialog";
+import { apiGetBlob } from "../../../api/client";
+import logger, { describeError } from "../../../lib/logger";
 
 interface Props{
     files : HCEFile[]
@@ -18,23 +20,32 @@ const FilesCollection : React.FC<Props> = ({files, onClose, onDeleteFile}) => {
     const [fileToDelete, setFileToDelete] = useState<HCEFile | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [error, setError] = useState<string>('');
+    // Evita el doble click mientras el archivo baja del servidor.
+    const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
-    const handleDownload = (content : string , fileName : string) => {
-        const byteCharacters = atob(content);
-        const byteNumbers = new Array(byteCharacters.length);
-        for (let i = 0; i < byteCharacters.length; i++) {
-            byteNumbers[i] = byteCharacters.charCodeAt(i);
+    // El contenido ya no viene en el JSON de la HCE: se pide a demanda, y el backend
+    // valida ahí la pertenencia al consultorio antes de servirlo.
+    const handleDownload = async (file: HCEFile) => {
+        if (downloadingId) return;
+
+        setDownloadingId(file.id);
+        setError('');
+        try {
+            const blob = await apiGetBlob(`/api/Hce/DownloadFile/${file.id}`);
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', file.fileName);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        } catch (e) {
+            logger.error('No se pudo descargar el archivo', describeError(e));
+            setError('No se pudo descargar el archivo. Intente nuevamente.');
+        } finally {
+            setDownloadingId(null);
         }
-        const byteArray = new Uint8Array(byteNumbers);
-        const blob = new Blob([byteArray], { type: 'application/octet-stream' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', fileName);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
     };
 
     const handleConfirmDelete = async () => {
@@ -69,7 +80,7 @@ const FilesCollection : React.FC<Props> = ({files, onClose, onDeleteFile}) => {
                         <li key={file.id}>
                             <a href="#" onClick={(e) =>{
                                 e.preventDefault();
-                                handleDownload(file.content, file.fileName)
+                                handleDownload(file)
                             }}>
                                 <FaFileDownload aria-hidden="true" />
                                 <span className="text-truncate">{file.fileName}</span>

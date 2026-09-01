@@ -114,9 +114,10 @@ const HistoriaClinica = () => {
           .sort((a: Evolution, b: Evolution) => a.DateAdded.getTime() - b.DateAdded.getTime()),
         Files: data.files.map((file : HCEFile) => ({
           id: file.id,
-          content: file.content,
           fileName: file.fileName,
-          hceId: file.hceId
+          hceId: file.hceId,
+          contentType: file.contentType,
+          sizeBytes: file.sizeBytes
         }))
       };
 

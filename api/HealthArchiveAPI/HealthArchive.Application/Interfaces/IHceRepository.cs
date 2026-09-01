@@ -1,3 +1,4 @@
+using HealthArchive.Application.DTOs;
 using HealthArchive.Domain;
 
 namespace HealthArchive.Application.Interfaces
@@ -25,6 +26,17 @@ namespace HealthArchive.Application.Interfaces
         /// HCEFile -> HCE -> Patient -> ConsultorioId.
         /// </summary>
         bool FileBelongsToConsultorio(Guid fileId, Guid consultorioId);
+
+        /// <summary>
+        /// Metadata del adjunto sin materializar el contenido. Null si no existe.
+        /// </summary>
+        HCEFileMetaDto? GetFileMeta(Guid fileId);
+
+        /// <summary>
+        /// Contenido bytea de una fila pre-backfill (StorageKey null). Transitorio:
+        /// muere con la migración que dropea HCEFiles.Content.
+        /// </summary>
+        byte[]? GetFileContent(Guid fileId);
 
         /// <summary>
         /// Borra un adjunto por id. Devuelve false si no existe.

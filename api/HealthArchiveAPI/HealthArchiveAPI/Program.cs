@@ -87,6 +87,10 @@ builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 builder.Services.AddScoped<IPasswordHasher, PasswordHasherService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 
+// Object storage de adjuntos (Cloudflare R2 vía API S3). Singleton: el cliente es
+// thread-safe y reutiliza conexiones.
+builder.Services.AddSingleton<IFileStorage, R2FileStorage>();
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -213,6 +217,16 @@ if (app.Environment.IsProduction())
     {
         throw new InvalidOperationException(
             "Registration:ConsultoryCode está vacío: nadie podría registrarse. Setear Registration__ConsultoryCode.");
+    }
+
+    // Sin bucket no hay adjuntos: mejor no arrancar que fallar en la primera descarga.
+    foreach (var clave in new[] { "ServiceUrl", "Bucket", "AccessKey", "SecretKey" })
+    {
+        if (string.IsNullOrWhiteSpace(builder.Configuration[$"Storage:{clave}"]))
+        {
+            throw new InvalidOperationException(
+                $"Storage:{clave} está vacío: los adjuntos no van a funcionar. Setear Storage__{clave} en el host.");
+        }
     }
 }
 

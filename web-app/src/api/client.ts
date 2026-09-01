@@ -213,3 +213,11 @@ export const apiPostFile = async <T>(path: string, formData: FormData): Promise<
   if (!res.ok) throw await toApiError(res, path, 'POST', performance.now() - startedAt);
   return res.json() as Promise<T>;
 };
+
+// Descarga binaria (adjuntos). Va por apiFetch para heredar cookies y el retry del 401.
+export const apiGetBlob = async (path: string): Promise<Blob> => {
+  const startedAt = performance.now();
+  const res = await apiFetch(path);
+  if (!res.ok) throw await toApiError(res, path, 'GET', performance.now() - startedAt);
+  return res.blob();
+};
