@@ -16,7 +16,7 @@ const Register = () => {
                 <p className="ha-auth-card-subtitle">Ingrese sus credenciales profesionales para comenzar.</p>
                 <RegisterForm/>
                 <p className="ha-auth-footer">
-                    ¿Ya tenes una cuenta creada? <Link to="/">Inicio Sesion</Link>
+                    ¿Ya tenes una cuenta creada? <Link to="/Login">Inicio Sesion</Link>
                 </p>
             </div>
         </div>
