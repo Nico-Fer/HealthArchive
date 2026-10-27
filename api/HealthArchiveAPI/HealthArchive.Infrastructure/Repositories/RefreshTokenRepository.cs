@@ -1,6 +1,7 @@
 using HealthArchive.Application.Interfaces;
 using HealthArchive.Domain;
 using HealthArchive.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace HealthArchive.Infrastructure.Repositories
 {
@@ -13,9 +14,9 @@ namespace HealthArchive.Infrastructure.Repositories
             _db = db;
         }
 
-        public RefreshToken? GetByToken(string token)
+        public RefreshToken? GetByTokenHash(string tokenHash)
         {
-            return _db.RefreshTokens.FirstOrDefault(t => t.Token == token);
+            return _db.RefreshTokens.FirstOrDefault(t => t.TokenHash == tokenHash);
         }
 
         public bool Add(RefreshToken token)
@@ -28,6 +29,16 @@ namespace HealthArchive.Infrastructure.Repositories
         {
             _db.RefreshTokens.Update(token);
             return Save();
+        }
+
+        // ExecuteUpdate: un solo UPDATE sin traer las filas. Ojo que no pasa por el change
+        // tracker, así que una entidad ya cargada en este scope no ve el RevokedAt nuevo.
+        public bool RevokeAllForDoctor(Guid doctorId)
+        {
+            var now = DateTime.UtcNow;
+            return _db.RefreshTokens
+                .Where(t => t.DoctorId == doctorId && t.RevokedAt == null)
+                .ExecuteUpdate(s => s.SetProperty(t => t.RevokedAt, now)) >= 0;
         }
 
         public bool Save()

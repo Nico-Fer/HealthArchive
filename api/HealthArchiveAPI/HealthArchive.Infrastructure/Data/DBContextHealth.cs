@@ -68,7 +68,7 @@ namespace HealthArchive.Infrastructure.Data
 
             modelBuilder.Entity<RefreshToken>(rt =>
             {
-                rt.HasIndex(t => t.Token).IsUnique();
+                rt.HasIndex(t => t.TokenHash).IsUnique();
                 rt.HasOne<Doctor>()
                     .WithMany()
                     .HasForeignKey(t => t.DoctorId)

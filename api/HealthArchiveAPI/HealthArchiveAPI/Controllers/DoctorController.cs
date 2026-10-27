@@ -1,6 +1,7 @@
 using HealthArchive.Application.DTOs;
 using HealthArchive.Application.Interfaces;
 using HealthArchive.Application.Mapping;
+using HealthArchive.Application.Security;
 using HealthArchive.Domain;
 using HealthArchiveAPI.Extensions;
 using Microsoft.AspNetCore.Authorization;
@@ -93,6 +94,12 @@ namespace HealthArchiveAPI.Controllers
             {
                 _logger.LogWarning("Registro rechazado: el email {Email} ya existe", doctorDto.Email);
                 ModelState.AddModelError("error", "doctor_exists");
+                return BadRequest(ModelState);
+            }
+
+            if (!PasswordPolicy.IsAcceptable(doctorDto.Password))
+            {
+                ModelState.AddModelError("error", "weak_password");
                 return BadRequest(ModelState);
             }
 

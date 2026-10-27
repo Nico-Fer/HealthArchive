@@ -44,16 +44,31 @@ namespace HealthArchive.Infrastructure.Services
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
-        public RefreshToken CreateRefreshToken(Guid doctorId)
+        public (RefreshToken Entity, string Value) CreateRefreshToken(Guid doctorId)
         {
-            var days = int.Parse(_config["Jwt:RefreshTokenDays"] ?? "7");
-            return new RefreshToken
+            var value = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
+            var entity = new RefreshToken
             {
-                Token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64)),
+                TokenHash = HashRefreshToken(value),
                 DoctorId = doctorId,
                 CreatedAt = DateTime.UtcNow,
-                ExpiresAt = DateTime.UtcNow.AddDays(days),
+                ExpiresAt = NextRefreshExpiry(),
             };
+            return (entity, value);
+        }
+
+        // SHA-256 sin salt alcanza: el token son 512 bits aleatorios, no hay diccionario
+        // posible. Lo que importa es que leer la tabla no alcance para usarlo. La migración
+        // HashRefreshTokens calcula lo mismo en SQL; si cambia el formato, cambiar las dos.
+        public string HashRefreshToken(string value)
+        {
+            return Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(value)));
+        }
+
+        public DateTime NextRefreshExpiry()
+        {
+            var minutes = int.Parse(_config["Session:IdleTimeoutMinutes"] ?? "120");
+            return DateTime.UtcNow.AddMinutes(minutes);
         }
     }
 }

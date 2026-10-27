@@ -229,13 +229,13 @@ namespace HealthArchive.Infrastructure.Migrations
                     b.Property<DateTime>("ExpiresAt")
                         .HasColumnType("timestamp without time zone");
 
-                    b.Property<string>("ReplacedByToken")
+                    b.Property<string>("ReplacedByTokenHash")
                         .HasColumnType("text");
 
                     b.Property<DateTime?>("RevokedAt")
                         .HasColumnType("timestamp without time zone");
 
-                    b.Property<string>("Token")
+                    b.Property<string>("TokenHash")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -243,7 +243,7 @@ namespace HealthArchive.Infrastructure.Migrations
 
                     b.HasIndex("DoctorId");
 
-                    b.HasIndex("Token")
+                    b.HasIndex("TokenHash")
                         .IsUnique();
 
                     b.ToTable("RefreshTokens");
