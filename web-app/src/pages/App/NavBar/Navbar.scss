@@ -64,5 +64,10 @@
     color: var(--ha-text-secondary);
     font-weight: 500;
     white-space: nowrap;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
   }
 }

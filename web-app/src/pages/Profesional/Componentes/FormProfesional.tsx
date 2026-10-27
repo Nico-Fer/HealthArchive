@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 
 import { Phone } from '../../../Types/Phone';
 import { FormErrors } from '../../../Types/FormErrors';
@@ -10,6 +11,8 @@ import { apiGet, apiPatch, apiDelete } from '../../../api/client';
 import Spinner from '../../../components/Spinner';
 import ConfirmDialog from '../../../components/ConfirmDialog';
 import logger, { describeError } from '../../../lib/logger';
+import { store } from '../../../Redux/Store';
+import ChangePasswordForm from './ChangePasswordForm';
 
 interface FormData {
   Name: string;
@@ -23,6 +26,7 @@ interface FormData {
 const MyForm: React.FC = () => {
   const navigate = useNavigate();
   const [Id, setId] = useState('');
+  const loggedDoctorId = useSelector((state: store) => state.Professional.id);
   
   useEffect(()=>{
     fetchProfessional();
@@ -141,6 +145,10 @@ const MyForm: React.FC = () => {
     );
   }
 
+  // El cambio de contraseña es siempre del doctor logueado, así que solo se ofrece en
+  // su propio perfil. Con un id vacío (sesión vieja sin id) no se muestra.
+  const isOwnProfile = !!Id && Id === loggedDoctorId;
+
   return (
     <div className="profesional-form ha-card">
       <h1 className="profesional-form-title">Profesional</h1>
@@ -236,6 +244,8 @@ const MyForm: React.FC = () => {
           onCancel={() => setShowDeleteConfirm(false)}
         />
       )}
+
+      {isOwnProfile && <ChangePasswordForm />}
     </div>
   );
 };

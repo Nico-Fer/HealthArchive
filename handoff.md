@@ -36,8 +36,8 @@ Decisiones ya tomadas con el usuario (no volver a preguntar):
 |---|---|---|
 | 1 | Backend: refresh tokens hasheados + migración `HashRefreshTokens` | ✅ hecho, compila |
 | 2 | Backend: inactividad, KeepAlive, Logout anónimo, ChangePassword, seeder, política de contraseña | ✅ hecho, compila |
-| 3 | Front: sesión por pestaña + IdleWatcher (`lib/session.ts`, `pages/App/IdleWatcher.tsx`, `AuthBootstrap`, slice `Session.endedReason`, Login) | ✅ hecho, `tsc` + `vite build` OK; falta E2E en browser |
-| 4 | Front: ChangePasswordForm, NavBar, Register (`weak_password`) | ⏳ pendiente |
+| 3 | Front: sesión por pestaña + IdleWatcher (`lib/session.ts`, `pages/App/IdleWatcher.tsx`, `AuthBootstrap`, slice `Session.endedReason`, Login) | ✅ hecho y probado en Chromium (Playwright) |
+| 4 | Front: ChangePasswordForm (en el perfil propio), NavBar → perfil, Register (`weak_password`) | ✅ hecho y probado en Chromium |
 | 5 | Docs: `CLAUDE.md` + `docs/deploy.md` (runbook de rotación) | ⏳ pendiente |
 
 ## Verificación hecha / pendiente
@@ -50,7 +50,13 @@ Decisiones ya tomadas con el usuario (no volver a preguntar):
   `weak_password`, revoca otras sesiones), Logout sin access token, cookies sin `Expires`, y el
   fail-fast de Production del código de consultorio (corta solo si el inicial no tiene código).
 - Front: `npx tsc --noEmit` y `vite build` OK.
-- Pendiente: E2E del front en browser (Playwright) contra la API local.
+- E2E con Playwright contra API + Postgres locales (scripts fuera del repo):
+  - pestañas: la 2ª adopta la sesión, recargar la mantiene, cerrar una no afecta a la otra, cerrar
+    todas y reabrir → Login con 0 refresh tokens activos en la base, logout se propaga;
+  - inactividad (con `ctx.clock`): aviso a 118 min en todas las pestañas, "Seguir conectado" →
+    KeepAlive 204, la actividad renueva, a 120 min cierra en todas con el mensaje en el Login;
+  - cambiar contraseña: errores por slug, éxito, sigue logueado; no aparece en perfiles ajenos;
+    registro con contraseña corta muestra el mensaje.
 
 ## Cómo compilar en un container sin el SDK 10.0.3xx
 

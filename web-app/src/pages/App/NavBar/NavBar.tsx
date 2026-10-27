@@ -31,7 +31,15 @@ const NavBar = () => {
         </div>
       </div>
       <div className='ha-navbar-right'>
-        <span className='ha-navbar-user d-none d-md-inline'>{professional.name} {professional.lastName}</span>
+        {/* Lleva al perfil propio, que es donde está "Cambiar contraseña". */}
+        <Link
+          to='/Profesionales/Profesional'
+          state={{ email: professional.email }}
+          className='ha-navbar-user d-none d-md-inline'
+          title='Mi perfil'
+        >
+          {professional.name} {professional.lastName}
+        </Link>
         <button className='btn btn-danger' onClick={() => handleSignOut()}>Cerrar Sesión</button>
       </div>
     </nav>
