@@ -4,6 +4,7 @@ import { useDispatch } from 'react-redux';
 import { logout } from '../../../Redux/States/professional';
 import { useSelector } from "react-redux";
 import { store } from '../../../Redux/Store';
+import NotificationBell from './NotificationBell';
 
 const NavBar = () => {
 
@@ -32,6 +33,7 @@ const NavBar = () => {
         </div>
       </div>
       <div className='ha-navbar-right'>
+        <NotificationBell />
         {/* Lleva al perfil propio, que es donde está "Cambiar contraseña". */}
         <Link
           to='/Profesionales/Profesional'

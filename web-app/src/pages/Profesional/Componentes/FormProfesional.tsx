@@ -13,6 +13,7 @@ import ConfirmDialog from '../../../components/ConfirmDialog';
 import logger, { describeError } from '../../../lib/logger';
 import { store } from '../../../Redux/Store';
 import ChangePasswordForm from './ChangePasswordForm';
+import WhatsAppOptIn from '../../../components/WhatsAppOptIn';
 
 interface FormData {
   Name: string;
@@ -21,6 +22,8 @@ interface FormData {
   Description: string;
   Email: string;
   Tuition: string;
+  /** Agenda del día por WhatsApp. Viaja siempre para que guardar el perfil no lo pise. */
+  WhatsAppAgendaOptIn: boolean;
 }
 
 const MyForm: React.FC = () => {
@@ -42,6 +45,7 @@ const MyForm: React.FC = () => {
     Description: '',
     Email:'',
     Tuition: '',
+    WhatsAppAgendaOptIn: false,
   });
 
   const [originalFormData, setOriginalFormData] = useState<FormData>({ ...formData });
@@ -95,6 +99,7 @@ const MyForm: React.FC = () => {
           Email: data.email,
           Description: data.description,
           Tuition: data.tuition,
+          WhatsAppAgendaOptIn: data.whatsAppAgendaOptIn ?? false,
         };
   
         setId(data.id);
@@ -195,6 +200,17 @@ const MyForm: React.FC = () => {
             />
           </div>
         </div>
+
+        {/* Es un consentimiento propio: solo lo cambia el doctor sobre su perfil. */}
+        {Id !== '' && Id === loggedDoctorId && (
+          <WhatsAppOptIn
+            id="WhatsAppAgendaOptIn"
+            label="Recibir la agenda del día por WhatsApp (07:30)"
+            checked={formData.WhatsAppAgendaOptIn}
+            hasPhone={formData.PhoneNumber.PhoneNumber.trim() !== ''}
+            onChange={(WhatsAppAgendaOptIn) => setFormData(prev => ({ ...prev, WhatsAppAgendaOptIn }))}
+          />
+        )}
 
         <div className="ha-form-field">
           <label htmlFor="Email">Email</label>

@@ -26,8 +26,8 @@ Decisiones tomadas con el usuario (no volver a preguntar):
 |---|---|---|
 | 1 | Backend: `Appointment`, `WhatsAppMessage`, opt-ins, migración `Appointments`, `AppointmentController`, sender de WhatsApp, `ReminderWorker` | ✅ probado con curl + mock de WhatsApp |
 | 2 | Front: pestaña Turnos + confirmar asistencia → HCE (+ opt-in de WhatsApp en los formularios de paciente) | ✅ `tsc` + E2E en Chromium |
-| 3 | Front: campanita (resumen del día) + avisos 10 min antes | ⏳ pendiente |
-| 4 | Front: opt-in en el perfil del médico (`FormProfesional`). El de paciente ya está | ⏳ pendiente |
+| 3 | Front: campanita (resumen del día) + avisos 10 min antes | ✅ E2E: toast, badge, resumen, sin duplicar entre pestañas, 0 llamadas a /Refresh |
+| 4 | Front: opt-in en el perfil del médico (`FormProfesional`, solo en el perfil propio) | ✅ E2E |
 | 5 | Docs: `CLAUDE.md` + `docs/deploy.md` §8 (setup de Meta, plantillas, costos) | ⏳ pendiente |
 
 El plan completo (con el diseño del front) está más abajo, en **Plan del front**.
@@ -86,6 +86,10 @@ Verificado:
 - Front (etapa 2): E2E con Playwright. Turno para alguien nuevo → Confirmar asistencia →
   diálogo de fecha de nacimiento → HCE del paciente creado → volver muestra "Atendido".
   Front con `VITE_API_URL=http://localhost:5080`.
+- Campanita (`pages/App/NavBar/NotificationBell.tsx` + `lib/agendaNotices.ts`): todo en un
+  componente del NavBar, **sin slice de Redux** (el NavBar solo se monta con sesión, así que
+  los timers mueren con el logout). El estado compartido entre pestañas vive en localStorage
+  (`ha-agenda`, que se reinicia al cambiar el día).
 - Worker: un WhatsApp por turno (idempotente entre ticks), normalización
   `011 15 5000 1111` → `5491150001111`, agenda diaria del doctor con el conteo de hoy (hora
   local AR) y teléfonos enmascarados en el log.
