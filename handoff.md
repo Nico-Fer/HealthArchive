@@ -2,74 +2,42 @@
 
 > Archivo de trabajo para retomar en otra sesión. **Borrarlo antes de mergear.**
 
-## Qué se está haciendo
-
-1. **Respuesta al incidente de Railway (21-oct-2026)**: se filtraron env vars → `DATABASE_URL`/credenciales
-   de Postgres (que tiene la conexión pública activa), `Jwt__Key` y `Registration__ConsultoryCode`.
-   Medidas en código: refresh tokens hasheados + migración que revoca todas las sesiones, el código de
-   alta deja de ser obligatorio en Railway una vez sembrado, política mínima de contraseña y
-   "Cambiar contraseña".
-2. **Cierre de sesión al cerrar la última pestaña** de la app.
-3. **Cierre por inactividad a las 2 h**, con aviso 2 min antes. Antes nunca existió: el refresh token
-   duraba 7 días deslizantes y las cookies eran persistentes.
-
-Decisiones ya tomadas con el usuario (no volver a preguntar):
-- Multi-pestaña: la sesión se cierra al cerrar la **última** pestaña; abrir otra pestaña no pide login.
-- Aviso de inactividad **2 min antes** con "Seguir conectado".
-- **Sí** se agrega "Cambiar contraseña".
-
-## Diseño (resumen)
-
-- **Server = autoridad.** `Session:IdleTimeoutMinutes` (120). El refresh token vence a ahora + 120 y
-  se corre en cada `/Refresh` (rotación) y en `POST /api/AuthService/KeepAlive` (sin rotar).
-  Cookies de sesión (sin `Expires`). `Logout` es `[AllowAnonymous]`.
-- **Front = UX.** `src/lib/session.ts`: "último toque" en localStorage (`ha-session-touched-at`, =
-  último KeepAlive enviado) compartido entre pestañas; flag de pestaña en sessionStorage
-  (`ha-tab-session`); `BroadcastChannel('ha-session')` para ping/pong ("¿hay otra pestaña con
-  sesión?") y para propagar el logout. `IdleWatcher` manda KeepAlive ante actividad cada ≥5 min,
-  avisa a los 118 min y cierra a los 120. `AuthBootstrap`: sin flag de pestaña y sin otra pestaña
-  viva → `/Logout` y anónimo.
-
-## Estado por bloque
+## Estado: código terminado y verificado. Falta lo manual (abajo).
 
 | # | Bloque | Estado |
 |---|---|---|
-| 1 | Backend: refresh tokens hasheados + migración `HashRefreshTokens` | ✅ hecho, compila |
-| 2 | Backend: inactividad, KeepAlive, Logout anónimo, ChangePassword, seeder, política de contraseña | ✅ hecho, compila |
-| 3 | Front: sesión por pestaña + IdleWatcher (`lib/session.ts`, `pages/App/IdleWatcher.tsx`, `AuthBootstrap`, slice `Session.endedReason`, Login) | ✅ hecho y probado en Chromium (Playwright) |
-| 4 | Front: ChangePasswordForm (en el perfil propio), NavBar → perfil, Register (`weak_password`) | ✅ hecho y probado en Chromium |
-| 5 | Docs: `CLAUDE.md` + `docs/deploy.md` (runbook de rotación) | ⏳ pendiente |
+| 1 | Backend: refresh tokens hasheados + migración `HashRefreshTokens` | ✅ probado contra Postgres 16 |
+| 2 | Backend: inactividad (`Session:IdleTimeoutMinutes`), `KeepAlive`, `Logout` anónimo, `ChangePassword`, seeder, `PasswordPolicy` | ✅ probado con curl |
+| 3 | Front: sesión por pestaña + `IdleWatcher` (`lib/session.ts`, `AuthBootstrap`, `Session.endedReason`, Login) | ✅ probado en Chromium (Playwright) |
+| 4 | Front: `ChangePasswordForm` en el perfil propio, NavBar → perfil, Register (`weak_password`) | ✅ probado en Chromium |
+| 5 | Docs: `CLAUDE.md` (sección *Cierre de sesión*) + `docs/deploy.md` sección 7 (runbook de rotación) | ✅ |
 
-## Verificación hecha / pendiente
+Decisiones tomadas con el usuario (no volver a preguntar): la sesión se cierra al cerrar la
+**última** pestaña; aviso de inactividad **2 min antes**; **sí** "Cambiar contraseña".
 
-- Backend: `dotnet build` OK (SDK 10.0.113 del archivo de Ubuntu; **`global.json` pide 10.0.301**, así
-  que se compiló en una copia fuera del repo). Migración generada con `dotnet-ef` 10.0.0.
-- Backend probado contra Postgres 16 local (apt `postgresql`): la migración hashea en el mismo formato
-  que C# y revoca todo; con `Session__IdleTimeoutMinutes=1` se verificó Login/Me/KeepAlive/Refresh,
-  vencimiento por inactividad (401 + log Information), ChangePassword (400 `incorrect_password`/
-  `weak_password`, revoca otras sesiones), Logout sin access token, cookies sin `Expires`, y el
-  fail-fast de Production del código de consultorio (corta solo si el inicial no tiene código).
-- Front: `npx tsc --noEmit` y `vite build` OK.
-- E2E con Playwright contra API + Postgres locales (scripts fuera del repo):
-  - pestañas: la 2ª adopta la sesión, recargar la mantiene, cerrar una no afecta a la otra, cerrar
-    todas y reabrir → Login con 0 refresh tokens activos en la base, logout se propaga;
-  - inactividad (con `ctx.clock`): aviso a 118 min en todas las pestañas, "Seguir conectado" →
-    KeepAlive 204, la actividad renueva, a 120 min cierra en todas con el mensaje en el Login;
-  - cambiar contraseña: errores por slug, éxito, sigue logueado; no aparece en perfiles ajenos;
-    registro con contraseña corta muestra el mensaje.
+## Qué se verificó
 
-## Cómo compilar en un container sin el SDK 10.0.3xx
+- `dotnet build` OK. Ojo: `global.json` pide SDK 10.0.301 y el container solo consigue 10.0.113 por
+  apt, así que se compiló en una copia fuera del repo (`cp -r api/HealthArchiveAPI /tmp/x`).
+- Migración contra Postgres 16 local: hashea en el mismo formato que C# (SHA-256 base64) y revoca todo.
+- API con `Session__IdleTimeoutMinutes=1`: Login/Me/KeepAlive/Refresh, vencimiento por inactividad,
+  ChangePassword (slugs + revoca otras sesiones), Logout sin access token, cookies sin `Expires`,
+  fail-fast de Production del código de consultorio (solo si el inicial no tiene código).
+- Front: `tsc --noEmit` y `vite build` OK; E2E en Chromium de pestañas, inactividad (con reloj
+  simulado), logout propagado entre pestañas y cambio de contraseña.
+- **No** se probó contra Railway/Vercel reales ni en Safari/Firefox.
 
-```bash
-apt-get install -y dotnet-sdk-10.0          # trae 10.0.1xx
-cp -r api/HealthArchiveAPI /tmp/build-api    # fuera del repo, para que no aplique global.json
-cd /tmp/build-api && dotnet build HealthArchiveAPI.sln
-```
+## Pendiente: pasos manuales (detalle en `docs/deploy.md` §7)
 
-## Pasos manuales para el usuario (fuera del código)
+1. Auditar ANTES de deployar (SQL en el runbook + logs de Railway).
+2. Postgres: regenerar contraseña y quitar el TCP Proxy público; redeployar la API.
+3. `Jwt__Key` nueva.
+4. Rotar el Project Token de Railway y el secret `RAILWAY_TOKEN` de GitHub.
+5. Deployar este branch con `RunMigrationsOnStartup=true` (todos vuelven a loguearse).
+6. Rotar los códigos de consultorio con `UpdateConsultorio` y **borrar** `Registration__ConsultoryCode`.
+7. Pedir a los doctores que cambien la contraseña (clic en su nombre ▸ Cambiar contraseña).
 
-Ver el plan completo; resumen: auditar (Doctors/Admins, RefreshTokens desde el 21-oct, logs de
-Railway) → regenerar password de Postgres y apagar su TCP proxy público → `Jwt__Key` nueva → rotar
-`RAILWAY_TOKEN` de GitHub → deployar con `RunMigrationsOnStartup=true` → rotar códigos de consultorio
-con `UpdateConsultorio` y borrar `Registration__ConsultoryCode` → pedir a los doctores que cambien la
-contraseña.
+## Fuera de alcance, detectado al compilar
+
+`System.Security.Cryptography.Pkcs` 9.0.0 (transitiva de `HealthArchiveAPI`) tiene un advisory High
+(GHSA-846f-f764-76mx). No lo trae este cambio; conviene resolverlo aparte.
