@@ -19,5 +19,7 @@ namespace HealthArchive.Application.DTOs
         /// traiga el cliente se ignora — lo reasigna el mapper por posición.
         /// </summary>
         public List<MedicalCoverage>? MedicalCoverages { get; set; }
+        /// <summary>Consentimiento para recordatorios por WhatsApp (opt-in explícito).</summary>
+        public bool WhatsAppOptIn { get; set; }
     }
 }

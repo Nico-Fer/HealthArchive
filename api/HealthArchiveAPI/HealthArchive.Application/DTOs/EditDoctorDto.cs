@@ -9,5 +9,6 @@ namespace HealthArchive.Application.DTOs
         public Phone? PhoneNumber { get; set; }
         public string? Description { get; set; }
         public string Tuition { get; set; }
+        public bool WhatsAppAgendaOptIn { get; set; }
     }
 }

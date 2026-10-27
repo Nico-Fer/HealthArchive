@@ -23,6 +23,9 @@ namespace HealthArchive.Domain
         public string? Description { get; set; } = "";
         public string Role { get; set; } = "Doctor";
 
+        /// <summary>¿Quiere recibir la agenda del día por WhatsApp? Opt-in, como el de los pacientes.</summary>
+        public bool WhatsAppAgendaOptIn { get; set; }
+
         [ForeignKey("Consultorio")]
         public Guid ConsultorioId { get; set; }
         public Consultorio Consultorio { get; set; }

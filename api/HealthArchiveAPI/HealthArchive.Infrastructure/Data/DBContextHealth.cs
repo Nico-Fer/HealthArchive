@@ -66,6 +66,57 @@ namespace HealthArchive.Infrastructure.Data
                 .HasIndex(p => new { p.ConsultorioId, p.DNI })
                 .IsUnique();
 
+            modelBuilder.Entity<Appointment>(a =>
+            {
+                a.OwnsOne(x => x.PhoneNumber);
+                a.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
+
+                // Restrict, igual que doctores y pacientes: un consultorio no se borra en
+                // cascada. Doctor y paciente sí arrastran sus turnos: sin ellos el turno no
+                // significa nada (y el historial clínico vive en la HCE, no acá).
+                a.HasOne(x => x.Consultorio)
+                    .WithMany()
+                    .HasForeignKey(x => x.ConsultorioId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                a.HasOne(x => x.Doctor)
+                    .WithMany()
+                    .HasForeignKey(x => x.DoctorId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                a.HasOne(x => x.Patient)
+                    .WithMany()
+                    .HasForeignKey(x => x.PatientId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                // La agenda siempre se consulta por consultorio y rango de fechas.
+                a.HasIndex(x => new { x.ConsultorioId, x.StartsAt });
+                a.HasIndex(x => new { x.DoctorId, x.StartsAt });
+            });
+
+            modelBuilder.Entity<WhatsAppMessage>(m =>
+            {
+                m.Property(x => x.Kind).HasConversion<string>().HasMaxLength(30);
+                m.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
+
+                m.HasOne<Appointment>()
+                    .WithMany()
+                    .HasForeignKey(x => x.AppointmentId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                m.HasOne<Doctor>()
+                    .WithMany()
+                    .HasForeignKey(x => x.DoctorId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                // Idempotencia del worker: un recordatorio por turno y una agenda por doctor
+                // y día. Filtrados porque cada fila usa solo uno de los dos juegos de columnas
+                // (y en Postgres los NULL no chocan entre sí en un índice único).
+                m.HasIndex(x => new { x.Kind, x.AppointmentId })
+                    .IsUnique()
+                    .HasFilter("\"AppointmentId\" IS NOT NULL");
+                m.HasIndex(x => new { x.Kind, x.DoctorId, x.LocalDate })
+                    .IsUnique()
+                    .HasFilter("\"DoctorId\" IS NOT NULL");
+            });
+
             modelBuilder.Entity<RefreshToken>(rt =>
             {
                 rt.HasIndex(t => t.TokenHash).IsUnique();
@@ -83,5 +134,7 @@ namespace HealthArchive.Infrastructure.Data
         public DbSet<HCE> HCEs { get; set; }
         public DbSet<Evolution> Evolutions { get; set; }
         public DbSet<HCEFile> HCEFiles { get; set; }
+        public DbSet<Appointment> Appointments { get; set; }
+        public DbSet<WhatsAppMessage> WhatsAppMessages { get; set; }
     }
 }

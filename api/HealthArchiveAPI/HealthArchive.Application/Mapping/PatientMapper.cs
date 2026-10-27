@@ -33,6 +33,7 @@ namespace HealthArchive.Application.Mapping
             patient.Ocupation = dto.Ocupation;
             patient.HomeAddress = dto.HomeAddress;
             patient.Note = dto.Note;
+            patient.WhatsAppOptIn = dto.WhatsAppOptIn;
             // Se reemplaza la colección entera (EF borra las viejas e inserta las nuevas) y
             // el Order se reasigna por posición: así "la primera es la principal" no depende
             // de que el cliente mande bien el campo. Las filas totalmente vacías se descartan

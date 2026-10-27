@@ -42,6 +42,7 @@ namespace HealthArchive.Application.Mapping
             doctor.PhoneNumber = dto.PhoneNumber;
             doctor.Description = dto.Description;
             doctor.Tuition = dto.Tuition;
+            doctor.WhatsAppAgendaOptIn = dto.WhatsAppAgendaOptIn;
         }
     }
 }

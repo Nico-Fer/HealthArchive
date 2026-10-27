@@ -26,6 +26,12 @@ namespace HealthArchive.Domain
         public List<MedicalCoverage> MedicalCoverages { get; set; } = new();
         public HCE ClinicHistory { get; set; }
 
+        /// <summary>
+        /// Consentimiento explícito para recibir recordatorios de turnos por WhatsApp. La
+        /// política de WhatsApp Business exige opt-in: tener el celular cargado no alcanza.
+        /// </summary>
+        public bool WhatsAppOptIn { get; set; }
+
         [ForeignKey("Consultorio")]
         public Guid ConsultorioId { get; set; }
         public Consultorio Consultorio { get; set; }

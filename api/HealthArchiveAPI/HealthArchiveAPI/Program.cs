@@ -4,6 +4,8 @@ using HealthArchive.Infrastructure.Repositories;
 using HealthArchive.Infrastructure.Services;
 using HealthArchiveAPI.Extensions;
 using HealthArchiveAPI.Middleware;
+using HealthArchiveAPI.Reminders;
+using HealthArchive.Application.Messaging;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
@@ -82,6 +84,14 @@ builder.Services.AddScoped<IPatientRepository, PatientRepository>();
 builder.Services.AddScoped<IConsultorioRepository, ConsultorioRepository>();
 builder.Services.AddScoped<IAuthServiceRepository, AuthServiceRepository>();
 builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+builder.Services.AddScoped<IAppointmentRepository, AppointmentRepository>();
+builder.Services.AddScoped<IWhatsAppMessageRepository, WhatsAppMessageRepository>();
+
+// Recordatorios de turnos. El worker corre siempre, pero con WhatsApp:Enabled=false cada
+// pasada sale sin tocar la base, así que en local no molesta.
+builder.Services.AddHttpClient<IWhatsAppSender, WhatsAppCloudApiSender>(c => c.Timeout = TimeSpan.FromSeconds(15));
+builder.Services.AddScoped<ReminderDispatcher>();
+builder.Services.AddHostedService<ReminderWorker>();
 
 // Auth services
 builder.Services.AddScoped<IPasswordHasher, PasswordHasherService>();
@@ -209,11 +219,24 @@ if (app.Environment.IsProduction())
             "Cors:AllowedOrigins está vacío: el front no va a poder llamar al API. Setear Cors__AllowedOrigins.");
     }
 
+    // Con WhatsApp prendido y sin credenciales, el worker fallaría en silencio cada 5 minutos.
+    if (app.Configuration.GetValue<bool>("WhatsApp:Enabled")
+        && (string.IsNullOrWhiteSpace(app.Configuration["WhatsApp:AccessToken"])
+            || string.IsNullOrWhiteSpace(app.Configuration["WhatsApp:PhoneNumberId"])))
+    {
+        throw new InvalidOperationException(
+            "WhatsApp:Enabled=true pero faltan WhatsApp:AccessToken o WhatsApp:PhoneNumberId. Setear WhatsApp__AccessToken y WhatsApp__PhoneNumberId.");
+    }
+
     // Registration:ConsultoryCode ya no se exige acá: solo hace falta mientras el
     // consultorio inicial no tenga código, y eso lo valida SeedConsultorioInicial. Así,
     // una vez sembrado, la variable se puede borrar del host y deja de ser un secreto
     // más guardado en Railway (el código real se rota con UpdateConsultorio).
 }
+
+// La zona horaria de los recordatorios tiene que existir en el host: mejor no arrancar
+// que mandar los recordatorios corridos de hora.
+_ = ReminderClock.TimeZone(app.Configuration);
 
 // Aplicar migraciones pendientes al arrancar. Apagado por defecto: se prende con
 // RunMigrationsOnStartup=true (env var) en el primer deploy y se puede volver a apagar.
