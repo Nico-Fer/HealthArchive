@@ -10,6 +10,7 @@ import { apiPost } from '../../api/client';
 import DateField from '../../components/DateField';
 import CoverageList, { emptyCoverage } from '../../components/CoverageList';
 import logger, { describeError } from '../../lib/logger';
+import WhatsAppOptIn from '../../components/WhatsAppOptIn';
 
 
 import './NewPatient.scss'
@@ -32,6 +33,7 @@ const NewPatient = () => {
       HomeAddress: '',
       BirthDate: null,
       Note: '',
+      WhatsAppOptIn: false,
     })
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -194,12 +196,19 @@ const NewPatient = () => {
                     className="form-control"
                     id="phone"
                     name="phone"
-                    placeholder='11 5000 0000'
+                    placeholder='11 5000 0000 (sin 0 ni 15)'
                     value={patientData.PhoneNumber.PhoneNumber}
                     onChange={handleChangePhoneNumber}
                   />
                 </div>
               </div>
+
+              <WhatsAppOptIn
+                id="WhatsAppOptIn"
+                checked={patientData.WhatsAppOptIn}
+                hasPhone={patientData.PhoneNumber.PhoneNumber.trim() !== ''}
+                onChange={(WhatsAppOptIn) => setPatientData(prevData => ({ ...prevData, WhatsAppOptIn }))}
+              />
 
               <div className="ha-form-row">
                 <div className="ha-form-field">

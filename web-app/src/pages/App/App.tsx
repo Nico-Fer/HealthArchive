@@ -11,6 +11,7 @@ import "./App.scss";
 import Proffesionals from "../Professionals";
 import HistoriaClinica from "../HistoriaClinica/HistoriaClinica";
 import NewPatient from "../NewPatient";
+import Turnos from "../Turnos";
 import AuthGuard, { PublicGuard } from "../../Guards";
 import ErrorBoundary from "../../components/ErrorBoundary";
 import { Provider } from "react-redux";
@@ -39,6 +40,7 @@ const App = () => {
                     <Route path="/Register" element={<Register />} />
                   </Route>
                   <Route element={<AuthGuard />}>
+                    <Route path="/Turnos" element={<Turnos />} />
                     <Route path="/Pacientes" element={<Patients />} />
                     <Route path="/Pacientes/Nuevo" element={<NewPatient />} />
                     <Route path="/Profesionales" element={<Proffesionals />} />

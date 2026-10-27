@@ -26,6 +26,7 @@ const NavBar = () => {
       <div className='ha-navbar-left'>
         <Link to="/Pacientes" className='ha-navbar-brand'>HealthArchive</Link>
         <div className='ha-navbar-links'>
+          <NavLink to="/Turnos" className='ha-navbar-link'>Turnos</NavLink>
           <NavLink to="/Pacientes" className='ha-navbar-link'>Pacientes</NavLink>
           <NavLink to="/Profesionales" className='ha-navbar-link'>Profesionales</NavLink>
         </div>

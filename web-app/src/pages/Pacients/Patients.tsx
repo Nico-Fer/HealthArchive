@@ -9,6 +9,7 @@ import { PagedResult } from "./../../Types/Paged";
 import { apiGet } from '../../api/client';
 import Spinner from '../../components/Spinner';
 import logger, { describeError } from '../../lib/logger';
+import mapPatientFromApi from '../../Functions/mapPatientFromApi';
 
 const PAGE_SIZE = 30;
 
@@ -35,30 +36,7 @@ const Patients = () => {
 
       const data = await apiGet<PagedResult<any>>(`/api/Patient/GetPatients?${params}`);
 
-      const mappedPatients = data.items.map((patient: any) => ({
-        Name: patient.name,
-        LastName: patient.lastName,
-        PhoneNumber: {
-          CountryCode: patient.phoneNumber.countryCode,
-          PhoneNumber: patient.phoneNumber.phoneNumber,
-        },
-        Email: patient.email,
-        // Se ordena por `order` y no se confía en el orden del JSON: la primera es la
-        // cobertura principal y es la que muestra la tabla.
-        MedicalCoverages: [...(patient.medicalCoverages ?? [])]
-          .sort((a: any, b: any) => a.order - b.order)
-          .map((coverage: any) => ({
-            Number: coverage.number,
-            Coverage: coverage.coverage,
-            Order: coverage.order,
-          })),
-        DNI: patient.dni,
-        Country: patient.country,
-        Ocupation: patient.ocupation,
-        HomeAddress: patient.homeAddress,
-        BirthDate: patient.birthDate,
-        Note: patient.note,
-      }));
+      const mappedPatients = data.items.map(mapPatientFromApi);
 
       setPatients(mappedPatients);
       setTotalPages(data.totalPages);

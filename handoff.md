@@ -25,9 +25,9 @@ Decisiones tomadas con el usuario (no volver a preguntar):
 | # | Etapa | Estado |
 |---|---|---|
 | 1 | Backend: `Appointment`, `WhatsAppMessage`, opt-ins, migración `Appointments`, `AppointmentController`, sender de WhatsApp, `ReminderWorker` | ✅ probado con curl + mock de WhatsApp |
-| 2 | Front: pestaña Turnos + confirmar asistencia → HCE | ⏳ pendiente |
+| 2 | Front: pestaña Turnos + confirmar asistencia → HCE (+ opt-in de WhatsApp en los formularios de paciente) | ✅ `tsc` + E2E en Chromium |
 | 3 | Front: campanita (resumen del día) + avisos 10 min antes | ⏳ pendiente |
-| 4 | Front: checkboxes de opt-in en paciente y perfil del médico | ⏳ pendiente |
+| 4 | Front: opt-in en el perfil del médico (`FormProfesional`). El de paciente ya está | ⏳ pendiente |
 | 5 | Docs: `CLAUDE.md` + `docs/deploy.md` §8 (setup de Meta, plantillas, costos) | ⏳ pendiente |
 
 El plan completo (con el diseño del front) está más abajo, en **Plan del front**.
@@ -82,6 +82,10 @@ recrearlos.
 Verificado:
 - Endpoints con curl: 409 y sobreturno, vinculación por DNI, `birthdate_required` → CheckIn
   crea paciente + HCE, CheckIn idempotente, 404, `invalid_range`, `invalid_status`.
+- Worker, reintentos: con error 500 hace 3 intentos y para. Al reprogramar el turno, el recordatorio se reenvía.
+- Front (etapa 2): E2E con Playwright. Turno para alguien nuevo → Confirmar asistencia →
+  diálogo de fecha de nacimiento → HCE del paciente creado → volver muestra "Atendido".
+  Front con `VITE_API_URL=http://localhost:5080`.
 - Worker: un WhatsApp por turno (idempotente entre ticks), normalización
   `011 15 5000 1111` → `5491150001111`, agenda diaria del doctor con el conteo de hoy (hora
   local AR) y teléfonos enmascarados en el log.

@@ -1,0 +1,182 @@
+.turnos {
+  .turnos-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+
+  .turnos-day-nav {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .turnos-day-field {
+    width: 11rem;
+  }
+
+  .turnos-doctor {
+    min-width: 14rem;
+  }
+
+  .turnos-summary {
+    color: var(--ha-text-secondary);
+    margin-bottom: 12px;
+  }
+
+  .turnos-empty {
+    padding: 32px;
+    text-align: center;
+    color: var(--ha-text-secondary);
+  }
+
+  .turnos-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .turnos-item {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+    border-left: 4px solid var(--ha-primary);
+
+    &.turnos-item-atendido {
+      border-left-color: #198754;
+    }
+
+    &.turnos-item-ausente,
+    &.turnos-item-cancelado {
+      border-left-color: var(--ha-outline);
+      opacity: 0.75;
+    }
+  }
+
+  .turnos-time {
+    display: flex;
+    flex-direction: column;
+    min-width: 4.5rem;
+
+    .turnos-hour {
+      font-size: var(--ha-fs-headline-sm);
+      font-weight: 700;
+      color: var(--ha-primary-dark);
+    }
+  }
+
+  .turnos-person {
+    flex: 1 1 16rem;
+    min-width: 0;
+  }
+
+  .turnos-name {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .turnos-reason {
+    margin-top: 4px;
+    font-style: italic;
+  }
+
+  .turnos-status {
+    font-size: var(--ha-fs-label);
+    font-weight: 600;
+    color: var(--ha-text-secondary);
+
+    &.turnos-status-atendido {
+      color: #198754;
+    }
+
+    &.turnos-status-cancelado {
+      text-decoration: line-through;
+    }
+  }
+
+  .turnos-reminder {
+    display: inline-flex;
+    font-size: 1.1rem;
+    color: var(--ha-outline);
+
+    &.turnos-reminder-sent {
+      color: #25d366;
+    }
+
+    &.turnos-reminder-scheduled {
+      color: #8fd9a8;
+    }
+
+    &.turnos-reminder-failed,
+    &.turnos-reminder-invalid_phone {
+      color: var(--ha-danger);
+    }
+  }
+
+  .turnos-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-left: auto;
+  }
+}
+
+// El formulario es un modal: vive fuera de .turnos en el árbol de estilos.
+.turnos-mode {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.turnos-selected {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--ha-border);
+  border-radius: var(--ha-radius);
+  background-color: var(--ha-primary-soft);
+}
+
+.turnos-results {
+  list-style: none;
+  padding: 0;
+  margin: 4px 0 0;
+  border: 1px solid var(--ha-border);
+  border-radius: var(--ha-radius);
+  max-height: 14rem;
+  overflow-y: auto;
+
+  button {
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: 0;
+    padding: 8px 12px;
+
+    &:hover,
+    &:focus {
+      background-color: var(--ha-primary-soft);
+    }
+  }
+}
+
+.turnos-dni-match {
+  padding: 10px 12px;
+  margin-bottom: 16px;
+  border-radius: var(--ha-radius);
+  background-color: #fff8e1;
+}

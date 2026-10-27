@@ -9,6 +9,8 @@ interface ConfirmDialogProps {
     cancelLabel?: string;
     onConfirm: () => void;
     onCancel: () => void;
+    /** 'danger' (default) para borrar; 'primary' para confirmaciones que no destruyen nada. */
+    tone?: 'danger' | 'primary';
 }
 
 const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
@@ -18,6 +20,7 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
     cancelLabel = 'Cancelar',
     onConfirm,
     onCancel,
+    tone = 'danger',
 }) => {
     return (
         <div className="ha-confirm-backdrop" onClick={onCancel}>
@@ -34,7 +37,7 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
                     <button type="button" className="btn btn-outline-secondary" onClick={onCancel}>
                         {cancelLabel}
                     </button>
-                    <button type="button" className="btn btn-danger" onClick={onConfirm}>
+                    <button type="button" className={`btn btn-${tone}`} onClick={onConfirm}>
                         {confirmLabel}
                     </button>
                 </div>

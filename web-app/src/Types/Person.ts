@@ -19,4 +19,6 @@ export interface Patient extends Person {
     // inicializaba con new Date(), lo que prellenaba "hoy" como fecha de nacimiento.
     BirthDate: Date | null;
     Note: string;
+    /** Opt-in explícito para recordatorios de turnos por WhatsApp. */
+    WhatsAppOptIn: boolean;
 }

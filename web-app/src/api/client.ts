@@ -133,6 +133,13 @@ export interface ApiFetchOptions {
    * redirigiendo en medio del bootstrap.
    */
   redirectOnAuthFailure?: boolean;
+  /**
+   * Ante un 401, ¿intentar /Refresh? Los requests de fondo (polls de la agenda) van con
+   * false: cada /Refresh corre la ventana de inactividad del server, así que un poll que
+   * refresca mantendría la sesión viva para siempre y rompería el cierre a las 2 h. Con
+   * false, un 401 se devuelve tal cual y el próximo request del usuario refresca.
+   */
+  refreshOnUnauthorized?: boolean;
 }
 
 // Base wrapper: always sends cookies (credentials: 'include'). On a 401 it tries a
@@ -160,7 +167,7 @@ export const apiFetch = async (
     throw error;
   }
 
-  if (res.status === 401 && path !== REFRESH_PATH) {
+  if (res.status === 401 && path !== REFRESH_PATH && options?.refreshOnUnauthorized !== false) {
     const refreshed = await tryRefresh();
     if (refreshed) {
       res = await fetch(`${BASE}${path}`, opts);
@@ -172,9 +179,9 @@ export const apiFetch = async (
   return res;
 };
 
-export const apiGet = async <T>(path: string): Promise<T> => {
+export const apiGet = async <T>(path: string, options?: ApiFetchOptions): Promise<T> => {
   const startedAt = performance.now();
-  const res = await apiFetch(path);
+  const res = await apiFetch(path, undefined, options);
   if (!res.ok) throw await toApiError(res, path, 'GET', performance.now() - startedAt);
   return res.json() as Promise<T>;
 };

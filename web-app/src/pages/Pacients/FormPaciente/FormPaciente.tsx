@@ -11,6 +11,7 @@ import ConfirmDialog from '../../../components/ConfirmDialog';
 import DateField from '../../../components/DateField';
 import CoverageList from '../../../components/CoverageList';
 import logger, { describeError } from '../../../lib/logger';
+import WhatsAppOptIn from '../../../components/WhatsAppOptIn';
 
 interface FormProps {
     patient: Patient; 
@@ -40,6 +41,7 @@ interface FormProps {
       Ocupation:patient.Ocupation,
       HomeAddress:patient.HomeAddress,
       Note:patient.Note,
+      WhatsAppOptIn: patient.WhatsAppOptIn ?? false,
     });
 
     const handleHistory = () => {
@@ -238,6 +240,13 @@ interface FormProps {
               />
             </div>
           </div>
+
+          <WhatsAppOptIn
+            id="FormPaciente-WhatsAppOptIn"
+            checked={patientData.WhatsAppOptIn}
+            hasPhone={patientData.PhoneNumber.PhoneNumber.trim() !== ''}
+            onChange={(WhatsAppOptIn) => setFormData(prevData => ({ ...prevData, WhatsAppOptIn }))}
+          />
 
           {actionError && (
             <div className="ha-form-error" role="alert">{actionError}</div>
