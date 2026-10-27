@@ -16,6 +16,7 @@ import ErrorBoundary from "../../components/ErrorBoundary";
 import { Provider } from "react-redux";
 import  store  from "../../Redux/Store";
 import AuthBootstrap from "./AuthBootstrap";
+import IdleWatcher from "./IdleWatcher";
 
 const App = () => {
 
@@ -27,6 +28,8 @@ const App = () => {
                 nada se renderiza hasta saber si la sesión está viva. */}
             <AuthBootstrap>
               <NavBar/>
+              {/* Cierre por inactividad: solo actúa con la sesión abierta. */}
+              <IdleWatcher/>
               {/* Adentro del Router para que el fallback conserve la navegación. */}
               <ErrorBoundary>
                 <Routes>

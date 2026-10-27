@@ -1,7 +1,8 @@
 import { createSlice } from "@reduxjs/toolkit";
 import { ProfessionalForRedux } from "../../Types/ProfessionalForRedux";
 import { apiFetch } from "../../api/client";
-import { sessionAnonymous } from "./session";
+import { sessionAnonymous, SessionEndReason } from "./session";
+import { broadcastLogout, clearSessionTouch, clearTabSession } from "../../lib/session";
 import logger from "../../lib/logger";
 
 export const EmptyProfessionalState : ProfessionalForRedux ={
@@ -58,14 +59,20 @@ export const {createProfessionalRed, updateProfessionalRed, resetProfessionalRed
 
 // Thunk: revokes the refresh token server-side (clears the httpOnly cookies) and
 // then wipes the local session. Redux Toolkit ships thunk middleware by default.
-export const logout = () => async (dispatch: any) => {
+// `reason` lo usa el cierre por inactividad para que el Login explique qué pasó; las otras
+// pestañas se enteran por BroadcastChannel y se cierran sin volver a llamar al API.
+export const logout = (reason: SessionEndReason | null = null) => async (dispatch: any) => {
     try {
-        await apiFetch('/api/AuthService/Logout', { method: 'POST' });
+        // Logout es anónimo en el API, así que nunca da 401: no hay refresh ni redirect.
+        await apiFetch('/api/AuthService/Logout', { method: 'POST' }, { redirectOnAuthFailure: false });
     } catch {
         // Ignore network errors: we still clear the local session below.
     }
+    clearTabSession();
+    clearSessionTouch();
+    broadcastLogout(reason);
     dispatch(resetProfessionalRed());
-    dispatch(sessionAnonymous());
+    dispatch(sessionAnonymous(reason));
 };
 
 export const ProfessionalReducer = ProfessionalSlice.reducer;

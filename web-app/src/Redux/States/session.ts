@@ -1,4 +1,4 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 /**
  * Estado del arranque de sesión, separado del perfil del profesional.
@@ -14,12 +14,22 @@ import { createSlice } from '@reduxjs/toolkit';
  */
 export type SessionStatus = 'checking' | 'authenticated' | 'anonymous';
 
+/**
+ * Por qué terminó la sesión, para que el Login lo explique. Un logout manual o el cierre
+ * de la última pestaña no llevan motivo: no hay nada que explicar.
+ * - `idle`    → cierre por inactividad (IdleWatcher).
+ * - `expired` → el server ya no aceptó la sesión (falló el refresh).
+ */
+export type SessionEndReason = 'idle' | 'expired';
+
 export interface SessionState {
   status: SessionStatus;
+  endedReason: SessionEndReason | null;
 }
 
 const initialState: SessionState = {
   status: localStorage.getItem('Professional') ? 'checking' : 'anonymous',
+  endedReason: null,
 };
 
 export const SessionSlice = createSlice({
@@ -28,9 +38,11 @@ export const SessionSlice = createSlice({
   reducers: {
     sessionAuthenticated: (state) => {
       state.status = 'authenticated';
+      state.endedReason = null;
     },
-    sessionAnonymous: (state) => {
+    sessionAnonymous: (state, action: PayloadAction<SessionEndReason | null | undefined>) => {
       state.status = 'anonymous';
+      state.endedReason = action.payload ?? null;
     },
   },
 });

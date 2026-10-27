@@ -36,7 +36,7 @@ Decisiones ya tomadas con el usuario (no volver a preguntar):
 |---|---|---|
 | 1 | Backend: refresh tokens hasheados + migración `HashRefreshTokens` | ✅ hecho, compila |
 | 2 | Backend: inactividad, KeepAlive, Logout anónimo, ChangePassword, seeder, política de contraseña | ✅ hecho, compila |
-| 3 | Front: sesión por pestaña + IdleWatcher | ⏳ pendiente |
+| 3 | Front: sesión por pestaña + IdleWatcher (`lib/session.ts`, `pages/App/IdleWatcher.tsx`, `AuthBootstrap`, slice `Session.endedReason`, Login) | ✅ hecho, `tsc` + `vite build` OK; falta E2E en browser |
 | 4 | Front: ChangePasswordForm, NavBar, Register (`weak_password`) | ⏳ pendiente |
 | 5 | Docs: `CLAUDE.md` + `docs/deploy.md` (runbook de rotación) | ⏳ pendiente |
 
@@ -44,7 +44,13 @@ Decisiones ya tomadas con el usuario (no volver a preguntar):
 
 - Backend: `dotnet build` OK (SDK 10.0.113 del archivo de Ubuntu; **`global.json` pide 10.0.301**, así
   que se compiló en una copia fuera del repo). Migración generada con `dotnet-ef` 10.0.0.
-- Pendiente: probar la migración y los endpoints contra un Postgres local; build/typecheck del front.
+- Backend probado contra Postgres 16 local (apt `postgresql`): la migración hashea en el mismo formato
+  que C# y revoca todo; con `Session__IdleTimeoutMinutes=1` se verificó Login/Me/KeepAlive/Refresh,
+  vencimiento por inactividad (401 + log Information), ChangePassword (400 `incorrect_password`/
+  `weak_password`, revoca otras sesiones), Logout sin access token, cookies sin `Expires`, y el
+  fail-fast de Production del código de consultorio (corta solo si el inicial no tiene código).
+- Front: `npx tsc --noEmit` y `vite build` OK.
+- Pendiente: E2E del front en browser (Playwright) contra la API local.
 
 ## Cómo compilar en un container sin el SDK 10.0.3xx
 
