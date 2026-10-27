@@ -91,24 +91,30 @@ error en vez de generar un bundle con `undefined` como base URL.
 | `Jwt__Issuer` | `HealthArchive` | opcional, hay default en `appsettings.json` |
 | `Jwt__Audience` | `HealthArchiveClient` | opcional |
 | `Cors__AllowedOrigins` | `https://<app>.vercel.app` | CSV; **sin barra final** |
-| `Registration__ConsultoryCode` | código de alta | **obligatoria**: sin ella la app no arranca. Ver abajo |
+| `Registration__ConsultoryCode` | código de alta | **solo para el primer deploy**: siembra el código del consultorio inicial. Una vez sembrado, borrarla. Ver abajo |
+| `Session__IdleTimeoutMinutes` | `120` | opcional (default 120). Minutos sin actividad antes de cerrar la sesión; tiene que coincidir con `VITE_SESSION_IDLE_MINUTES` del front |
 | `Cookies__Secure` | `true` | |
 | `Cookies__SameSite` | `None` | requerido para cross-domain |
 | `RunMigrationsOnStartup` | `true` | ver abajo |
 
-> ⚠️ **`Registration__ConsultoryCode` hay que setearla ANTES de deployar** la versión que
-> la introduce. `Program.cs` valida en Production que no esté vacía y tira excepción si
-> falta, igual que con `Jwt__Key`: si deployás primero, la API no levanta.
+> ⚠️ **`Registration__ConsultoryCode` solo hace falta mientras el consultorio inicial no
+> tenga código** (primer deploy sobre una base nueva). En ese caso `Program.cs` tira
+> excepción en Production si falta, igual que con `Jwt__Key`. Una vez sembrado, el código
+> vive hasheado en la base y **la variable conviene borrarla**: cambiarla no rota nada (el
+> seeder no pisa un código existente) y dejarla es un secreto más guardado en Railway. El
+> código se rota con `UpdateConsultorio` (ver sección 7).
 >
-> Es el código que pide `/Register` para dar de alta un doctor. Antes estaba hardcodeado
-> como `"1234"` en el código fuente, o sea público en el repo. **Es el único perímetro del
-> sistema**: cualquier doctor registrado ve todas las historias clínicas, así que elegí un
-> valor que no sea adivinable y no lo compartas de más.
+> Es el código que pide `/Register` para dar de alta un doctor. **Es el único perímetro del
+> sistema**: cualquier doctor registrado ve todas las historias clínicas de su consultorio,
+> así que elegí un valor que no sea adivinable y no lo compartas de más.
 
-Generar la clave JWT (PowerShell):
+Generar la clave JWT:
 
 ```bash
-[Convert]::ToBase64String((1..48 | ForEach-Object { Get-Random -Max 256 }))
+# bash / Git Bash
+openssl rand -base64 48
+# PowerShell (Get-Random no es criptográfico: preferir la de arriba)
+[Convert]::ToBase64String([System.Security.Cryptography.RandomNumberGenerator]::GetBytes(48))
 ```
 
 > `PORT` lo inyecta Railway solo; `Program.cs` lo lee y bindea Kestrel a `0.0.0.0:$PORT`.
@@ -149,8 +155,8 @@ como código el valor de `Registration__ConsultoryCode`. Para sumar otros, con u
 curl -X POST https://<tu-api>.up.railway.app/api/Consultorio/CreateConsultorio -H "Content-Type: application/json" -d '{"name":"Consultorio Norte","code":"UN-CODIGO-FUERTE"}'
 ```
 
-(La request necesita la cookie de sesión de un Admin.) A partir de ahí el consultorio nuevo
-aparece en el desplegable de `/Register` y quien tenga su código puede darse de alta ahí.
+(La request necesita la cookie de sesión de un Admin.) A partir de ahí quien tenga su código
+puede darse de alta en `/Register`: el código solo alcanza para identificar el consultorio.
 Los códigos se guardan **hasheados**: si se pierde uno, no se puede recuperar, se rota con
 `PATCH /api/Consultorio/UpdateConsultorio/{id}`.
 
@@ -166,7 +172,8 @@ Los códigos se guardan **hasheados**: si se pierde uno, no se puede recuperar, 
    rewrite SPA) lo toma de [`web-app/vercel.json`](../web-app/vercel.json).
 3. **Environment Variables** → `VITE_API_URL = https://<api>.up.railway.app`
    (sin barra final). Vite embebe el valor en build time: si la cambiás,
-   hay que **redeployar**, no alcanza con reiniciar.
+   hay que **redeployar**, no alcanza con reiniciar. Opcional:
+   `VITE_SESSION_IDLE_MINUTES` (default 120), igual a `Session__IdleTimeoutMinutes` del API.
 
 El `rewrite` de `vercel.json` manda todo a `index.html`; sin eso, recargar en
 `/Pacientes` o cualquier ruta de react-router devuelve 404.
@@ -195,7 +202,10 @@ cada push: o los agregás, o simplemente no van a poder llamar al API).
 - [ ] La tabla `RefreshTokens` y la columna `Doctors.Role` existen en el Postgres.
 - [ ] Registro desde el front → el doctor queda con `Password` hasheada.
 - [ ] Login → DevTools ▸ Application ▸ Cookies: `access_token` y `refresh_token`
-      con `HttpOnly` ✓ `Secure` ✓ `SameSite=None`, en el dominio de Railway.
+      con `HttpOnly` ✓ `Secure` ✓ `SameSite=None`, en el dominio de Railway, y
+      **Expires = Session** (cookies de sesión).
+- [ ] En la tabla `RefreshTokens` la columna es `TokenHash` y no hay ningún token en claro.
+- [ ] Cerrar todas las pestañas de la app y volver a abrirla → pide login.
 - [ ] Navegar a `/Pacientes` → 200, y **recargar la página** ahí → sigue funcionando
       (verifica el rewrite de Vercel).
 - [ ] Borrar cookies → los endpoints protegidos dan 401 y el front redirige a Login.
@@ -256,3 +266,85 @@ Si falta algo, el primer step corta con un mensaje que dice exactamente qué.
   exactamente lo que manda la integración de GitHub. Si se corriera `railway up` desde
   `api/HealthArchiveAPI`, el build falla con
   `failed to read Dockerfile at 'api/HealthArchiveAPI/Dockerfile'`.
+
+---
+
+## 7. Rotación de secretos (incidente de Railway, oct-2026)
+
+El 21-oct-2026 Railway informó que pudieron leerse las variables de entorno de sus
+clientes, en algunos casos descifradas. En este proyecto eso incluye la conexión al
+Postgres (que además tenía la **conexión pública** activa, por la herramienta de
+migración), `Jwt__Key` y `Registration__ConsultoryCode`. Hay que tratarlas a todas como
+filtradas. El procedimiento sirve igual para cualquier rotación futura.
+
+En orden:
+
+1. **Auditar antes de tocar nada.** El deploy de la migración `HashRefreshTokens` revoca
+   todas las sesiones (conserva las filas, pero se pierde cuáles estaban activas). Con
+   cualquier cliente de Postgres:
+
+   ```sql
+   -- ¿Doctores que nadie reconoce, o Admins de más?
+   SELECT "Email", "Name", "LastName", "Role", "ConsultorioId" FROM "Doctors" ORDER BY "Role", "Email";
+
+   -- Logins y refresh desde el incidente (cada login y cada rotación crea una fila).
+   -- Doctors no tiene fecha de alta: un doctor desconocido se data por su primera sesión.
+   SELECT d."Email", rt."CreatedAt", rt."RevokedAt"
+   FROM "RefreshTokens" rt JOIN "Doctors" d ON d."Id" = rt."DoctorId"
+   WHERE rt."CreatedAt" >= '2026-10-20'
+   ORDER BY rt."CreatedAt";
+
+   -- ¿Consultorios nuevos?
+   SELECT "Id", "Name" FROM "Consultorios";
+   ```
+
+   En los logs de Railway del servicio de la API (filtrables por campo, ver
+   Observabilidad en `CLAUDE.md`): `registrado en el consultorio` (altas), `Login correcto`
+   desde IPs que no son las del consultorio, y requests a `CreateConsultorio` /
+   `UpdateConsultorio`. Railway guarda los logs por tiempo limitado: revisarlos cuanto antes.
+
+2. **Postgres.** En el servicio de Postgres, regenerar la contraseña (pestaña
+   *Database ▸ Credentials*). Después, en *Settings ▸ Networking*, **eliminar el TCP Proxy
+   público** si ya no se usa `tools/migracion-postgres`: la API se conecta por la red
+   interna y no lo necesita. Redeployar la API: `DATABASE_URL` es una referencia
+   (`${{Postgres.DATABASE_URL}}`) y toma el valor nuevo, pero recién en el próximo deploy.
+
+3. **`Jwt__Key`.** Generar una nueva (`openssl rand -base64 48`) y reemplazarla en Railway.
+   Invalida todos los access tokens: con la clave vieja se podían firmar tokens de
+   cualquier doctor, incluso Admin.
+
+4. **`RAILWAY_TOKEN` de GitHub Actions.** En Railway, borrar el Project Token actual y crear
+   uno nuevo; actualizar el secret `RAILWAY_TOKEN` en GitHub (sección 6).
+
+5. **Deployar** esta versión con `RunMigrationsOnStartup=true`. La migración
+   `HashRefreshTokens` reemplaza los refresh tokens en claro por su hash y los revoca:
+   **todos los doctores tienen que volver a loguearse**.
+
+6. **Rotar los códigos de consultorio.** El código del consultorio inicial estaba en claro en
+   `Registration__ConsultoryCode`, y los de los demás consultorios están hasheados en la
+   base (que pudo leerse). Logueado en el front como Admin, desde la consola del navegador:
+
+   ```js
+   const API = 'https://<tu-api>.up.railway.app';
+   // Lista de consultorios (id y nombre)
+   await (await fetch(`${API}/api/Consultorio/GetConsultorios`, { credentials: 'include' })).json();
+   // Rotar uno: mandar el nombre actual (no lo cambia) y el código nuevo
+   await fetch(`${API}/api/Consultorio/UpdateConsultorio/<id>`, {
+     method: 'PATCH', credentials: 'include',
+     headers: { 'Content-Type': 'application/json' },
+     body: JSON.stringify({ name: '<nombre actual>', code: '<CÓDIGO-NUEVO>' }),
+   }).then((r) => r.status); // 200
+   ```
+
+   Recién después **borrar `Registration__ConsultoryCode` de Railway**: ya no la necesita
+   nada y cambiarla nunca rotó el código.
+
+7. **Contraseñas.** Los hashes de contraseña (PBKDF2) pudieron copiarse y las débiles se
+   pueden romper offline. Pedirle a cada doctor que la cambie desde su perfil (clic en su
+   nombre en el navbar ▸ *Cambiar contraseña*): eso además cierra sus otras sesiones.
+
+8. **Vercel** no guarda secretos (`VITE_API_URL` es pública por definición): no hay nada
+   que rotar ahí.
+
+9. Las historias clínicas son datos sensibles (Ley 25.326). Si la auditoría muestra
+   accesos que no son propios, evaluar las obligaciones de notificación.

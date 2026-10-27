@@ -209,11 +209,10 @@ if (app.Environment.IsProduction())
             "Cors:AllowedOrigins está vacío: el front no va a poder llamar al API. Setear Cors__AllowedOrigins.");
     }
 
-    if (string.IsNullOrWhiteSpace(builder.Configuration["Registration:ConsultoryCode"]))
-    {
-        throw new InvalidOperationException(
-            "Registration:ConsultoryCode está vacío: nadie podría registrarse. Setear Registration__ConsultoryCode.");
-    }
+    // Registration:ConsultoryCode ya no se exige acá: solo hace falta mientras el
+    // consultorio inicial no tenga código, y eso lo valida SeedConsultorioInicial. Así,
+    // una vez sembrado, la variable se puede borrar del host y deja de ser un secreto
+    // más guardado en Railway (el código real se rota con UpdateConsultorio).
 }
 
 // Aplicar migraciones pendientes al arrancar. Apagado por defecto: se prende con
@@ -227,7 +226,8 @@ if (app.Configuration.GetValue<bool>("RunMigrationsOnStartup"))
 // El código del consultorio inicial no se puede sembrar desde la migración porque
 // hay que hashearlo, y eso es código de la app. Lo completa acá.
 // Idempotente: solo actúa si el hash está vacío, así que no pisa un código que se
-// haya rotado después desde la API.
+// haya rotado después desde la API. Ojo: por lo mismo, cambiar la env var NO rota el
+// código; para eso está PATCH /api/Consultorio/UpdateConsultorio/{id}.
 SeedConsultorioInicial(app);
 
 app.UseForwardedHeaders();
@@ -295,7 +295,13 @@ static void SeedConsultorioInicial(WebApplication app)
     var code = app.Configuration["Registration:ConsultoryCode"];
     if (string.IsNullOrWhiteSpace(code))
     {
-        // En Production no se llega acá: el fail-fast de arriba ya cortó.
+        // Fail-fast en prod, igual que Jwt:Key: sin código nadie podría registrarse.
+        if (app.Environment.IsProduction())
+        {
+            throw new InvalidOperationException(
+                "El consultorio inicial no tiene código y Registration:ConsultoryCode está vacío: nadie podría registrarse. Setear Registration__ConsultoryCode.");
+        }
+
         app.Logger.LogWarning(
             "El consultorio inicial quedó sin código: Registration:ConsultoryCode está vacío. Nadie va a poder registrarse.");
         return;

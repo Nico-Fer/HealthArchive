@@ -7,6 +7,7 @@ import { useDispatch } from "react-redux";
 import { createProfessionalRed } from "../../../../Redux/States/professional";
 import { sessionAuthenticated } from "../../../../Redux/States/session";
 import { apiFetch } from '../../../../api/client';
+import { touchSession } from '../../../../lib/session';
 import logger, { describeError } from '../../../../lib/logger';
 
 interface FormData {
@@ -49,6 +50,9 @@ const Form = () => {
   
         const userData = await response.json();
 
+        // El server acaba de abrir la ventana de inactividad: el reloj del front arranca
+        // ahora, y no desde un toque viejo que haya quedado de otra sesión.
+        touchSession();
         dispatch(createProfessionalRed(userData));
         dispatch(sessionAuthenticated());
 

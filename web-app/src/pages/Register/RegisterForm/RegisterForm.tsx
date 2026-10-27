@@ -8,6 +8,8 @@ import { createProfessionalRed } from "../../../Redux/States/professional";
 import { sessionAuthenticated } from "../../../Redux/States/session";
 import { ApiError, apiFetch } from '../../../api/client';
 import logger, { describeError } from '../../../lib/logger';
+import { touchSession } from '../../../lib/session';
+import { PASSWORD_MIN_LENGTH } from '../../../Functions/passwordPolicy';
 
 interface FormData {
   Name: string;
@@ -24,6 +26,7 @@ const ERROR_BY_SLUG: Record<string, string> = {
   doctor_exists: 'Ese email ya está registrado.',
   incorrect_code: 'El código del consultorio es incorrecto.',
   ambiguous_code: 'Ese código corresponde a más de un consultorio. Contactá al administrador.',
+  weak_password: `La contraseña tiene que tener al menos ${PASSWORD_MIN_LENGTH} caracteres.`,
 };
 
 const RegisterForm = () => {
@@ -77,6 +80,7 @@ const RegisterForm = () => {
       }
 
       const userData : ProfessionalForRedux = await loginRes.json();
+      touchSession();
       dispatch(createProfessionalRed(userData));
       dispatch(sessionAuthenticated());
 
@@ -90,6 +94,11 @@ const RegisterForm = () => {
   const validateForm= () => {
     if(formData.ConsultoryCode === '' || formData.Email=== '' || formData.Name=== '' || formData.LastName=== '' || formData.Password=== '' || formData.Tuition=== ''){
       setErrorMessage('Todos los campos son obligatorios');
+      setError(true);
+      return false;
+    }
+    if(formData.Password.length < PASSWORD_MIN_LENGTH){
+      setErrorMessage(ERROR_BY_SLUG.weak_password);
       setError(true);
       return false;
     }
