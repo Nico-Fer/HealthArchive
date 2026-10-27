@@ -28,9 +28,25 @@ Decisiones tomadas con el usuario (no volver a preguntar):
 | 2 | Front: pestaña Turnos + confirmar asistencia → HCE (+ opt-in de WhatsApp en los formularios de paciente) | ✅ `tsc` + E2E en Chromium |
 | 3 | Front: campanita (resumen del día) + avisos 10 min antes | ✅ E2E: toast, badge, resumen, sin duplicar entre pestañas, 0 llamadas a /Refresh |
 | 4 | Front: opt-in en el perfil del médico (`FormProfesional`, solo en el perfil propio) | ✅ E2E |
-| 5 | Docs: `CLAUDE.md` + `docs/deploy.md` §8 (setup de Meta, plantillas, costos) | ⏳ pendiente |
+| 5 | Docs: `CLAUDE.md` + `docs/deploy.md` §8 (setup de Meta, plantillas, costos) | ✅ |
 
-El plan completo (con el diseño del front) está más abajo, en **Plan del front**.
+**Código terminado.** Falta lo que no se puede hacer desde acá:
+1. **Meta:** verificación del negocio, número, medio de pago, las 2 plantillas Utility en
+   `es_AR` y el token permanente. Paso a paso en `docs/deploy.md` §8.
+2. **Railway:** deployar con `RunMigrationsOnStartup=true` (migración `Appointments`) y,
+   cuando Meta esté listo, `WhatsApp__Enabled`, `WhatsApp__PhoneNumberId` y
+   `WhatsApp__AccessToken`.
+3. **Probar contra Meta real** con el número de prueba. Acá solo se probó contra un mock.
+   Tampoco se probó en Safari/Firefox ni contra Railway/Vercel.
+4. **Borrar este `handoff.md` antes de mergear.**
+
+Ideas para una segunda etapa (no pedidas):
+- botones Confirmo/Cancelo en el WhatsApp, que necesitan un webhook con verificación de la
+  firma de Meta;
+- vista semanal;
+- aviso al paciente cuando se cancela o reprograma su turno.
+
+El diseño del front tal como se planificó está más abajo, en **Plan del front**.
 
 ## Backend — lo que hay
 

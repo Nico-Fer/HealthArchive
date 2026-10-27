@@ -96,6 +96,10 @@ error en vez de generar un bundle con `undefined` como base URL.
 | `Cookies__Secure` | `true` | |
 | `Cookies__SameSite` | `None` | requerido para cross-domain |
 | `RunMigrationsOnStartup` | `true` | ver abajo |
+| `WhatsApp__Enabled` | `true` | opcional (default `false`). Recordatorios de turnos, ver sección 8 |
+| `WhatsApp__PhoneNumberId` | id del número en Meta | requerido si `WhatsApp__Enabled=true` |
+| `WhatsApp__AccessToken` | token **permanente** de System User | requerido si `WhatsApp__Enabled=true`. Secreto |
+| `Reminders__TimeZone` | `America/Argentina/Buenos_Aires` | opcional, es el default |
 
 > ⚠️ **`Registration__ConsultoryCode` solo hace falta mientras el consultorio inicial no
 > tenga código** (primer deploy sobre una base nueva). En ese caso `Program.cs` tira
@@ -348,3 +352,89 @@ En orden:
 
 9. Las historias clínicas son datos sensibles (Ley 25.326). Si la auditoría muestra
    accesos que no son propios, evaluar las obligaciones de notificación.
+
+---
+
+## 8. WhatsApp: recordatorios de turnos
+
+La API manda dos plantillas por la **WhatsApp Cloud API de Meta**, directa, sin intermediarios:
+- al paciente, un recordatorio en las 24 h previas al turno;
+- al médico, la agenda del día a las 07:30.
+
+Solo se envían a quien dio el **opt-in**: el checkbox del paciente y el del perfil del médico.
+Sin configurar nada, `WhatsApp__Enabled` queda en `false` y la turnera funciona igual, sin mensajes.
+
+### Costo
+
+- **Meta no cobra plataforma ni hosting.** Se paga por cada mensaje de plantilla entregado,
+  según el país de quien lo recibe y la categoría. Las dos plantillas son **Utility**.
+- **Argentina, Utility:** ≈ USD 0,026–0,03 por mensaje (Meta factura en ARS desde
+  jul-2025). Desde el 1-oct-2026 las Utility se cobran también dentro de la ventana de 24 h.
+  Los mensajes entrantes son gratis.
+- **Ejemplo:** 20 turnos/día × 22 días ≈ 440 recordatorios + 22 agendas ≈ **USD 12/mes**.
+- **Ojo con el texto de la plantilla:** si tiene contenido promocional, Meta la reclasifica
+  como **Marketing** (≈ USD 0,062).
+- Railway no suma nada: el envío corre dentro del container de la API.
+- Confirmar las tarifas vigentes en la rate card oficial de Meta (*Pricing on the WhatsApp
+  Business Platform*), porque cambian.
+
+### Setup en Meta (una sola vez)
+
+1. **Portfolio de negocio** en business.facebook.com, con la **verificación del negocio**
+   (es gratis).
+2. En developers.facebook.com: **Create App ▸ Business**, y agregarle el producto
+   **WhatsApp**. Meta da un **número de prueba** que puede mandar a hasta 5 destinatarios
+   verificados: sirve para probar antes de tener el número real.
+3. **Número propio:** agregarlo en *WhatsApp Manager ▸ Phone numbers* y verificarlo por SMS
+   o llamada. Tiene que ser una línea que no esté usando la app de WhatsApp común. La
+   *coexistence* con la app WhatsApp Business existe, pero conviene una línea dedicada.
+   Anotar el **Phone number ID**: es `WhatsApp__PhoneNumberId`.
+4. **Medio de pago** en *WhatsApp Manager ▸ Payment settings*. Sin él no salen las
+   plantillas pagas.
+5. **Plantillas** en *WhatsApp Manager ▸ Message templates*. Categoría **Utility**, idioma
+   **Spanish (ARG)** (`es_AR`). Los nombres tienen que coincidir con
+   `WhatsApp__PatientReminderTemplate` y `WhatsApp__DoctorAgendaTemplate`.
+
+   **`recordatorio_turno`**. Variables: nombre de pila, profesional, día, hora y consultorio.
+   ```
+   Hola {{1}}, te recordamos tu turno con {{2}} el {{3}} a las {{4}} en {{5}}. Si no podés asistir, avisanos para liberar el horario.
+   ```
+   Ejemplos para la revisión de Meta: `Juan`, `Ana Gómez`, `martes 28/10`, `10:30`,
+   `Consultorio principal`.
+
+   **`agenda_diaria`**. Variables: nombre de pila del médico, cantidad de turnos y hora del
+   primero.
+   ```
+   Hola {{1}}, hoy tenés {{2}} turnos pendientes en la agenda. El primero es a las {{3}}.
+   ```
+
+   Nunca agregar el motivo de la consulta ni datos clínicos: Meta es un tercero.
+6. **Token permanente:**
+   - *Business settings ▸ Users ▸ System users*, crear uno (Admin).
+   - Asignarle la app y la cuenta de WhatsApp.
+   - **Generate token** con el permiso `whatsapp_business_messaging`, sin vencimiento.
+
+   Ese es `WhatsApp__AccessToken`. **El token temporal del panel de la app vence en 24 h**:
+   no usarlo en Railway.
+
+### Activarlo en Railway
+
+Cargar `WhatsApp__Enabled=true`, `WhatsApp__PhoneNumberId` y `WhatsApp__AccessToken`, y
+redeployar. Si falta alguna de las dos credenciales con `Enabled=true`, la API no arranca a
+propósito, igual que con `Jwt__Key`.
+
+### Cómo se comporta
+
+- El worker corre cada 5 min (`Reminders__PollMinutes`). No manda nada entre las 21 y las 08
+  (`Reminders__QuietHoursStart` / `Reminders__QuietHoursEnd`). Las horas son de
+  `Reminders__TimeZone`, no del server (Railway corre en UTC).
+- Cada envío queda en la tabla `WhatsAppMessages`: nunca se repite uno exitoso. Un error
+  transitorio se reintenta hasta 3 veces. Uno permanente (número inválido, plantilla no
+  aprobada) no se reintenta y queda logueado como `Warning`.
+- **Con la API bajada (sección 6) no sale nada.** Al levantarla, la primera pasada manda los
+  recordatorios de los turnos que todavía estén dentro de las 24 h.
+- La agenda muestra el estado de cada recordatorio con el ícono de WhatsApp: enviado,
+  programado, sin celular, sin consentimiento, celular inválido o falló.
+- Para probar en local sin Meta: `WhatsApp__BaseUrl=http://127.0.0.1:<puerto>` apuntando a
+  un mock HTTP que responda `{"messages":[{"id":"x"}]}`.
+
