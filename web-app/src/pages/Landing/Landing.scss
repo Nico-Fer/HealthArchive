@@ -1,0 +1,809 @@
+@use '../../styles/tokens' as *;
+
+// Landing pública. Misma paleta que la app (_tokens.scss), con más profundidad: gradientes
+// azules, capturas en perspectiva y sombras teñidas. Todo cuelga de .landing porque el
+// chunk queda cargado si el usuario sigue a /Login y no tiene que pisar estilos de la app.
+// Radios: tarjetas y capturas $ha-radius-lg, botones $ha-radius.
+
+.landing {
+  // Tokens propios, con variante oscura automática (la app no la tiene; la landing sí,
+  // porque es lo primero que ve alguien de afuera).
+  --lp-bg: #{$ha-bg};
+  --lp-surface: #{$ha-surface};
+  --lp-surface-2: #{$ha-primary-soft};
+  --lp-border: #{$ha-border};
+  --lp-text: #{$ha-text};
+  --lp-text-2: #{$ha-text-secondary};
+  --lp-primary: #{$ha-primary};
+  --lp-primary-strong: #{$ha-primary-dark};
+  --lp-on-primary: #fff;
+  --lp-glow-1: rgba(0, 86, 179, 0.16);
+  --lp-glow-2: rgba(0, 86, 179, 0.08);
+  --lp-shadow: 0 1px 2px rgba(0, 63, 135, 0.06), 0 12px 32px -8px rgba(0, 63, 135, 0.18);
+  --lp-shadow-lg: 0 2px 6px rgba(0, 63, 135, 0.08), 0 40px 80px -24px rgba(0, 63, 135, 0.35);
+  --lp-header-bg: rgba(248, 249, 250, 0.82);
+  --lp-ease: cubic-bezier(0.16, 1, 0.3, 1);
+
+  @media (prefers-color-scheme: dark) {
+    --lp-bg: #0b1320;
+    --lp-surface: #111c2e;
+    --lp-surface-2: #13253f;
+    --lp-border: #1f2e45;
+    --lp-text: #e8eef7;
+    --lp-text-2: #9fb0c6;
+    --lp-primary: #6ea8fe;
+    --lp-primary-strong: #9ec5fe;
+    --lp-on-primary: #0b1320;
+    --lp-glow-1: rgba(61, 139, 253, 0.22);
+    --lp-glow-2: rgba(61, 139, 253, 0.1);
+    --lp-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 32px -8px rgba(0, 0, 0, 0.5);
+    --lp-shadow-lg: 0 2px 6px rgba(0, 0, 0, 0.3), 0 40px 80px -24px rgba(0, 0, 0, 0.7);
+    --lp-header-bg: rgba(11, 19, 32, 0.8);
+  }
+
+  min-height: 100dvh;
+  background: var(--lp-bg);
+  color: var(--lp-text);
+  font-family: $ha-font;
+  overflow-x: clip;
+
+  a {
+    text-decoration: none;
+  }
+
+  a:hover {
+    text-decoration: none;
+  }
+
+  h1,
+  h2,
+  h3 {
+    color: var(--lp-text);
+  }
+
+  p {
+    margin: 0;
+  }
+
+  // ---------- Base ----------
+
+  .lp-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 16px;
+
+    @media (min-width: 768px) {
+      padding: 0 32px;
+    }
+  }
+
+  .lp-section {
+    padding: 72px 0;
+
+    @media (min-width: 1024px) {
+      padding: 112px 0;
+    }
+  }
+
+  .lp-section-title {
+    font-size: clamp(1.75rem, 1.2rem + 2vw, 2.5rem);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+    max-width: 22ch;
+    margin: 0 0 40px;
+  }
+
+  .lp-eyebrow {
+    font-size: $ha-fs-label;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--lp-primary);
+    margin-bottom: 20px;
+  }
+
+  // ---------- Botones ----------
+
+  .lp-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 48px;
+    padding: 0 22px;
+    border-radius: $ha-radius;
+    font-weight: 600;
+    font-size: $ha-fs-body;
+    white-space: nowrap;
+    transition: transform 0.2s var(--lp-ease), background-color 0.2s, box-shadow 0.2s, color 0.2s;
+
+    &:active {
+      transform: translateY(1px) scale(0.98);
+    }
+
+    svg {
+      transition: transform 0.25s var(--lp-ease);
+    }
+
+    &:hover svg {
+      transform: translateX(3px);
+    }
+  }
+
+  .lp-btn-primary {
+    background: var(--lp-primary);
+    color: var(--lp-on-primary);
+    box-shadow: 0 8px 20px -8px var(--lp-glow-1), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+
+    &:hover {
+      background: var(--lp-primary-strong);
+      color: var(--lp-on-primary);
+    }
+  }
+
+  .lp-btn-soft {
+    background: var(--lp-surface-2);
+    color: var(--lp-primary);
+
+    &:hover {
+      color: var(--lp-primary-strong);
+    }
+  }
+
+  .lp-btn-ghost {
+    min-height: 40px;
+    padding: 0 16px;
+    color: var(--lp-primary);
+    border: 1px solid var(--lp-border);
+    background: var(--lp-surface);
+
+    &:hover {
+      border-color: var(--lp-primary);
+      color: var(--lp-primary);
+    }
+  }
+
+  // ---------- Header ----------
+
+  .lp-header {
+    position: sticky;
+    top: 0;
+    z-index: 1020; // mismo nivel que .sticky-top de Bootstrap
+    background: var(--lp-header-bg);
+    backdrop-filter: saturate(180%) blur(12px);
+    -webkit-backdrop-filter: saturate(180%) blur(12px);
+    border-bottom: 1px solid var(--lp-border);
+
+    @media (prefers-reduced-transparency: reduce) {
+      background: var(--lp-bg);
+      backdrop-filter: none;
+    }
+  }
+
+  .lp-header-inner {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    height: 64px;
+  }
+
+  .lp-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    font-size: 1.125rem;
+    letter-spacing: -0.02em;
+    color: var(--lp-text);
+
+    &:hover {
+      color: var(--lp-text);
+    }
+  }
+
+  // Mismo isotipo que el Login (.ha-auth-logo): la cruz blanca sobre el azul primario.
+  .lp-brand-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: $ha-radius;
+    background: $ha-primary;
+    color: #fff;
+    font-size: 1rem;
+  }
+
+  .lp-header-nav {
+    display: none;
+    gap: 28px;
+    margin-left: auto;
+
+    a {
+      color: var(--lp-text-2);
+      font-weight: 500;
+      transition: color 0.2s;
+
+      &:hover {
+        color: var(--lp-text);
+      }
+    }
+
+    @media (min-width: 768px) {
+      display: flex;
+    }
+
+    + .lp-btn {
+      margin-left: auto;
+
+      @media (min-width: 768px) {
+        margin-left: 8px;
+      }
+    }
+  }
+
+  // ---------- Hero ----------
+
+  .lp-hero {
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-height: calc(100dvh - 64px);
+    padding: 48px 0 72px;
+    isolation: isolate;
+
+    @media (min-width: 1024px) {
+      padding: 64px 0 96px;
+    }
+  }
+
+  .lp-hero-glow {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(60% 55% at 78% 40%, var(--lp-glow-1), transparent 70%),
+      radial-gradient(30% 35% at 8% 70%, var(--lp-glow-2), transparent 70%);
+    // Se desvanece antes del borde inferior para no dibujar una línea contra la sección siguiente.
+    mask-image: linear-gradient(180deg, #000 65%, transparent);
+    -webkit-mask-image: linear-gradient(180deg, #000 65%, transparent);
+  }
+
+  .lp-hero-grid {
+    display: grid;
+    gap: 48px;
+    align-items: center;
+    width: 100%;
+
+    @media (min-width: 1024px) {
+      grid-template-columns: 1.1fr 1fr;
+      gap: 56px;
+    }
+  }
+
+  .lp-hero-title {
+    font-size: clamp(2.25rem, 1.5rem + 2.6vw, 3.25rem);
+    font-weight: 700;
+    letter-spacing: -0.035em;
+    line-height: 1.08;
+    margin: 0 0 24px;
+    max-width: 20ch;
+
+    em {
+      font-style: normal;
+      color: var(--lp-primary);
+    }
+  }
+
+  .lp-hero-sub {
+    font-size: $ha-fs-body-lg;
+    line-height: 1.6;
+    color: var(--lp-text-2);
+    max-width: 44ch;
+    margin-bottom: 36px;
+  }
+
+  .lp-hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .lp-hero-visual {
+    perspective: 1600px;
+
+    .lp-shot {
+      box-shadow: var(--lp-shadow-lg);
+
+      @media (min-width: 1024px) {
+        transform: rotateY(-9deg) rotateX(3deg);
+        transform-origin: left center;
+        transition: transform 0.8s var(--lp-ease);
+      }
+    }
+
+    @media (min-width: 1024px) {
+      &:hover .lp-shot {
+        transform: rotateY(-3deg) rotateX(1deg);
+      }
+    }
+  }
+
+  // Entrada escalonada del hero
+  @media (prefers-reduced-motion: no-preference) {
+    .lp-enter {
+      animation: lp-enter 0.9s var(--lp-ease) both;
+      animation-delay: calc(var(--i, 0) * 90ms + 80ms);
+    }
+
+    [data-reveal] {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.8s var(--lp-ease), transform 0.8s var(--lp-ease);
+
+      &.is-visible {
+        opacity: 1;
+        transform: none;
+      }
+    }
+
+    .lp-bento [data-reveal]:nth-child(2) { transition-delay: 60ms; }
+    .lp-bento [data-reveal]:nth-child(3) { transition-delay: 120ms; }
+    .lp-bento [data-reveal]:nth-child(4) { transition-delay: 60ms; }
+    .lp-bento [data-reveal]:nth-child(5) { transition-delay: 120ms; }
+  }
+
+  // ---------- Capturas ----------
+
+  .lp-shot {
+    margin: 0;
+    border-radius: $ha-radius-lg;
+    overflow: hidden;
+    background: var(--lp-surface);
+    border: 1px solid var(--lp-border);
+    box-shadow: var(--lp-shadow);
+
+    img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+  }
+
+  .lp-shot-bar {
+    display: flex;
+    gap: 6px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--lp-border);
+    background: var(--lp-bg);
+
+    span {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--lp-border);
+    }
+  }
+
+  .lp-shot-placeholder {
+    display: flex;
+    align-items: flex-end;
+    aspect-ratio: 16 / 10;
+    padding: 16px;
+    background:
+      repeating-linear-gradient(-45deg, transparent 0 14px, var(--lp-glow-2) 14px 15px),
+      linear-gradient(160deg, var(--lp-surface-2), var(--lp-surface));
+
+    span {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.8rem;
+      color: var(--lp-text-2);
+    }
+  }
+
+  // ---------- Bento de funciones ----------
+
+  .lp-bento {
+    display: grid;
+    gap: 16px;
+
+    @media (min-width: 768px) {
+      grid-template-columns: repeat(2, 1fr);
+
+      .lp-cell-hce {
+        grid-column: span 2;
+      }
+    }
+
+    @media (min-width: 1024px) {
+      grid-template-columns: repeat(6, 1fr);
+
+      .lp-cell-hce {
+        grid-column: span 4;
+        grid-row: span 2;
+      }
+
+      .lp-cell-tint,
+      .lp-cell-dots {
+        grid-column: span 2;
+      }
+
+      .lp-cell:nth-child(4),
+      .lp-cell-gradient {
+        grid-column: span 3;
+      }
+    }
+  }
+
+  .lp-cell {
+    position: relative;
+    overflow: hidden;
+    padding: 32px;
+    border-radius: $ha-radius-lg;
+    background: var(--lp-surface);
+    border: 1px solid var(--lp-border);
+    box-shadow: var(--lp-shadow);
+    transition: transform 0.4s var(--lp-ease), box-shadow 0.4s var(--lp-ease);
+
+    &:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--lp-shadow-lg);
+    }
+
+    h3 {
+      font-size: $ha-fs-headline-sm;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      margin: 0 0 8px;
+    }
+
+    p {
+      color: var(--lp-text-2);
+      line-height: 1.6;
+      max-width: 42ch;
+    }
+  }
+
+  .lp-cell-icon {
+    display: block;
+    font-size: 2rem;
+    color: var(--lp-primary);
+    margin-bottom: 24px;
+  }
+
+  // Celda principal: azul profundo, con un rayado de cuaderno que evoca la nota clínica.
+  .lp-cell-hce {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    min-height: 320px;
+    padding: 40px;
+    border: 0;
+    background: linear-gradient(150deg, #0a4a9a 0%, $ha-primary-dark 55%, #022a5c 100%);
+
+    h3 {
+      color: #fff;
+      font-size: $ha-fs-headline-md;
+    }
+
+    p {
+      color: rgba(255, 255, 255, 0.82);
+      font-size: $ha-fs-body-lg;
+    }
+
+    .lp-cell-icon {
+      color: #fff;
+      font-size: 2.5rem;
+      margin-bottom: auto;
+    }
+
+    > :not(.lp-cell-lines) {
+      position: relative;
+      z-index: 1;
+    }
+  }
+
+  .lp-cell-lines {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(180deg, transparent 0 35px, rgba(255, 255, 255, 0.07) 35px 36px);
+    mask-image: linear-gradient(200deg, #000 10%, transparent 70%);
+    -webkit-mask-image: linear-gradient(200deg, #000 10%, transparent 70%);
+  }
+
+  .lp-cell-tint {
+    background: var(--lp-surface-2);
+    border-color: transparent;
+  }
+
+  .lp-cell-dots {
+    background-color: var(--lp-surface);
+    background-image: radial-gradient(var(--lp-glow-1) 1px, transparent 1.5px);
+    background-size: 16px 16px;
+    background-position: -8px -8px;
+  }
+
+  .lp-cell-gradient {
+    background: linear-gradient(120deg, var(--lp-surface) 35%, var(--lp-surface-2));
+  }
+
+  // ---------- Recorrido de la consulta ----------
+
+  .lp-workflow {
+    background: linear-gradient(180deg, var(--lp-bg), var(--lp-surface-2) 55%, var(--lp-bg));
+  }
+
+  .lp-workflow-grid {
+    display: grid;
+    gap: 32px;
+    align-items: center;
+
+    @media (min-width: 1024px) {
+      grid-template-columns: 5fr 7fr;
+      gap: 56px;
+    }
+  }
+
+  .lp-steps {
+    display: grid;
+    gap: 8px;
+  }
+
+  .lp-step {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    width: 100%;
+    padding: 20px;
+    text-align: left;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: $ha-radius-lg;
+    color: var(--lp-text);
+    cursor: pointer;
+    transition: background-color 0.3s, border-color 0.3s, box-shadow 0.3s;
+
+    &:hover {
+      background: var(--lp-surface);
+    }
+
+    &.is-active {
+      background: var(--lp-surface);
+      border-color: var(--lp-border);
+      box-shadow: var(--lp-shadow);
+
+      .lp-step-icon {
+        background: var(--lp-primary);
+        color: var(--lp-on-primary);
+      }
+
+      .lp-step-text {
+        color: var(--lp-text-2);
+      }
+    }
+  }
+
+  .lp-step-icon {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: $ha-radius;
+    background: var(--lp-surface-2);
+    color: var(--lp-primary);
+    font-size: 1.375rem;
+    transition: background-color 0.3s, color 0.3s;
+  }
+
+  .lp-step-title {
+    display: block;
+    font-weight: 600;
+    font-size: $ha-fs-headline-sm;
+    margin-bottom: 4px;
+  }
+
+  .lp-step-text {
+    display: block;
+    color: var(--lp-text-2);
+    line-height: 1.55;
+  }
+
+  // Las tres capturas apiladas en la misma celda; solo la activa es visible.
+  .lp-workflow-stage {
+    display: grid;
+  }
+
+  .lp-workflow-panel {
+    grid-area: 1 / 1;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(8px) scale(0.99);
+    transition: opacity 0.5s var(--lp-ease), transform 0.5s var(--lp-ease), visibility 0.5s;
+
+    &.is-active {
+      opacity: 1;
+      visibility: visible;
+      transform: none;
+    }
+
+    .lp-shot {
+      box-shadow: var(--lp-shadow-lg);
+    }
+  }
+
+  // ---------- Seguridad ----------
+
+  .lp-security-grid {
+    display: grid;
+    gap: 40px;
+
+    @media (min-width: 1024px) {
+      grid-template-columns: 5fr 7fr;
+      gap: 80px;
+      align-items: start;
+    }
+  }
+
+  .lp-security-intro {
+    @media (min-width: 1024px) {
+      position: sticky;
+      top: 112px;
+    }
+
+    .lp-section-title {
+      margin-bottom: 20px;
+    }
+
+    p {
+      font-size: $ha-fs-body-lg;
+      line-height: 1.6;
+      color: var(--lp-text-2);
+      max-width: 40ch;
+    }
+  }
+
+  .lp-security-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 36px;
+
+    li {
+      display: flex;
+      gap: 20px;
+    }
+
+    h3 {
+      font-size: $ha-fs-headline-sm;
+      font-weight: 600;
+      margin: 0 0 6px;
+    }
+
+    p {
+      color: var(--lp-text-2);
+      line-height: 1.6;
+      max-width: 52ch;
+    }
+  }
+
+  .lp-security-icon {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 52px;
+    border-radius: $ha-radius-lg;
+    background: var(--lp-surface);
+    border: 1px solid var(--lp-border);
+    color: var(--lp-primary);
+    font-size: 1.5rem;
+    box-shadow: var(--lp-shadow);
+  }
+
+  // ---------- Banda final ----------
+
+  .lp-manifesto {
+    padding: 88px 0;
+    background:
+      radial-gradient(50% 120% at 50% 0%, var(--lp-glow-1), transparent 70%),
+      var(--lp-surface-2);
+    text-align: center;
+
+    @media (min-width: 1024px) {
+      padding: 120px 0;
+    }
+  }
+
+  .lp-manifesto-quote {
+    font-size: clamp(1.75rem, 1.1rem + 2.6vw, 3rem);
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+    max-width: 24ch;
+    margin: 0 auto 48px;
+
+    strong {
+      display: block;
+      font-weight: 700;
+      color: var(--lp-primary);
+    }
+  }
+
+  .lp-manifesto-points {
+    display: grid;
+    gap: 20px;
+    max-width: 860px;
+    margin: 0 auto;
+    text-align: left;
+
+    @media (min-width: 768px) {
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+    }
+
+    p {
+      display: flex;
+      gap: 12px;
+      color: var(--lp-text-2);
+      line-height: 1.6;
+    }
+
+    svg {
+      flex: none;
+      font-size: 1.5rem;
+      color: var(--lp-primary);
+    }
+  }
+
+  // ---------- Footer ----------
+
+  .lp-footer {
+    padding: 40px 0;
+    border-top: 1px solid var(--lp-border);
+  }
+
+  .lp-footer-inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 32px;
+
+    p {
+      color: var(--lp-text-2);
+      font-size: $ha-fs-label;
+    }
+
+    > a {
+      margin-left: auto;
+      font-weight: 600;
+      color: var(--lp-primary);
+
+      &:hover {
+        color: var(--lp-primary-strong);
+      }
+    }
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--lp-primary);
+    outline-offset: 3px;
+  }
+}
+
+@keyframes lp-enter {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

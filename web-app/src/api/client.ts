@@ -117,10 +117,8 @@ const handleAuthFailure = () => {
     return;
   }
 
-  // Fallback sin handler registrado. Ojo: '/' también renderiza el Login, por eso
-  // ambos caminos cuentan como "ya estoy en el login".
-  const path = window.location.pathname;
-  if (path !== '/Login' && path !== '/') {
+  // Fallback sin handler registrado. '/' es la landing pública, que no llama al API.
+  if (window.location.pathname !== '/Login') {
     window.location.href = '/Login';
   }
 };
